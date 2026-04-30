@@ -82,6 +82,19 @@ export class ChatRoom extends LitElement {
     this.messages = [...this.messages, msg];
   }
 
+  private formatTime(isoString: string): string {
+    // If the backend sends a naive UTC datetime (without 'Z' or offset),
+    // JS will parse it as local time. By appending 'Z', we ensure it's treated as UTC.
+    const normalizedIso = isoString.endsWith("Z") || isoString.includes("+") || isoString.includes("-") && isoString.lastIndexOf("-") > 10
+      ? isoString
+      : `${isoString}Z`;
+      
+    return new Date(normalizedIso).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   private handleSubmit(e: Event) {
     e.preventDefault();
     const trimmed = this.inputValue.trim();
@@ -121,6 +134,7 @@ export class ChatRoom extends LitElement {
                           >
                             <div class="message__author">${m.username}</div>
                             <div class="message__body">${m.text}</div>
+                            <div class="message__time">${this.formatTime(m.createdAt)}</div>
                           </article>
                         `,
                 )}

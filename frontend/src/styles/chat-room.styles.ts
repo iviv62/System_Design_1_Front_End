@@ -152,6 +152,13 @@ export const chatRoomStyles = css`
     word-break: break-word;
   }
 
+  .message__time {
+    font-size: 0.65rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    margin-left: 0.25rem;
+  }
+
   .message--user {
     align-self: flex-start;
   }
@@ -162,6 +169,12 @@ export const chatRoomStyles = css`
 
   .message--user.message--self .message__author {
     display: none; /* Often hide author for own messages, or align right */
+  }
+
+  .message--user.message--self .message__time {
+    text-align: right;
+    margin-left: 0;
+    margin-right: 0.25rem;
   }
 
   .message--user.message--self .message__body {

@@ -89,7 +89,6 @@ export class ChatApp extends LitElement {
     }
 
     return html`
-      <h1>Room: ${this.room}</h1>
       <chat-room .username=${this.username} .room=${this.room}></chat-room>
     `;
   }
