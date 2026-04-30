@@ -6,6 +6,7 @@ import {
   toUiMessage,
 } from "./chat-message-adapter";
 import { getApiBaseUrl, getSocketUrl } from "./chat-config";
+import type { ChatCursorStore } from "./storage/chat-cursor-store";
 
 export type Identity = {
   room: string;
@@ -16,6 +17,7 @@ export type ChatRoomControllerOptions = {
   apiBase: string | undefined;
   wsBase: string | undefined;
   pageProtocol: string;
+  cursorStore: ChatCursorStore;
   onMessage: (message: UiMessage) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
@@ -75,10 +77,6 @@ export class ChatRoomController {
     this.options.onReconnectChange(isReconnecting);
   }
 
-  private get lastSeenKey(): string {
-    return `chat_last_seen_${this.room}`;
-  }
-
   private getResolvedApiBaseUrl(): string {
     return getApiBaseUrl(this.options.apiBase, this.options.wsBase);
   }
@@ -96,7 +94,7 @@ export class ChatRoomController {
   private async loadHistory(): Promise<void> {
     this.options.onLoadingChange(true);
 
-    const stored = localStorage.getItem(this.lastSeenKey);
+    const stored = this.options.cursorStore.getLastSeen(this.room);
     if (stored) this.lastSeen = stored;
 
     try {
@@ -113,7 +111,7 @@ export class ChatRoomController {
           }
         }
         if (this.lastSeen) {
-          localStorage.setItem(this.lastSeenKey, this.lastSeen);
+          this.options.cursorStore.setLastSeen(this.room, this.lastSeen);
         }
       }
     } catch {
@@ -162,7 +160,7 @@ export class ChatRoomController {
 
       const uiMessage = toUiMessage(chatMessage);
       this.lastSeen = uiMessage.createdAt;
-      localStorage.setItem(this.lastSeenKey, this.lastSeen);
+      this.options.cursorStore.setLastSeen(this.room, this.lastSeen);
       this.options.onMessage(uiMessage);
     };
 

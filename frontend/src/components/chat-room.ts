@@ -4,6 +4,8 @@ import { repeat } from "lit/directives/repeat.js";
 import { chatRoomStyles } from "../styles/chat-room.styles";
 import type { UiMessage } from "../types/message";
 import { ChatRoomController } from "../features/lib/chat/chat-room-controller";
+import { LocalStorageKeyValueStorage } from "../shared/storage/local-storage-key-value-storage";
+import { ChatCursorStore } from "../features/lib/chat/storage/chat-cursor-store";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -32,10 +34,18 @@ export class ChatRoom extends LitElement {
 
   constructor() {
     super();
+
+    const keyValueStorage = new LocalStorageKeyValueStorage(localStorage, {
+      prefix: "my-app",
+    });
+
+    const cursorStore = new ChatCursorStore(keyValueStorage);
+
     this.controller = new ChatRoomController({
       apiBase: import.meta.env.VITE_API_BASE_URL,
       wsBase: import.meta.env.VITE_WS_BASE_URL,
       pageProtocol: window.location.protocol,
+      cursorStore,
       onMessage: (message) => this.addMessage(message),
       onLoadingChange: (isLoading) => (this.isLoadingHistory = isLoading),
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
