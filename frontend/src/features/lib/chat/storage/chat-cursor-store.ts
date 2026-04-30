@@ -1,7 +1,11 @@
 import type { KeyValueStorage } from "../../../../shared/storage/key-value-storage";
 
 export class ChatCursorStore {
-  constructor(private readonly storage: KeyValueStorage) {}
+  private readonly storage: KeyValueStorage;
+
+  constructor(storage: KeyValueStorage) {
+    this.storage = storage;
+  }
 
   private key(room: string): string {
     return `chat_last_seen_${room}`;

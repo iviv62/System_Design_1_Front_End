@@ -33,8 +33,11 @@ export class ChatRoomController {
   private started = false;
   private room = "general";
   private username = "Guest";
+  private readonly options: ChatRoomControllerOptions;
 
-  constructor(private readonly options: ChatRoomControllerOptions) {}
+  constructor(options: ChatRoomControllerOptions) {
+    this.options = options;
+  }
 
   updateIdentity(identity: Identity): void {
     this.room = identity.room;

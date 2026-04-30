@@ -1,4 +1,4 @@
-import type { ChatMessage, UiMessage } from "../../../../types/message";
+import type { ChatMessage, UiMessage } from "../../../types/message";
 
 export function toUiMessage(msg: ChatMessage): UiMessage {
   return {

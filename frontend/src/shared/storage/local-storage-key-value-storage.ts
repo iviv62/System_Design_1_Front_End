@@ -5,10 +5,16 @@ export type LocalStorageKeyValueStorageOptions = {
 };
 
 export class LocalStorageKeyValueStorage implements KeyValueStorage {
+  private readonly storage: Storage;
+  private readonly options: LocalStorageKeyValueStorageOptions;
+
   constructor(
-    private readonly storage: Storage,
-    private readonly options: LocalStorageKeyValueStorageOptions = {},
-  ) {}
+    storage: Storage,
+    options: LocalStorageKeyValueStorageOptions = {},
+  ) {
+    this.storage = storage;
+    this.options = options;
+  }
 
   private buildKey(key: string): string {
     const prefix = this.options.prefix?.trim();
