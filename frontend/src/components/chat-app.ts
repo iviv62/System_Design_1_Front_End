@@ -85,11 +85,15 @@ export class ChatApp extends LitElement {
     }
   }
 
+  private joinRoom(roomName: string) {
+    if (!this.username.trim()) return;
+    this.selectedRoom = roomName;
+    this.joined = true;
+  }
+
   private handleJoin(e: Event) {
     e.preventDefault();
-    if (!this.username.trim() || !this.selectedRoom.trim()) {
-      return;
-    }
+    if (!this.username.trim() || !this.selectedRoom.trim()) return;
     this.joined = true;
   }
 
@@ -101,37 +105,38 @@ export class ChatApp extends LitElement {
 
       return html`
         <div class="lobby">
+          <!-- Top Header Bar -->
           <div class="lobby__header">
-            <h1>💬 Chat Lobby</h1>
+            <h1 class="lobby__title">💬 Chat Lobby</h1>
             <button class="lobby__theme-btn" @click=${this.toggleTheme}>
-              ${this.theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+              ${this.theme === "light" ? "🌙 Dark" : "☀️ Light"}
             </button>
           </div>
 
+          <!-- Three-column layout -->
           <div class="lobby__layout">
-            <!-- Left Column: Account Setup -->
-            <div class="lobby__sidebar">
-              <div>
-                <h3 class="lobby__section-title">Account Setup</h3>
-                <div class="lobby__input-group">
-                  <label class="lobby__label">Username</label>
-                  <input
-                    class="lobby__input"
-                    type="text"
-                    placeholder="Enter username..."
-                    .value=${this.username}
-                    @input=${(e: Event) => (this.username = (e.target as HTMLInputElement).value)}
-                  />
-                </div>
+
+            <!-- Column 1: Account Setup + Recent Rooms -->
+            <div class="lobby__col">
+              <div class="lobby__card">
+                <h3 class="lobby__card-title">Account Setup</h3>
+                <label class="lobby__label">Username</label>
+                <input
+                  class="lobby__input"
+                  type="text"
+                  placeholder="Enter username..."
+                  .value=${this.username}
+                  @input=${(e: Event) => (this.username = (e.target as HTMLInputElement).value)}
+                />
               </div>
 
-              <div>
-                <h3 class="lobby__section-title" style="margin-bottom: 0.5rem;">Recent Rooms</h3>
+              <div class="lobby__card">
+                <h3 class="lobby__card-title">Recent Rooms</h3>
                 <div class="lobby__room-cards">
                   ${this.rooms.length === 0 && !this.isLoadingRooms
-                    ? html`<div class="lobby__label" style="text-align:center;">No rooms yet</div>`
+                    ? html`<p class="lobby__empty">No rooms yet</p>`
                     : repeat(
-                        this.rooms.slice(0, 5), // Only show a few as "Recent" or prominent
+                        this.rooms.slice(0, 5),
                         (r) => r.id || r.name,
                         (r) => html`
                           <div
@@ -146,88 +151,95 @@ export class ChatApp extends LitElement {
               </div>
             </div>
 
-            <!-- Right Column: Room Finder -->
-            <div class="lobby__main">
-              <div class="lobby__finder-header">
-                <h3 class="lobby__section-title">Room Finder 🔴</h3>
+            <!-- Column 2: Create Room + Room Finder -->
+            <div class="lobby__col">
+              <div class="lobby__card">
+                <h3 class="lobby__card-title">Create a New Room</h3>
+                <form @submit=${this.handleCreateRoom}>
+                  <input
+                    class="lobby__input"
+                    type="text"
+                    placeholder="New Chat Room 1"
+                    .value=${this.newRoomName}
+                    @input=${(e: Event) => (this.newRoomName = (e.target as HTMLInputElement).value)}
+                  />
+                  <button
+                    class="lobby__btn lobby__btn--dark lobby__btn--full"
+                    type="submit"
+                    ?disabled=${!this.newRoomName.trim()}
+                  >
+                    + Create Room
+                  </button>
+                  ${this.error ? html`<div class="lobby__error">${this.error}</div>` : ""}
+                </form>
               </div>
-              
-              <div class="lobby__search">
+
+              <div class="lobby__card">
+                <div class="lobby__finder-header">
+                  <h3 class="lobby__card-title" style="margin-bottom: 0;">Room Finder</h3>
+                  <button
+                    class="lobby__refresh-btn"
+                    @click=${this.loadRooms}
+                    ?disabled=${this.isLoadingRooms}
+                  >
+                    ${this.isLoadingRooms ? "⏳" : "↻ Refresh"}
+                  </button>
+                </div>
+
                 <input
-                  class="lobby__input"
+                  class="lobby__input lobby__search-input"
                   type="text"
                   placeholder="🔍 Search..."
                   .value=${this.searchQuery}
                   @input=${(e: Event) => (this.searchQuery = (e.target as HTMLInputElement).value)}
                 />
-              </div>
 
-              ${this.error ? html`<div class="lobby__error">${this.error}</div>` : ""}
-              
-              <div class="lobby__table-wrapper">
-                <table class="lobby__table">
-                  <thead>
-                    <tr>
-                      <th>Room Name</th>
-                      <th>Participants</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${this.isLoadingRooms
-                      ? html`<tr><td colspan="3" style="text-align:center; padding: 2rem;">Loading rooms...</td></tr>`
-                      : filteredRooms.length === 0
-                      ? html`<tr><td colspan="3" style="text-align:center; padding: 2rem;">No rooms found.</td></tr>`
-                      : repeat(
-                          filteredRooms,
-                          (r) => r.id || r.name,
-                          (r) => html`
-                            <tr
-                              class="${this.selectedRoom === r.name ? "selected" : ""}"
-                              @click=${() => (this.selectedRoom = r.name)}
-                            >
-                              <td>${r.name}</td>
-                              <td>15/50</td>
-                              <td>Public</td>
-                            </tr>
-                          `
-                        )}
-                  </tbody>
-                </table>
+                <div class="lobby__table-wrapper">
+                  <table class="lobby__table">
+                    <thead>
+                      <tr>
+                        <th>Room Name</th>
+                        <th>Participants</th>
+                        <th>Status</th>
+                        <th>Join Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.isLoadingRooms
+                        ? html`<tr><td colspan="4" class="lobby__table-empty">Loading rooms...</td></tr>`
+                        : filteredRooms.length === 0
+                        ? html`<tr><td colspan="4" class="lobby__table-empty">No rooms found.</td></tr>`
+                        : repeat(
+                            filteredRooms,
+                            (r) => r.id || r.name,
+                            (r) => html`
+                              <tr class="${this.selectedRoom === r.name ? "selected" : ""}" @click=${() => (this.selectedRoom = r.name)}>
+                                <td>${r.name}</td>
+                                <td>👥 ${r.participants?.label || "0/50"}</td>
+                                <td>
+                                  ${r.status === "password"
+                                    ? html`🔒 Password`
+                                    : html`🌐 Public`}
+                                </td>
+                                <td>
+                                  <button
+                                    class="lobby__btn lobby__btn--join"
+                                    ?disabled=${!this.username.trim()}
+                                    @click=${(e: Event) => { e.stopPropagation(); this.joinRoom(r.name); }}
+                                  >Join</button>
+                                </td>
+                              </tr>
+                            `
+                          )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Bottom Actions -->
-          <div class="lobby__bottom">
-            <div class="lobby__create">
-              <label class="lobby__label">Create a New Room</label>
-              <form class="lobby__create-row" @submit=${this.handleCreateRoom}>
-                <input
-                  class="lobby__input"
-                  style="flex: 1;"
-                  type="text"
-                  placeholder="New Chat Room 1"
-                  .value=${this.newRoomName}
-                  @input=${(e: Event) => (this.newRoomName = (e.target as HTMLInputElement).value)}
-                />
-                <button
-                  class="lobby__btn lobby__btn--dark"
-                  type="submit"
-                  ?disabled=${!this.newRoomName.trim()}
-                >
-                  + Create Room
-                </button>
-              </form>
-            </div>
-            
-            <button 
-              class="lobby__btn lobby__btn--primary lobby__btn--large" 
-              @click=${this.handleJoin}
-              ?disabled=${!this.username.trim() || !this.selectedRoom.trim()}
-            >
-              Join Selected: ${this.selectedRoom || "None"}
-            </button>
+            <!-- Column 3: Reserved / Future use -->
+            <div class="lobby__col lobby__col--aside"></div>
+
           </div>
         </div>
       `;
