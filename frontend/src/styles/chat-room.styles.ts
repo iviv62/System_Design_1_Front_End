@@ -45,4 +45,29 @@ export const chatRoomStyles = css`
   button:hover {
     background: #059669;
   }
+
+  .reconnecting-banner {
+    background: #fef3c7;
+    color: #92400e;
+    text-align: center;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+  }
+
+  .loading {
+    color: #6b7280;
+    text-align: center;
+    padding: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .empty-state {
+    color: #9ca3af;
+    text-align: center;
+    padding: 2rem 0;
+    font-size: 0.9rem;
+    font-style: italic;
+  }
 `;

@@ -67,7 +67,7 @@ export class ChatApp extends LitElement {
   render() {
     if (!this.joined) {
       return html`
-        <h1>Chat (Stage 1)</h1>
+        <h1>Chat (Stage 2)</h1>
         <form @submit=${this.handleJoin}>
           <input
             type="text"
