@@ -68,8 +68,10 @@ export class ChatRoom extends LitElement {
       this.controller.updateIdentity({ room: this.room, username: this.username });
     }
 
-    const el = this.shadowRoot?.querySelector(".messages");
-    if (el) el.scrollTop = el.scrollHeight;
+    if (changedProperties.has("messages")) {
+      const el = this.shadowRoot?.querySelector(".chat-room__messages");
+      if (el) el.scrollTop = el.scrollHeight;
+    }
   }
 
   private addMessage(msg: UiMessage) {
@@ -85,40 +87,57 @@ export class ChatRoom extends LitElement {
     const trimmed = this.inputValue.trim();
     if (!trimmed) return;
 
-    if (this.controller.send(trimmed)) {
+        if (this.controller.send(trimmed)) {
       this.inputValue = "";
     }
   }
 
   render() {
     return html`
-      ${this.isReconnecting
-        ? html`<div class="reconnecting-banner">Reconnecting…</div>`
-        : nothing}
-      <div class="messages">
-        ${this.isLoadingHistory
-          ? html`<div class="loading">Loading history…</div>`
-          : this.messages.length === 0
-            ? html`<div class="empty-state">No messages yet. Say hello!</div>`
-            : repeat(
-                this.messages,
-                (m) => m.id,
-                (m) =>
-                  m.kind === "system"
-                    ? html`<div class="system">[system] ${m.text}</div>`
-                    : html`<div>${m.username}: ${m.text}</div>`,
-              )}
-      </div>
-      <form @submit=${this.handleSubmit}>
-        <input
-          type="text"
-          placeholder="Type a message…"
-          .value=${this.inputValue}
-          @input=${(e: Event) =>
-            (this.inputValue = (e.target as HTMLInputElement).value)}
-        />
-        <button type="submit">Send</button>
-      </form>
+      <section class="chat-room">
+        <header class="chat-room__header">
+          <h2 class="chat-room__title">Room: ${this.room}</h2>
+          <p class="chat-room__meta">Logged in as ${this.username}</p>
+        </header>
+
+        ${this.isReconnecting
+          ? html`<div class="chat-room__banner">Reconnecting…</div>`
+          : nothing}
+
+        <div class="chat-room__messages">
+          ${this.isLoadingHistory
+            ? html`<div class="message message--system">Loading history…</div>`
+            : this.messages.length === 0
+              ? html`<div class="message message--system">No messages yet. Say hello!</div>`
+              : repeat(
+                  this.messages,
+                  (m) => m.id,
+                  (m) =>
+                    m.kind === "system"
+                      ? html`<div class="message message--system">${m.text}</div>`
+                      : html`
+                          <article
+                            class="message message--user ${m.username === this.username ? "message--self" : ""}"
+                          >
+                            <div class="message__author">${m.username}</div>
+                            <div class="message__body">${m.text}</div>
+                          </article>
+                        `,
+                )}
+        </div>
+
+        <form class="chat-room__composer" @submit=${this.handleSubmit}>
+          <input
+            class="chat-room__input"
+            type="text"
+            placeholder="Type a message…"
+            .value=${this.inputValue}
+            @input=${(e: Event) =>
+              (this.inputValue = (e.target as HTMLInputElement).value)}
+          />
+          <button class="chat-room__send" type="submit" ?disabled=${!this.inputValue.trim()}>Send</button>
+        </form>
+      </section>
     `;
   }
 }
