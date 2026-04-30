@@ -1,7 +1,8 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { repeat } from "lit/directives/repeat.js";
 import { chatRoomStyles } from "../styles/chat-room.styles";
-import type { ChatMessage } from "../types/message";
+import type { ChatMessage, UiMessage } from "../types/message";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -14,7 +15,7 @@ export class ChatRoom extends LitElement {
   room = "general";
 
   @state()
-  private messages: string[] = [];
+  private messages: UiMessage[] = [];
 
   @state()
   private inputValue = "";
@@ -30,10 +31,122 @@ export class ChatRoom extends LitElement {
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionalClose = false;
-  private seenLines = new Set<string>();
+  private seenMessageIds = new Set<string>();
 
   private get lastSeenKey(): string {
     return `chat_last_seen_${this.room}`;
+  }
+
+  private toUiMessage(msg: ChatMessage): UiMessage {
+    return {
+      id: msg.id,
+      kind: "user",
+      username: msg.username,
+      text: msg.text,
+      createdAt: msg.created_at,
+    };
+  }
+
+  private toSystemMessage(text: string): UiMessage {
+    return {
+      id: `sys-${Date.now()}-${Math.random()}`,
+      kind: "system",
+      username: "",
+      text,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  private isChatMessage(payload: unknown): payload is ChatMessage {
+    return (
+      typeof payload === "object" &&
+      payload !== null &&
+      typeof (payload as ChatMessage).id === "string" &&
+      typeof (payload as ChatMessage).room === "string" &&
+      typeof (payload as ChatMessage).username === "string" &&
+      typeof (payload as ChatMessage).text === "string" &&
+      typeof (payload as ChatMessage).created_at === "string"
+    );
+  }
+
+  private extractChatMessage(payload: unknown): ChatMessage | null {
+    if (this.isChatMessage(payload)) {
+      return payload;
+    }
+
+    if (typeof payload !== "object" || payload === null) {
+      return null;
+    }
+
+    const wrapped = payload as {
+      message?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    };
+
+    if (this.isChatMessage(wrapped.message)) {
+      return wrapped.message;
+    }
+    if (this.isChatMessage(wrapped.data)) {
+      return wrapped.data;
+    }
+    if (this.isChatMessage(wrapped.payload)) {
+      return wrapped.payload;
+    }
+
+    return null;
+  }
+
+  private isSystemEvent(payload: unknown): payload is { type: "system"; text: string } {
+    return (
+      typeof payload === "object" &&
+      payload !== null &&
+      (payload as { type?: unknown }).type === "system" &&
+      typeof (payload as { text?: unknown }).text === "string"
+    );
+  }
+
+  private extractSystemText(payload: unknown): string | null {
+    if (this.isSystemEvent(payload)) {
+      return payload.text;
+    }
+
+    if (typeof payload !== "object" || payload === null) {
+      return null;
+    }
+
+    const event = payload as {
+      type?: unknown;
+      event?: unknown;
+      text?: unknown;
+      reason?: unknown;
+      code?: unknown;
+      detail?: unknown;
+      message?: unknown;
+    };
+
+    if (event.type !== "system") {
+      return null;
+    }
+
+    if (typeof event.text === "string") {
+      return event.text;
+    }
+
+    if (typeof event.message === "string") {
+      return event.message;
+    }
+
+    const eventName = typeof event.event === "string" ? event.event : "event";
+    const code = typeof event.code === "number" ? `, code=${event.code}` : "";
+    const reason = typeof event.reason === "string" && event.reason
+      ? `, reason=${event.reason}`
+      : "";
+    const detail = typeof event.detail === "string" && event.detail
+      ? `, detail=${event.detail}`
+      : "";
+
+    return `${eventName}${code}${reason}${detail}`;
   }
 
   private getApiBaseUrl(): string {
@@ -97,9 +210,7 @@ export class ChatRoom extends LitElement {
       if (res.ok) {
         const data: ChatMessage[] = await res.json();
         for (const msg of data) {
-          const line = `${msg.username}: ${msg.text}`;
-          this.seenLines.add(line);
-          this.addMessage(line);
+          this.addMessage(this.toUiMessage(msg));
           if (!this.lastSeen || msg.created_at > this.lastSeen) {
             this.lastSeen = msg.created_at;
           }
@@ -130,22 +241,40 @@ export class ChatRoom extends LitElement {
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
-      const line = event.data as string;
-      if (this.seenLines.has(line)) {
-        this.seenLines.delete(line);
+      let payload: unknown;
+      try {
+        payload = JSON.parse(String(event.data));
+      } catch {
+        // Fallback to plain text for transitional servers.
+        this.addSystemMessage(String(event.data));
         return;
       }
-      this.lastSeen = new Date().toISOString();
+
+      const systemText = this.extractSystemText(payload);
+      if (systemText) {
+        this.addSystemMessage(systemText);
+        return;
+      }
+
+      const chatMessage = this.extractChatMessage(payload);
+      if (!chatMessage) {
+        return;
+      }
+
+      const uiMessage = this.toUiMessage(chatMessage);
+      this.lastSeen = uiMessage.createdAt;
       localStorage.setItem(this.lastSeenKey, this.lastSeen);
-      this.addMessage(line);
+      this.addMessage(uiMessage);
     };
 
     this.socket.onclose = (event: CloseEvent) => {
       if (this.intentionalClose) return;
-      const details = event.reason
-        ? `code=${event.code}, reason=${event.reason}`
-        : `code=${event.code}`;
-      this.addSystemMessage(`Disconnected (${details})`);
+      if (!this.isReconnecting) {
+        const details = event.reason
+          ? `code=${event.code}, reason=${event.reason}`
+          : `code=${event.code}`;
+        this.addSystemMessage(`Disconnected (${details})`);
+      }
       this.scheduleReconnect();
     };
 
@@ -169,12 +298,16 @@ export class ChatRoom extends LitElement {
     if (el) el.scrollTop = el.scrollHeight;
   }
 
-  private addMessage(msg: string) {
+  private addMessage(msg: UiMessage) {
+    if (msg.kind === "user") {
+      if (this.seenMessageIds.has(msg.id)) return;
+      this.seenMessageIds.add(msg.id);
+    }
     this.messages = [...this.messages, msg];
   }
 
   private addSystemMessage(msg: string) {
-    this.addMessage(`[system] ${msg}`);
+    this.addMessage(this.toSystemMessage(msg));
   }
 
   private handleSubmit(e: Event) {
@@ -197,10 +330,13 @@ export class ChatRoom extends LitElement {
           ? html`<div class="loading">Loading history…</div>`
           : this.messages.length === 0
             ? html`<div class="empty-state">No messages yet. Say hello!</div>`
-            : this.messages.map((m) =>
-                m.startsWith("[system]")
-                  ? html`<div class="system">${m}</div>`
-                  : html`<div>${m}</div>`,
+            : repeat(
+                this.messages,
+                (m) => m.id,
+                (m) =>
+                  m.kind === "system"
+                    ? html`<div class="system">[system] ${m.text}</div>`
+                    : html`<div>${m.username}: ${m.text}</div>`,
               )}
       </div>
       <form @submit=${this.handleSubmit}>
