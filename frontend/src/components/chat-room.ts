@@ -1,7 +1,7 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import { chatRoomStyles } from "../styles/chat-room.styles";
+import chatRoomStylesRaw from "../styles/chat-room.styles.scss?inline";
 import type { UiMessage } from "../types/message";
 import { ChatRoomController } from "../features/lib/chat/chat-room-controller";
 import { LocalStorageKeyValueStorage } from "../shared/storage/local-storage-key-value-storage";
@@ -9,7 +9,7 @@ import { ChatCursorStore } from "../features/lib/chat/storage/chat-cursor-store"
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
-  static styles = chatRoomStyles;
+  static styles = unsafeCSS(chatRoomStylesRaw);
 
   @property()
   username = "Guest";
@@ -28,6 +28,9 @@ export class ChatRoom extends LitElement {
 
   @state()
   private isReconnecting = false;
+
+  @state()
+  private theme: "light" | "dark" = "light";
 
   private seenMessageIds = new Set<string>();
   private controller: ChatRoomController;
@@ -56,6 +59,16 @@ export class ChatRoom extends LitElement {
     super.connectedCallback();
     this.controller.updateIdentity({ room: this.room, username: this.username });
     this.controller.start();
+    // Sync theme from body attribute set by ChatApp
+    const bodyTheme = document.body.getAttribute("data-theme");
+    this.theme = bodyTheme === "dark" ? "dark" : "light";
+  }
+
+  private toggleTheme() {
+    this.theme = this.theme === "light" ? "dark" : "light";
+    localStorage.setItem("theme", this.theme);
+    document.body.setAttribute("data-theme", this.theme);
+    this.requestUpdate();
   }
 
   disconnectedCallback(): void {
@@ -107,10 +120,17 @@ export class ChatRoom extends LitElement {
 
   render() {
     return html`
-      <section class="chat-room">
+      <section class="chat-room ${this.theme === 'dark' ? 'chat-room--dark' : 'chat-room--light'}">
         <header class="chat-room__header">
-          <h2 class="chat-room__title">Room: ${this.room}</h2>
-          <p class="chat-room__meta">Logged in as ${this.username}</p>
+          <div class="chat-room__header-left">
+            <h2 class="chat-room__title">💬 ${this.room}</h2>
+            <p class="chat-room__meta">Logged in as <strong>${this.username}</strong></p>
+          </div>
+          <div class="chat-room__header-right">
+            <button class="chat-room__icon-btn" @click=${this.toggleTheme} title="Toggle theme">
+              ${this.theme === "light" ? "🌙" : "☀️"}
+            </button>
+          </div>
         </header>
 
         ${this.isReconnecting
