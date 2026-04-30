@@ -1,51 +1,14 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
 import "./chat-room";
 
 @customElement("chat-app")
 export class ChatApp extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-      font-family: system-ui, sans-serif;
-      padding: 1rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 1rem;
-    }
-
-    form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    input {
-      flex: 1;
-      min-width: 0;
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      padding: 0.4rem 0.8rem;
-      border-radius: 4px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-  `;
+  // Opt out of Shadow DOM so the compiled CSS applies directly to this component
+  createRenderRoot() {
+    return this;
+  }
 
   @state()
   private username = "";
