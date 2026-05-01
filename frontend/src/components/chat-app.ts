@@ -3,6 +3,8 @@ import { customElement, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
 import "./chat-room";
+import "./lobby-header";
+import "./lobby-account";
 import {
   fetchRooms,
   createRoom,
@@ -120,10 +122,6 @@ export class ChatApp extends LitElement {
     this.unreadByRoom = byRoom;
   }
 
-  private handleUsernameInput(e: Event) {
-    this.username = (e.target as HTMLInputElement).value;
-    void this.loadUnreadCountsForUser(this.username);
-  }
 
   private renderUnreadBadge(roomId: string) {
     const unread = this.unreadByRoom[roomId] ?? 0;
@@ -199,29 +197,20 @@ export class ChatApp extends LitElement {
       return html`
         <div class="lobby">
           <!-- Top Header Bar -->
-          <div class="lobby__header">
-            <h1 class="lobby__title">💬 Chat Lobby</h1>
-            <button class="lobby__theme-btn" @click=${this.toggleTheme}>
-              ${this.theme === "light" ? "🌙 Dark" : "☀️ Light"}
-            </button>
-          </div>
+          <lobby-header .theme=${this.theme} @toggle-theme=${this.toggleTheme}></lobby-header>
 
           <!-- Three-column layout -->
           <div class="lobby__layout">
 
             <!-- Column 1: Account Setup + Recent Rooms -->
             <div class="lobby__col">
-              <div class="lobby__card">
-                <h3 class="lobby__card-title">Account Setup</h3>
-                <label class="lobby__label">Username</label>
-                <input
-                  class="lobby__input"
-                  type="text"
-                  placeholder="Enter username..."
-                  .value=${this.username}
-                  @input=${this.handleUsernameInput}
-                />
-              </div>
+              <lobby-account 
+                .username=${this.username} 
+                @username-change=${(e: CustomEvent) => {
+                  this.username = e.detail;
+                  this.loadUnreadCountsForUser(this.username);
+                }}>
+              </lobby-account>
 
               <div class="lobby__card">
                 <h3 class="lobby__card-title">Recent Rooms</h3>
