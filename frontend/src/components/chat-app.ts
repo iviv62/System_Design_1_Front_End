@@ -5,6 +5,7 @@ import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to gl
 import "./chat-room";
 import "./lobby-header";
 import "./lobby-account";
+import "./lobby-create-room";
 import {
   fetchRooms,
   createRoom,
@@ -32,7 +33,7 @@ export class ChatApp extends LitElement {
   @state() private rooms: Room[] = [];
   @state() private conversationByRoom: Record<string, ConversationSummary> = {};
   @state() private unreadByRoom: Record<string, number> = {};
-  @state() private newRoomName = "";
+  // newRoomName state moved to <lobby-create-room>
   @state() private searchQuery = "";
   @state() private isLoadingRooms = true;
   @state() private error = "";
@@ -129,19 +130,17 @@ export class ChatApp extends LitElement {
     return html`<span class="lobby__unread-badge">${unread}</span>`;
   }
 
-  private async handleCreateRoom(e: Event) {
-    e.preventDefault();
-    const trimmed = this.newRoomName.trim();
-    if (!trimmed) return;
 
+  private async handleCreateRoomFromChild(roomName: string) {
+    const trimmed = roomName.trim();
+    if (!trimmed) return;
     try {
       const room = await createRoom({ name: trimmed, created_by: this.username.trim() || undefined });
-      this.newRoomName = "";
       await this.loadRooms();
       this.selectedRoomId = room.id;
       this.selectedRoomName = room.name;
-      // Auto-join the freshly created room using backend id.
       this.joined = true;
+      this.error = "";
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         this.error = "A room with that name already exists. Pick a different name.";
@@ -281,26 +280,10 @@ export class ChatApp extends LitElement {
 
             <!-- Column 2: Create Room + Room Finder -->
             <div class="lobby__col">
-              <div class="lobby__card">
-                <h3 class="lobby__card-title">Create a New Room</h3>
-                <form @submit=${this.handleCreateRoom}>
-                  <input
-                    class="lobby__input"
-                    type="text"
-                    placeholder="New Chat Room 1"
-                    .value=${this.newRoomName}
-                    @input=${(e: Event) => (this.newRoomName = (e.target as HTMLInputElement).value)}
-                  />
-                  <button
-                    class="lobby__btn lobby__btn--dark lobby__btn--full"
-                    type="submit"
-                    ?disabled=${!this.newRoomName.trim()}
-                  >
-                    + Create Room
-                  </button>
-                  ${this.error ? html`<div class="lobby__error">${this.error}</div>` : ""}
-                </form>
-              </div>
+              <lobby-create-room 
+                .error=${this.error}
+                @create-room=${(e: CustomEvent) => this.handleCreateRoomFromChild(e.detail)}>
+              </lobby-create-room>
 
               <div class="lobby__card">
                 <div class="lobby__finder-header">
