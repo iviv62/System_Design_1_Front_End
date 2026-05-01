@@ -2,10 +2,10 @@ import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
-import "./chat-room";
-import "./lobby-header";
-import "./lobby-account";
-import "./lobby-create-room";
+import "./chat/chat-room";
+import "./lobby/lobby-header";
+import "./lobby/lobby-account";
+import "./lobby/lobby-create-room";
 import {
   fetchRooms,
   createRoom,
@@ -51,8 +51,12 @@ export class ChatApp extends LitElement {
     await this.loadRooms();
   }
 
-  private toggleTheme() {
-    this.theme = this.theme === "light" ? "dark" : "light";
+  private toggleTheme(e?: CustomEvent) {
+    if (e && e.detail && e.detail.theme) {
+      this.theme = e.detail.theme;
+    } else {
+      this.theme = this.theme === "light" ? "dark" : "light";
+    }
     setTheme(this.theme);
   }
 

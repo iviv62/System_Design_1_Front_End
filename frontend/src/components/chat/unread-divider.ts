@@ -1,6 +1,6 @@
 import { LitElement, html, unsafeCSS } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import stylesRaw from "../styles/unread-divider.styles.scss?inline";
+import stylesRaw from "../../styles/unread-divider.styles.scss?inline";
 
 @customElement("unread-divider")
 export class UnreadDivider extends LitElement {

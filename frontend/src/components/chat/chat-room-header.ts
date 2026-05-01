@@ -1,5 +1,6 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import "../ui/theme-button";
 
 @customElement("chat-room-header")
 export class ChatRoomHeader extends LitElement {
@@ -22,9 +23,9 @@ export class ChatRoomHeader extends LitElement {
     return this;
   }
 
-  private handleToggleTheme() {
+  private handleToggleTheme(e: CustomEvent) {
     this.dispatchEvent(
-      new CustomEvent("theme-toggle", { bubbles: true, composed: true }),
+      new CustomEvent("theme-toggle", { detail: e.detail, bubbles: true, composed: true }),
     );
   }
 
@@ -36,9 +37,9 @@ export class ChatRoomHeader extends LitElement {
           <p class="chat-room__meta">Logged in as <strong>${this.username}</strong></p>
         </div>
         <div class="chat-room__header-right">
-          <button class="chat-room__icon-btn" @click=${this.handleToggleTheme} title="Toggle theme">
+          <theme-button .theme=${this.theme} @theme-changed=${this.handleToggleTheme} title="Toggle theme">
             ${this.theme === "light" ? "🌙" : "☀️"}
-          </button>
+          </theme-button>
         </div>
       </header>
 

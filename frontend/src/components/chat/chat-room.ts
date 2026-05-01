@@ -2,29 +2,29 @@ import { LitElement, html, nothing, unsafeCSS } from "lit";
 import type { PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import chatRoomStylesRaw from "../styles/chat-room.styles.scss?inline";
-import type { UiMessage } from "../types/message";
-import { ChatRoomController } from "../features/lib/chat/chat-room-controller";
-import { fetchUnreadCount } from "../features/lib/chat/chat-room-api";
+import chatRoomStylesRaw from "../../styles/chat-room.styles.scss?inline";
+import type { UiMessage } from "../../types/message";
+import { ChatRoomController } from "../../features/lib/chat/chat-room-controller";
+import { fetchUnreadCount } from "../../features/lib/chat/chat-room-api";
 import {
   DEFAULT_NEAR_BOTTOM_THRESHOLD_PX,
   getMessagesContainer,
   isMessagesNearBottom,
   scrollMessagesToBottom,
   scrollToUnreadBoundary,
-} from "../features/lib/chat/chat-room-scroll";
+} from "../../features/lib/chat/chat-room-scroll";
 import {
   getUnreadAnchorFromSnapshot,
   getUnreadCount,
   shouldAnchorFirstReplayMessage,
   shouldAutoScrollForNonUserMessage,
   shouldAutoScrollForUserMessage,
-} from "../features/lib/chat/chat-room-unread";
-import { getTheme, setTheme } from "../utils/theme";
+} from "../../features/lib/chat/chat-room-unread";
+import { getTheme, setTheme } from "../../utils/theme";
 import "./unread-divider";
-import "./chat/chat-room-header";
-import "./chat/chat-message-item";
-import "./chat/chat-room-composer";
+import "./chat-room-header";
+import "./chat-message-item";
+import "./chat-room-composer";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -105,8 +105,12 @@ export class ChatRoom extends LitElement {
     }
   }
 
-  private toggleTheme() {
-    this.theme = this.theme === "light" ? "dark" : "light";
+  private toggleTheme(e?: CustomEvent) {
+    if (e && e.detail && e.detail.theme) {
+      this.theme = e.detail.theme;
+    } else {
+      this.theme = this.theme === "light" ? "dark" : "light";
+    }
     setTheme(this.theme);
   }
 
