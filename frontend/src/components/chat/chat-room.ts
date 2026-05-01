@@ -20,7 +20,7 @@ import {
   shouldAutoScrollForNonUserMessage,
   shouldAutoScrollForUserMessage,
 } from "../../features/lib/chat/chat-room-unread";
-import { getTheme, setTheme } from "../../utils/theme";
+import { ThemeController } from "../../utils/theme-controller";
 import "./unread-divider";
 import "./chat-room-header";
 import "./chat-message-item";
@@ -48,8 +48,7 @@ export class ChatRoom extends LitElement {
   @state()
   private isReconnecting = false;
 
-  @state()
-  private theme: "light" | "dark" = "light";
+  private themeCtrl = new ThemeController(this);
 
   @state()
   private unreadAnchorMessageId: string | null = null;
@@ -93,8 +92,7 @@ export class ChatRoom extends LitElement {
     this.updateControllerIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
-    this.theme = getTheme();
-    setTheme(this.theme);
+    ThemeController.set(this.themeCtrl.theme);
   }
 
   private async loadUnreadCountSnapshot() {
@@ -106,12 +104,8 @@ export class ChatRoom extends LitElement {
   }
 
   private toggleTheme(e?: CustomEvent) {
-    if (e && e.detail && e.detail.theme) {
-      this.theme = e.detail.theme;
-    } else {
-      this.theme = this.theme === "light" ? "dark" : "light";
-    }
-    setTheme(this.theme);
+    const next = e?.detail?.theme ?? (this.themeCtrl.theme === "light" ? "dark" : "light");
+    ThemeController.set(next);
   }
 
   disconnectedCallback(): void {
@@ -303,12 +297,12 @@ export class ChatRoom extends LitElement {
     const unreadCount = this.getUnreadCount();
 
     return html`
-      <section class="chat-room ${this.theme === 'dark' ? 'chat-room--dark' : 'chat-room--light'}">
+      <section class="chat-room ${this.themeCtrl.theme === 'dark' ? 'chat-room--dark' : 'chat-room--light'}">
         <chat-room-header
           .roomName=${this.roomName}
           .roomId=${this.roomId}
           .username=${this.username}
-          .theme=${this.theme}
+          .theme=${this.themeCtrl.theme}
           .isReconnecting=${this.isReconnecting}
           @theme-toggle=${this.toggleTheme}
         ></chat-room-header>

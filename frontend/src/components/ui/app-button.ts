@@ -30,9 +30,17 @@ export class AppButton extends LitElement {
   @property({ type: String })
   theme: 'light' | 'dark' = 'light';
 
+  @property({ type: Boolean, reflect: true })
+  disabled = false;
+
+  @property({ type: String })
+  type: 'button' | 'submit' | 'reset' = 'button';
+
   render() {
     return html`
-      <button class="${this.theme}"><slot></slot></button>
+      <button class="${this.theme}" ?disabled=${this.disabled} type=${this.type}>
+        <slot></slot>
+      </button>
     `;
   }
 }

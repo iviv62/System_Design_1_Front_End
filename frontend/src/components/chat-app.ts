@@ -14,7 +14,7 @@ import {
   fetchUnreadCount,
   ApiError,
 } from "../features/lib/chat/chat-room-api";
-import { getTheme, setTheme } from "../utils/theme";
+import { ThemeController } from "../utils/theme-controller";
 import type { Room } from "../types/room";
 import type { ConversationSummary } from "../types/conversation-summary";
 
@@ -38,26 +38,21 @@ export class ChatApp extends LitElement {
   @state() private isLoadingRooms = true;
   @state() private error = "";
 
-  @state() private theme: "light" | "dark" = "light";
+  private themeCtrl = new ThemeController(this);
 
   private unreadLoadRequestId = 0;
 
   async connectedCallback() {
     super.connectedCallback();
 
-    this.theme = getTheme();
-    setTheme(this.theme);
+    ThemeController.set(this.themeCtrl.theme);
 
     await this.loadRooms();
   }
 
   private toggleTheme(e?: CustomEvent) {
-    if (e && e.detail && e.detail.theme) {
-      this.theme = e.detail.theme;
-    } else {
-      this.theme = this.theme === "light" ? "dark" : "light";
-    }
-    setTheme(this.theme);
+    const next = e?.detail?.theme ?? (this.themeCtrl.theme === "light" ? "dark" : "light");
+    ThemeController.set(next);
   }
 
   private async loadRooms() {
@@ -200,7 +195,7 @@ export class ChatApp extends LitElement {
       return html`
         <div class="lobby">
           <!-- Top Header Bar -->
-          <lobby-header .theme=${this.theme} @toggle-theme=${this.toggleTheme}></lobby-header>
+          <lobby-header .theme=${this.themeCtrl.theme} @toggle-theme=${this.toggleTheme}></lobby-header>
 
           <!-- Three-column layout -->
           <div class="lobby__layout">
