@@ -6,6 +6,7 @@ import "./chat-room";
 import {
   fetchRooms,
   createRoom,
+  deleteRoom,
   fetchConversationSummary,
   fetchUnreadCount,
   ApiError,
@@ -136,7 +137,7 @@ export class ChatApp extends LitElement {
     if (!trimmed) return;
 
     try {
-      const room = await createRoom({ name: trimmed });
+      const room = await createRoom({ name: trimmed, created_by: this.username.trim() || undefined });
       this.newRoomName = "";
       await this.loadRooms();
       this.selectedRoomId = room.id;
@@ -157,6 +158,29 @@ export class ChatApp extends LitElement {
     this.selectedRoomId = room.id;
     this.selectedRoomName = room.name;
     this.joined = true;
+  }
+
+  private async handleDeleteRoom(room: Room, e: Event) {
+    e.stopPropagation();
+    if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteRoom(room.id, this.username.trim());
+      if (this.selectedRoomId === room.id) {
+        this.joined = false;
+        this.selectedRoomId = "";
+        this.selectedRoomName = "";
+      }
+      await this.loadRooms();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        this.error = "Only the room creator can delete this room.";
+      } else if (error instanceof ApiError && error.status === 404) {
+        this.error = "Room not found. It may have already been deleted.";
+        await this.loadRooms();
+      } else {
+        this.error = "Failed to delete room.";
+      }
+    }
   }
 
   private renderLastMessagePreview(roomId: string): string {
@@ -220,11 +244,50 @@ export class ChatApp extends LitElement {
                               ${this.renderUnreadBadge(r.id)}
                             </div>
                             <div class="lobby__room-card-preview">${this.renderLastMessagePreview(r.id)}</div>
+                            ${r.created_by ? html`<div class="lobby__room-card-creator">by ${r.created_by}</div>` : ""}
                           </div>
                         `
                       )}
                 </div>
               </div>
+
+              ${this.username.trim() ? (() => {
+                const myRooms = this.rooms.filter(r => r.created_by === this.username.trim());
+                return html`
+                  <div class="lobby__card">
+                    <h3 class="lobby__card-title">My Rooms</h3>
+                    <div class="lobby__room-cards">
+                      ${myRooms.length === 0
+                        ? html`<p class="lobby__empty">You haven't created any rooms yet</p>`
+                        : repeat(
+                            myRooms,
+                            (r) => r.id,
+                            (r) => html`
+                              <div
+                                class="lobby__room-card ${this.selectedRoomId === r.id ? "lobby__room-card--selected" : ""}"
+                                @click=${() => {
+                                  this.selectedRoomId = r.id;
+                                  this.selectedRoomName = r.name;
+                                }}
+                              >
+                                <div class="lobby__room-card-head">
+                                  <div class="lobby__room-card-name">${r.name}</div>
+                                  ${this.renderUnreadBadge(r.id)}
+                                </div>
+                                <div class="lobby__room-card-preview">${this.renderLastMessagePreview(r.id)}</div>
+                                <div class="lobby__room-card-actions">
+                                  <button
+                                    class="lobby__btn lobby__btn--delete lobby__btn--delete-sm"
+                                    @click=${(e: Event) => this.handleDeleteRoom(r, e)}
+                                  >Delete</button>
+                                </div>
+                              </div>
+                            `
+                          )}
+                    </div>
+                  </div>
+                `;
+              })() : ""}
             </div>
 
             <!-- Column 2: Create Room + Room Finder -->
@@ -299,6 +362,7 @@ export class ChatApp extends LitElement {
                                     ${this.renderUnreadBadge(r.id)}
                                   </div>
                                   <div class="lobby__room-preview">${this.renderLastMessagePreview(r.id)}</div>
+                                  ${r.created_by ? html`<div class="lobby__room-creator">by ${r.created_by}</div>` : ""}
                                 </td>
                                 <td>👥 ${r.participants?.label || "0/50"}</td>
                                 <td>
@@ -312,6 +376,12 @@ export class ChatApp extends LitElement {
                                     ?disabled=${!this.username.trim()}
                                     @click=${(e: Event) => { e.stopPropagation(); this.joinRoom(r); }}
                                   >Join</button>
+                                  ${r.created_by && r.created_by === this.username.trim()
+                                    ? html`<button
+                                        class="lobby__btn lobby__btn--delete"
+                                        @click=${(e: Event) => this.handleDeleteRoom(r, e)}
+                                      >Delete</button>`
+                                    : ""}
                                 </td>
                               </tr>
                             `

@@ -8,6 +8,7 @@ export interface Room {
   id: string;
   name: string;
   created_at?: string;
+  created_by?: string;
   status?: string;
   max_participants?: number;
   participants?: ParticipantsInfo;

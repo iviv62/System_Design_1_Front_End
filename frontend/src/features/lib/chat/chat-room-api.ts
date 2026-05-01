@@ -14,6 +14,7 @@ export class ApiError extends Error {
 export type CreateRoomInput = {
   name: string;
   id?: string;
+  created_by?: string;
   status?: string;
   max_participants?: number;
 };
@@ -47,6 +48,16 @@ export async function createRoom(input: string | CreateRoomInput): Promise<Room>
     throw new ApiError(res.status, `Failed to create room: ${res.statusText}`);
   }
   return res.json();
+}
+
+export async function deleteRoom(roomId: string, username: string): Promise<void> {
+  const url = new URL(`${getBase()}/rooms/${encodeURIComponent(roomId)}`);
+  url.searchParams.set("username", username);
+
+  const res = await fetch(url.toString(), { method: "DELETE" });
+  if (!res.ok) {
+    throw new ApiError(res.status, `Failed to delete room: ${res.statusText}`);
+  }
 }
 
 export async function fetchConversationSummary(
