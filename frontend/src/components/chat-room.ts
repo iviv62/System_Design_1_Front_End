@@ -6,9 +6,11 @@ import type { UiMessage } from "../types/message";
 import { ChatRoomController } from "../features/lib/chat/chat-room-controller";
 import { fetchUnreadCount } from "../features/lib/chat/chat-room-api";
 import { getUnreadBoundaryScrollTarget } from "../features/lib/chat/chat-room-scroll";
-import { formatTime } from "../utils/time";
 import { getTheme, setTheme } from "../utils/theme";
 import "./unread-divider"; 
+import "./chat/chat-room-header";
+import "./chat/chat-message-item";
+import "./chat/chat-room-composer";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -25,9 +27,6 @@ export class ChatRoom extends LitElement {
 
   @state()
   private messages: UiMessage[] = [];
-
-  @state()
-  private inputValue = "";
 
   @state()
   private isLoadingHistory = true;
@@ -227,14 +226,10 @@ export class ChatRoom extends LitElement {
       .filter((m) => m.kind === "user" && m.username !== this.username).length;
   }
 
-  private handleSubmit(e: Event) {
-    e.preventDefault();
-    const trimmed = this.inputValue.trim();
-    if (!trimmed) return;
-
-        if (this.controller.send(trimmed)) {
-      this.inputValue = "";
-    }
+  private handleMessageSubmit(e: CustomEvent<{ text: string }>) {
+    const text = e.detail.text.trim();
+    if (!text) return;
+    this.controller.send(text);
   }
 
   render() {
@@ -242,21 +237,14 @@ export class ChatRoom extends LitElement {
 
     return html`
       <section class="chat-room ${this.theme === 'dark' ? 'chat-room--dark' : 'chat-room--light'}">
-        <header class="chat-room__header">
-          <div class="chat-room__header-left">
-            <h2 class="chat-room__title"> ${this.roomName || this.roomId}</h2>
-            <p class="chat-room__meta">Logged in as <strong>${this.username}</strong></p>
-          </div>
-          <div class="chat-room__header-right">
-            <button class="chat-room__icon-btn" @click=${this.toggleTheme} title="Toggle theme">
-              ${this.theme === "light" ? "🌙" : "☀️"}
-            </button>
-          </div>
-        </header>
-
-        ${this.isReconnecting
-          ? html`<div class="chat-room__banner">Reconnecting…</div>`
-          : nothing}
+        <chat-room-header
+          .roomName=${this.roomName}
+          .roomId=${this.roomId}
+          .username=${this.username}
+          .theme=${this.theme}
+          .isReconnecting=${this.isReconnecting}
+          @theme-toggle=${this.toggleTheme}
+        ></chat-room-header>
 
         <div class="chat-room__messages" @scroll=${this.handleMessagesScroll}>
           ${this.isLoadingHistory
@@ -267,21 +255,12 @@ export class ChatRoom extends LitElement {
                   this.messages,
                   (m) => m.id,
                   (m) =>
-                    m.kind === "system"
-                      ? html`<div class="message message--system" data-message-id=${m.id}>${m.text}</div>`
-                      : html`
-                          ${this.unreadAnchorMessageId === m.id
-                            ? html`<unread-divider data-unread-anchor></unread-divider>`
-                            : nothing}
-                          <article
-                            class="message message--user ${m.username === this.username ? "message--self" : ""}"
-                            data-message-id=${m.id}
-                          >
-                            <div class="message__author">${m.username}</div>
-                            <div class="message__body">${m.text}</div>
-                            <div class="message__time">${formatTime(m.createdAt)}</div>
-                          </article>
-                        `,
+                    html`
+                      ${this.unreadAnchorMessageId === m.id
+                        ? html`<unread-divider data-unread-anchor></unread-divider>`
+                        : nothing}
+                      <chat-message-item .message=${m} .username=${this.username}></chat-message-item>
+                    `,
                 )}
 
           ${this.hasUnseenMessages && unreadCount > 0
@@ -297,17 +276,7 @@ export class ChatRoom extends LitElement {
             : nothing}
         </div>
 
-        <form class="chat-room__composer" @submit=${this.handleSubmit}>
-          <input
-            class="chat-room__input"
-            type="text"
-            placeholder="Type a message…"
-            .value=${this.inputValue}
-            @input=${(e: Event) =>
-              (this.inputValue = (e.target as HTMLInputElement).value)}
-          />
-          <button class="chat-room__send" type="submit" ?disabled=${!this.inputValue.trim()}>Send</button>
-        </form>
+        <chat-room-composer @message-submit=${this.handleMessageSubmit}></chat-room-composer>
       </section>
     `;
   }

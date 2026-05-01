@@ -173,6 +173,12 @@
       background-color: var(--cr-scrollbar);
       border-radius: 4px;
     }
+
+    // chat-message-item is a wrapper custom element; keep original bubble layout behavior
+    // by letting its children participate directly in the flex column.
+    > chat-message-item {
+      display: contents;
+    }
   }
 
   &__jump-last-seen {
