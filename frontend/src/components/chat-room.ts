@@ -1,13 +1,27 @@
 import { LitElement, html, nothing, unsafeCSS } from "lit";
+import type { PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import chatRoomStylesRaw from "../styles/chat-room.styles.scss?inline";
 import type { UiMessage } from "../types/message";
 import { ChatRoomController } from "../features/lib/chat/chat-room-controller";
 import { fetchUnreadCount } from "../features/lib/chat/chat-room-api";
-import { getUnreadBoundaryScrollTarget } from "../features/lib/chat/chat-room-scroll";
+import {
+  DEFAULT_NEAR_BOTTOM_THRESHOLD_PX,
+  getMessagesContainer,
+  isMessagesNearBottom,
+  scrollMessagesToBottom,
+  scrollToUnreadBoundary,
+} from "../features/lib/chat/chat-room-scroll";
+import {
+  getUnreadAnchorFromSnapshot,
+  getUnreadCount,
+  shouldAnchorFirstReplayMessage,
+  shouldAutoScrollForNonUserMessage,
+  shouldAutoScrollForUserMessage,
+} from "../features/lib/chat/chat-room-unread";
 import { getTheme, setTheme } from "../utils/theme";
-import "./unread-divider"; 
+import "./unread-divider";
 import "./chat/chat-room-header";
 import "./chat/chat-message-item";
 import "./chat/chat-room-composer";
@@ -46,13 +60,13 @@ export class ChatRoom extends LitElement {
   @state()
   private pendingUnreadCount: number | null = null;
 
-  private waitingForFirstReplayMessage = false;
-  private shouldAutoScrollOnNextRender = false;
-  private shouldScrollToAnchorOnNextRender = false;
+  private awaitingFirstReplayMessage = false;
+  private pendingAutoScroll = false;
+  private pendingScrollToAnchor = false;
   private isAutoScrolling = false;
 
-  private seenMessageIds = new Set<string>();
-  private controller: ChatRoomController;
+  private readonly seenMessageIds = new Set<string>();
+  private readonly controller: ChatRoomController;
 
   constructor() {
     super();
@@ -67,7 +81,7 @@ export class ChatRoom extends LitElement {
         // After history load completes, the first incoming user message from WS replay
         // is treated as the "last seen" boundary anchor.
         if (!isLoading) {
-          this.waitingForFirstReplayMessage = true;
+          this.awaitingFirstReplayMessage = true;
         }
       },
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
@@ -76,7 +90,7 @@ export class ChatRoom extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.controller.updateIdentity({ room: this.roomId, username: this.username });
+    this.updateControllerIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
     this.theme = getTheme();
@@ -101,55 +115,92 @@ export class ChatRoom extends LitElement {
     super.disconnectedCallback();
   }
 
-  updated(changedProperties: Map<string | number | symbol, unknown>) {
+  updated(changedProperties: PropertyValues) {
     if (changedProperties.has("roomId") || changedProperties.has("username")) {
-      this.controller.updateIdentity({ room: this.roomId, username: this.username });
+      this.updateControllerIdentity();
     }
 
     if (changedProperties.has("messages")) {
-      const el = this.shadowRoot?.querySelector(".chat-room__messages");
-      if (el && this.shouldAutoScrollOnNextRender && !this.shouldScrollToAnchorOnNextRender) {
-        this.isAutoScrolling = true;
-        el.scrollTop = el.scrollHeight;
-        this.shouldAutoScrollOnNextRender = false;
-        // Clear the flag after the scroll event fires
-        requestAnimationFrame(() => { this.isAutoScrolling = false; });
-      } else if (this.shouldScrollToAnchorOnNextRender) {
-        this.shouldScrollToAnchorOnNextRender = false;
-          this.scrollToUnreadBoundary("instant");
-      }
-    }
-
-    // Fallback for servers that don't replay unread messages over WS.
-    // Place the anchor from unread-count against loaded history once.
-    if (
-      changedProperties.has("messages") &&
-      !this.isLoadingHistory &&
-      !this.unreadAnchorMessageId &&
-      this.pendingUnreadCount !== null &&
-      this.pendingUnreadCount > 0
-    ) {
-      const otherUserMessages = this.messages.filter(
-        (m) => m.kind === "user" && m.username !== this.username,
-      );
-      if (otherUserMessages.length > 0) {
-        const anchorIndex = Math.max(otherUserMessages.length - this.pendingUnreadCount, 0);
-        const anchor = otherUserMessages[anchorIndex];
-        if (anchor) {
-          this.unreadAnchorMessageId = anchor.id;
-          this.hasUnseenMessages = true;
-          this.shouldScrollToAnchorOnNextRender = true;
-        }
-      }
-      this.pendingUnreadCount = null;
+      this.handleMessagesUpdated();
     }
   }
 
+  private updateControllerIdentity() {
+    this.controller.updateIdentity({ room: this.roomId, username: this.username });
+  }
+
+  private handleMessagesUpdated() {
+    this.applyPendingScrollEffect();
+    this.applyUnreadFallbackFromSnapshot();
+  }
+
+  private applyPendingScrollEffect() {
+    const messagesEl = getMessagesContainer(this);
+    if (
+      messagesEl &&
+      this.pendingAutoScroll &&
+      !this.pendingScrollToAnchor
+    ) {
+      this.runBottomScroll(messagesEl);
+      this.pendingAutoScroll = false;
+      return;
+    }
+
+    if (this.pendingScrollToAnchor) {
+      this.pendingScrollToAnchor = false;
+      scrollToUnreadBoundary(this, "instant");
+    }
+  }
+
+  private applyUnreadFallbackFromSnapshot() {
+    if (
+      this.isLoadingHistory ||
+      this.unreadAnchorMessageId ||
+      this.pendingUnreadCount === null ||
+      this.pendingUnreadCount <= 0
+    ) {
+      return;
+    }
+
+    const anchorId = getUnreadAnchorFromSnapshot(
+      this.messages,
+      this.username,
+      this.pendingUnreadCount,
+    );
+    if (anchorId) {
+      this.markUnreadFromMessage(anchorId);
+      this.pendingScrollToAnchor = true;
+    }
+
+    this.pendingUnreadCount = null;
+  }
+
+  private runBottomScroll(messagesEl: HTMLElement) {
+    this.isAutoScrolling = true;
+    scrollMessagesToBottom(messagesEl, () => {
+      this.isAutoScrolling = false;
+    });
+  }
+
+  private markUnreadFromMessage(messageId: string) {
+    this.unreadAnchorMessageId = messageId;
+    this.hasUnseenMessages = true;
+  }
+
+  private scheduleAutoScroll() {
+    this.pendingAutoScroll = true;
+  }
+
+  private scheduleScrollToUnreadBoundary() {
+    this.pendingScrollToAnchor = true;
+  }
+
+  private isPageActive(): boolean {
+    return document.visibilityState === "visible" && document.hasFocus();
+  }
+
   private isMessagesNearBottom(): boolean {
-    const el = this.shadowRoot?.querySelector(".chat-room__messages") as HTMLElement | null;
-    if (!el) return true;
-    const threshold = 24;
-    return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+    return isMessagesNearBottom(this, DEFAULT_NEAR_BOTTOM_THRESHOLD_PX);
   }
 
   private clearUnreadMarker() {
@@ -168,62 +219,74 @@ export class ChatRoom extends LitElement {
     const isNearBottom = this.isMessagesNearBottom();
 
     if (msg.kind === "user") {
-      if (this.seenMessageIds.has(msg.id)) return;
-      this.seenMessageIds.add(msg.id);
-
-      const isOwnMessage = msg.username === this.username;
-
-      // Always mark the first WS-replayed message as the unread anchor when joining,
-      // regardless of scroll position. Skip own messages as they're already "seen".
-      if (this.waitingForFirstReplayMessage && !this.unreadAnchorMessageId && !isOwnMessage) {
-        this.unreadAnchorMessageId = msg.id;
-        this.hasUnseenMessages = true;
-        this.waitingForFirstReplayMessage = false;
-        this.shouldScrollToAnchorOnNextRender = true;
-      } else {
-        this.waitingForFirstReplayMessage = false;
+      if (!this.trackIncomingUserMessage(msg, isNearBottom)) {
+        return;
       }
-
-      if (isOwnMessage || this.isLoadingHistory) {
-        this.shouldAutoScrollOnNextRender = true;
-      } else if (isNearBottom && !this.hasUnseenMessages) {
-        this.shouldAutoScrollOnNextRender = true;
-      } else if (!isNearBottom) {
-        if (!this.unreadAnchorMessageId) {
-          this.unreadAnchorMessageId = msg.id;
-        }
-        this.hasUnseenMessages = true;
-      }
-    } else if ((isNearBottom || this.isLoadingHistory) && !this.hasUnseenMessages) {
-      this.shouldAutoScrollOnNextRender = true;
+    } else if (
+      shouldAutoScrollForNonUserMessage({
+        isLoadingHistory: this.isLoadingHistory,
+        isPageActive: this.isPageActive(),
+        isNearBottom,
+        hasUnseenMessages: this.hasUnseenMessages,
+      })
+    ) {
+      this.scheduleAutoScroll();
     }
 
     this.messages = [...this.messages, msg];
   }
 
-  private scrollToUnreadBoundary(behavior: ScrollBehavior = "instant") {
-    const dividerEl = getUnreadBoundaryScrollTarget(this);
-    if (!dividerEl) return;
-    // Scroll to the last-read message so the divider appears just below it
-    const lastReadEl = dividerEl.previousElementSibling as HTMLElement | null;
-    const target = lastReadEl ?? dividerEl;
-    target.scrollIntoView({ behavior, block: "start" });
+  private trackIncomingUserMessage(message: UiMessage, isNearBottom: boolean): boolean {
+    if (this.seenMessageIds.has(message.id)) {
+      return false;
+    }
+    this.seenMessageIds.add(message.id);
+
+    const isOwnMessage = message.username === this.username;
+
+    if (
+      shouldAnchorFirstReplayMessage({
+        waitingForFirstReplayMessage: this.awaitingFirstReplayMessage,
+        unreadAnchorMessageId: this.unreadAnchorMessageId,
+        isOwnMessage,
+      })
+    ) {
+      this.markUnreadFromMessage(message.id);
+      this.scheduleScrollToUnreadBoundary();
+    }
+
+    this.awaitingFirstReplayMessage = false;
+
+    if (
+      shouldAutoScrollForUserMessage({
+        isOwnMessage,
+        isLoadingHistory: this.isLoadingHistory,
+        isPageActive: this.isPageActive(),
+        isNearBottom,
+        hasUnseenMessages: this.hasUnseenMessages,
+      })
+    ) {
+      this.scheduleAutoScroll();
+      return true;
+    }
+
+    if (!isNearBottom) {
+      if (!this.unreadAnchorMessageId) {
+        this.markUnreadFromMessage(message.id);
+      } else {
+        this.hasUnseenMessages = true;
+      }
+    }
+
+    return true;
   }
 
   private scrollToLastSeen() {
-    this.scrollToUnreadBoundary("smooth");
+    scrollToUnreadBoundary(this, "smooth");
   }
 
   private getUnreadCount(): number {
-    if (!this.unreadAnchorMessageId) return 0;
-    const anchorIndex = this.messages.findIndex(
-      (m) => m.id === this.unreadAnchorMessageId,
-    );
-    if (anchorIndex < 0) return 0;
-
-    return this.messages
-      .slice(anchorIndex)
-      .filter((m) => m.kind === "user" && m.username !== this.username).length;
+    return getUnreadCount(this.messages, this.unreadAnchorMessageId, this.username);
   }
 
   private handleMessageSubmit(e: CustomEvent<{ text: string }>) {
