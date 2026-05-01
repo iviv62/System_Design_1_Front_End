@@ -6,7 +6,7 @@ import {
   toUiMessage,
 } from "./chat-message-adapter";
 import { getApiBaseUrl, getSocketUrl } from "./chat-config";
-import type { ChatCursorStore } from "./storage/chat-cursor-store";
+import { updateConversationLastSeen } from "./chat-room-api";
 
 export type Identity = {
   room: string;
@@ -17,7 +17,6 @@ export type ChatRoomControllerOptions = {
   apiBase: string | undefined;
   wsBase: string | undefined;
   pageProtocol: string;
-  cursorStore: ChatCursorStore;
   onMessage: (message: UiMessage) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
@@ -33,6 +32,8 @@ export class ChatRoomController {
   private started = false;
   private room = "general";
   private username = "Guest";
+  private seenSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastSyncedSeen: string | null = null;
   private readonly options: ChatRoomControllerOptions;
 
   constructor(options: ChatRoomControllerOptions) {
@@ -54,6 +55,11 @@ export class ChatRoomController {
   stop(): void {
     this.started = false;
     this.intentionalClose = true;
+    this.flushSeenToServer();
+    if (this.seenSyncTimer !== null) {
+      clearTimeout(this.seenSyncTimer);
+      this.seenSyncTimer = null;
+    }
     if (this.reconnectTimer !== null) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -97,9 +103,6 @@ export class ChatRoomController {
   private async loadHistory(): Promise<void> {
     this.options.onLoadingChange(true);
 
-    const stored = this.options.cursorStore.getLastSeen(this.room);
-    if (stored) this.lastSeen = stored;
-
     try {
       const base = this.getResolvedApiBaseUrl();
       const res = await fetch(
@@ -109,12 +112,6 @@ export class ChatRoomController {
         const data: ChatMessage[] = await res.json();
         for (const msg of data) {
           this.options.onMessage(toUiMessage(msg));
-          if (!this.lastSeen || msg.created_at > this.lastSeen) {
-            this.lastSeen = msg.created_at;
-          }
-        }
-        if (this.lastSeen) {
-          this.options.cursorStore.setLastSeen(this.room, this.lastSeen);
         }
       }
     } catch {
@@ -163,8 +160,8 @@ export class ChatRoomController {
 
       const uiMessage = toUiMessage(chatMessage);
       this.lastSeen = uiMessage.createdAt;
-      this.options.cursorStore.setLastSeen(this.room, this.lastSeen);
       this.options.onMessage(uiMessage);
+      this.scheduleSeenSync();
     };
 
     this.socket.onclose = (event: CloseEvent) => {
@@ -195,5 +192,31 @@ export class ChatRoomController {
         this.connect();
       }
     }, delay);
+  }
+
+  private scheduleSeenSync(): void {
+    if (!this.lastSeen || this.lastSeen === this.lastSyncedSeen) return;
+    if (this.seenSyncTimer !== null) {
+      clearTimeout(this.seenSyncTimer);
+    }
+
+    // Throttle to avoid posting on every message burst.
+    this.seenSyncTimer = setTimeout(() => {
+      this.seenSyncTimer = null;
+      this.flushSeenToServer();
+    }, 800);
+  }
+
+  private flushSeenToServer(): void {
+    if (!this.lastSeen || this.lastSeen === this.lastSyncedSeen) return;
+
+    const valueToSync = this.lastSeen;
+    void updateConversationLastSeen(this.room, this.username, valueToSync)
+      .then(() => {
+        this.lastSyncedSeen = valueToSync;
+      })
+      .catch(() => {
+        // Best-effort only: chat flow should not fail if this endpoint is absent.
+      });
   }
 }

@@ -5,7 +5,7 @@ export interface ParticipantsInfo {
 }
 
 export interface Room {
-  id?: string;
+  id: string;
   name: string;
   created_at?: string;
   status?: string;

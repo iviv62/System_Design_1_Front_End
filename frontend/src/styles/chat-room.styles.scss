@@ -126,6 +126,11 @@
     transition: background 0.2s;
 
     &:hover { background: var(--cr-icon-btn-hover); }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
   }
 
   &__title {
@@ -167,6 +172,26 @@
     &::-webkit-scrollbar-thumb  {
       background-color: var(--cr-scrollbar);
       border-radius: 4px;
+    }
+  }
+
+  &__jump-last-seen {
+    position: sticky;
+    bottom: 0.5rem;
+    align-self: flex-end;
+    margin-top: 0.25rem;
+    border: 1px solid var(--cr-border);
+    background: var(--cr-header-bg);
+    color: var(--cr-title-color);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    &:hover {
+      background: var(--cr-icon-btn-hover);
     }
   }
 

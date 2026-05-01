@@ -3,8 +3,15 @@ import { customElement, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
 import "./chat-room";
-import { fetchRooms, createRoom } from "../features/lib/chat/chat-room-api";
+import {
+  fetchRooms,
+  createRoom,
+  fetchConversationSummary,
+  fetchUnreadCount,
+  ApiError,
+} from "../features/lib/chat/chat-room-api";
 import type { Room } from "../types/room";
+import type { ConversationSummary } from "../types/conversation-summary";
 
 @customElement("chat-app")
 export class ChatApp extends LitElement {
@@ -14,16 +21,21 @@ export class ChatApp extends LitElement {
   }
 
   @state() private username = "";
-  @state() private selectedRoom = "";
+  @state() private selectedRoomId = "";
+  @state() private selectedRoomName = "";
   @state() private joined = false;
 
   @state() private rooms: Room[] = [];
+  @state() private conversationByRoom: Record<string, ConversationSummary> = {};
+  @state() private unreadByRoom: Record<string, number> = {};
   @state() private newRoomName = "";
   @state() private searchQuery = "";
   @state() private isLoadingRooms = true;
   @state() private error = "";
 
   @state() private theme: "light" | "dark" = "light";
+
+  private unreadLoadRequestId = 0;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -58,10 +70,31 @@ export class ChatApp extends LitElement {
     this.isLoadingRooms = true;
     this.error = "";
     try {
-      this.rooms = await fetchRooms();
+      const rooms = await fetchRooms();
+      this.rooms = rooms;
+
+      const summaryResults = await Promise.allSettled(
+        rooms.map(async (room) => {
+          const summary = await fetchConversationSummary(room.id);
+          return [room.id, summary] as const;
+        }),
+      );
+
+      const byRoom: Record<string, ConversationSummary> = {};
+      for (const result of summaryResults) {
+        if (result.status === "fulfilled") {
+          const [roomId, summary] = result.value;
+          byRoom[roomId] = summary;
+        }
+      }
+      this.conversationByRoom = byRoom;
+
+      await this.loadUnreadCountsForUser(this.username);
+
       // Auto-select the first room if available and none selected yet
-      if (this.rooms.length > 0 && !this.selectedRoom) {
-        this.selectedRoom = this.rooms[0].name;
+      if (this.rooms.length > 0 && !this.selectedRoomId) {
+        this.selectedRoomId = this.rooms[0].id;
+        this.selectedRoomName = this.rooms[0].name;
       }
     } catch {
       this.error = "Failed to load rooms. Ensure the backend is running.";
@@ -70,31 +103,81 @@ export class ChatApp extends LitElement {
     }
   }
 
+  private async loadUnreadCountsForUser(username: string) {
+    const trimmed = username.trim();
+    if (!trimmed || this.rooms.length === 0) {
+      this.unreadByRoom = {};
+      return;
+    }
+
+    const requestId = ++this.unreadLoadRequestId;
+
+    const unreadResults = await Promise.allSettled(
+      this.rooms.map(async (room) => {
+        const unread = await fetchUnreadCount(room.id, trimmed);
+        return [room.id, unread] as const;
+      }),
+    );
+
+    if (requestId !== this.unreadLoadRequestId) {
+      return;
+    }
+
+    const byRoom: Record<string, number> = {};
+    for (const result of unreadResults) {
+      if (result.status === "fulfilled") {
+        const [roomId, unread] = result.value;
+        byRoom[roomId] = unread;
+      }
+    }
+    this.unreadByRoom = byRoom;
+  }
+
+  private handleUsernameInput(e: Event) {
+    this.username = (e.target as HTMLInputElement).value;
+    void this.loadUnreadCountsForUser(this.username);
+  }
+
+  private renderUnreadBadge(roomId: string) {
+    const unread = this.unreadByRoom[roomId] ?? 0;
+    if (!this.username.trim() || unread <= 0) return null;
+    return html`<span class="lobby__unread-badge">${unread}</span>`;
+  }
+
   private async handleCreateRoom(e: Event) {
     e.preventDefault();
     const trimmed = this.newRoomName.trim();
     if (!trimmed) return;
 
     try {
-      const room = await createRoom(trimmed);
+      const room = await createRoom({ name: trimmed });
       this.newRoomName = "";
       await this.loadRooms();
-      this.selectedRoom = room.name; // Auto-select the freshly created room
-    } catch {
-      this.error = "Failed to create room.";
+      this.selectedRoomId = room.id;
+      this.selectedRoomName = room.name;
+      // Auto-join the freshly created room using backend id.
+      this.joined = true;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        this.error = "A room with that name already exists. Pick a different name.";
+      } else {
+        this.error = "Failed to create room.";
+      }
     }
   }
 
-  private joinRoom(roomName: string) {
+  private joinRoom(room: Room) {
     if (!this.username.trim()) return;
-    this.selectedRoom = roomName;
+    this.selectedRoomId = room.id;
+    this.selectedRoomName = room.name;
     this.joined = true;
   }
 
-  private handleJoin(e: Event) {
-    e.preventDefault();
-    if (!this.username.trim() || !this.selectedRoom.trim()) return;
-    this.joined = true;
+  private renderLastMessagePreview(roomId: string): string {
+    const summary = this.conversationByRoom[roomId];
+    if (!summary?.last_message_text) return "No messages yet";
+    if (!summary.last_message_username) return summary.last_message_text;
+    return `${summary.last_message_username}: ${summary.last_message_text}`;
   }
 
   render() {
@@ -126,7 +209,7 @@ export class ChatApp extends LitElement {
                   type="text"
                   placeholder="Enter username..."
                   .value=${this.username}
-                  @input=${(e: Event) => (this.username = (e.target as HTMLInputElement).value)}
+                  @input=${this.handleUsernameInput}
                 />
               </div>
 
@@ -137,13 +220,20 @@ export class ChatApp extends LitElement {
                     ? html`<p class="lobby__empty">No rooms yet</p>`
                     : repeat(
                         this.rooms.slice(0, 5),
-                        (r) => r.id || r.name,
+                        (r) => r.id,
                         (r) => html`
                           <div
-                            class="lobby__room-card ${this.selectedRoom === r.name ? "lobby__room-card--selected" : ""}"
-                            @click=${() => (this.selectedRoom = r.name)}
+                            class="lobby__room-card ${this.selectedRoomId === r.id ? "lobby__room-card--selected" : ""}"
+                            @click=${() => {
+                              this.selectedRoomId = r.id;
+                              this.selectedRoomName = r.name;
+                            }}
                           >
-                            ${r.name}
+                            <div class="lobby__room-card-head">
+                              <div class="lobby__room-card-name">${r.name}</div>
+                              ${this.renderUnreadBadge(r.id)}
+                            </div>
+                            <div class="lobby__room-card-preview">${this.renderLastMessagePreview(r.id)}</div>
                           </div>
                         `
                       )}
@@ -211,10 +301,19 @@ export class ChatApp extends LitElement {
                         ? html`<tr><td colspan="4" class="lobby__table-empty">No rooms found.</td></tr>`
                         : repeat(
                             filteredRooms,
-                            (r) => r.id || r.name,
+                            (r) => r.id,
                             (r) => html`
-                              <tr class="${this.selectedRoom === r.name ? "selected" : ""}" @click=${() => (this.selectedRoom = r.name)}>
-                                <td>${r.name}</td>
+                              <tr class="${this.selectedRoomId === r.id ? "selected" : ""}" @click=${() => {
+                                this.selectedRoomId = r.id;
+                                this.selectedRoomName = r.name;
+                              }}>
+                                <td>
+                                  <div class="lobby__room-main-head">
+                                    <div class="lobby__room-main">${r.name}</div>
+                                    ${this.renderUnreadBadge(r.id)}
+                                  </div>
+                                  <div class="lobby__room-preview">${this.renderLastMessagePreview(r.id)}</div>
+                                </td>
                                 <td>👥 ${r.participants?.label || "0/50"}</td>
                                 <td>
                                   ${r.status === "password"
@@ -225,7 +324,7 @@ export class ChatApp extends LitElement {
                                   <button
                                     class="lobby__btn lobby__btn--join"
                                     ?disabled=${!this.username.trim()}
-                                    @click=${(e: Event) => { e.stopPropagation(); this.joinRoom(r.name); }}
+                                    @click=${(e: Event) => { e.stopPropagation(); this.joinRoom(r); }}
                                   >Join</button>
                                 </td>
                               </tr>
@@ -246,7 +345,7 @@ export class ChatApp extends LitElement {
     }
 
     return html`
-      <chat-room .username=${this.username} .room=${this.selectedRoom}></chat-room>
+      <chat-room .username=${this.username} .roomId=${this.selectedRoomId} .roomName=${this.selectedRoomName}></chat-room>
     `;
   }
 }

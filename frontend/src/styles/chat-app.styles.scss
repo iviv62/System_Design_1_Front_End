@@ -114,10 +114,6 @@ chat-app {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-
-    &--aside {
-      /* Reserved column, intentionally minimal */
-    }
   }
 
   /* Individual cards */
@@ -202,6 +198,29 @@ chat-app {
     }
   }
 
+  &__room-card-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.2rem;
+  }
+
+  &__room-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+  }
+
+  &__room-card-preview {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   &__empty {
     color: var(--text-secondary);
     text-align: center;
@@ -273,6 +292,44 @@ chat-app {
     text-align: center;
     padding: 2rem !important;
     color: var(--text-secondary);
+  }
+
+  &__room-main {
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  &__room-main-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+  }
+
+  &__unread-badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1.25rem;
+    text-align: center;
+    font-weight: 700;
+    padding: 0 0.35rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  &__room-preview {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
   }
 
   /* Buttons */
