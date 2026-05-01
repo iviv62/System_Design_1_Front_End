@@ -10,6 +10,7 @@ import {
   fetchUnreadCount,
   ApiError,
 } from "../features/lib/chat/chat-room-api";
+import { getTheme, setTheme } from "../utils/theme";
 import type { Room } from "../types/room";
 import type { ConversationSummary } from "../types/conversation-summary";
 
@@ -39,31 +40,16 @@ export class ChatApp extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
-    
-    // Check local storage or system preference for theme
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark" || savedTheme === "light") {
-      this.theme = savedTheme;
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      this.theme = "dark";
-    }
-    this.applyTheme(this.theme);
+
+    this.theme = getTheme();
+    setTheme(this.theme);
 
     await this.loadRooms();
   }
 
   private toggleTheme() {
     this.theme = this.theme === "light" ? "dark" : "light";
-    localStorage.setItem("theme", this.theme);
-    this.applyTheme(this.theme);
-  }
-
-  private applyTheme(theme: "light" | "dark") {
-    if (theme === "dark") {
-      document.body.setAttribute("data-theme", "dark");
-    } else {
-      document.body.setAttribute("data-theme", "light");
-    }
+    setTheme(this.theme);
   }
 
   private async loadRooms() {

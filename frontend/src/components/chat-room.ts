@@ -5,7 +5,10 @@ import chatRoomStylesRaw from "../styles/chat-room.styles.scss?inline";
 import type { UiMessage } from "../types/message";
 import { ChatRoomController } from "../features/lib/chat/chat-room-controller";
 import { fetchUnreadCount } from "../features/lib/chat/chat-room-api";
-import "./unread-divider"; // registers <unread-divider>
+import { getUnreadBoundaryScrollTarget } from "../features/lib/chat/chat-room-scroll";
+import { formatTime } from "../utils/time";
+import { getTheme, setTheme } from "../utils/theme";
+import "./unread-divider"; 
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -77,9 +80,8 @@ export class ChatRoom extends LitElement {
     this.controller.updateIdentity({ room: this.roomId, username: this.username });
     this.controller.start();
     void this.loadUnreadCountSnapshot();
-    // Sync theme from body attribute set by ChatApp
-    const bodyTheme = document.body.getAttribute("data-theme");
-    this.theme = bodyTheme === "dark" ? "dark" : "light";
+    this.theme = getTheme();
+    setTheme(this.theme);
   }
 
   private async loadUnreadCountSnapshot() {
@@ -92,9 +94,7 @@ export class ChatRoom extends LitElement {
 
   private toggleTheme() {
     this.theme = this.theme === "light" ? "dark" : "light";
-    localStorage.setItem("theme", this.theme);
-    document.body.setAttribute("data-theme", this.theme);
-    this.requestUpdate();
+    setTheme(this.theme);
   }
 
   disconnectedCallback(): void {
@@ -203,7 +203,7 @@ export class ChatRoom extends LitElement {
   }
 
   private scrollToUnreadBoundary(behavior: ScrollBehavior = "instant") {
-    const dividerEl = this.shadowRoot?.querySelector("[data-unread-anchor]") as HTMLElement | null;
+    const dividerEl = getUnreadBoundaryScrollTarget(this);
     if (!dividerEl) return;
     // Scroll to the last-read message so the divider appears just below it
     const lastReadEl = dividerEl.previousElementSibling as HTMLElement | null;
@@ -225,19 +225,6 @@ export class ChatRoom extends LitElement {
     return this.messages
       .slice(anchorIndex)
       .filter((m) => m.kind === "user" && m.username !== this.username).length;
-  }
-
-  private formatTime(isoString: string): string {
-    // If the backend sends a naive UTC datetime (without 'Z' or offset),
-    // JS will parse it as local time. By appending 'Z', we ensure it's treated as UTC.
-    const normalizedIso = isoString.endsWith("Z") || isoString.includes("+") || isoString.includes("-") && isoString.lastIndexOf("-") > 10
-      ? isoString
-      : `${isoString}Z`;
-      
-    return new Date(normalizedIso).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   }
 
   private handleSubmit(e: Event) {
@@ -292,7 +279,7 @@ export class ChatRoom extends LitElement {
                           >
                             <div class="message__author">${m.username}</div>
                             <div class="message__body">${m.text}</div>
-                            <div class="message__time">${this.formatTime(m.createdAt)}</div>
+                            <div class="message__time">${formatTime(m.createdAt)}</div>
                           </article>
                         `,
                 )}
