@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, isSupported } from "firebase/messaging";
+import { registerNotificationToken } from "./notification-token-api";
 
 type FirebaseConfig = {
   apiKey: string;
@@ -20,6 +21,26 @@ const config: FirebaseConfig = {
 };
 
 const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? "";
+let currentPushToken: string | null = null;
+
+function normalizeVapidKey(raw: string): string {
+  const trimmed = raw.trim();
+
+  // Avoid common .env mistakes like wrapping values in quotes.
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
+function isLikelyValidVapidPublicKey(key: string): boolean {
+  // Web Push public keys are URL-safe base64 strings (typically ~87 chars for 65 bytes).
+  return key.length >= 80 && /^[A-Za-z0-9_-]+$/.test(key);
+}
 
 function hasRequiredFirebaseConfig() {
   return Object.values(config).every((value) => value.trim().length > 0) && vapidKey.trim().length > 0;
@@ -47,6 +68,14 @@ export async function initFirebasePush() {
     return null;
   }
 
+  const normalizedVapidKey = normalizeVapidKey(vapidKey);
+  if (!isLikelyValidVapidPublicKey(normalizedVapidKey)) {
+    console.error(
+      "Invalid VITE_FIREBASE_VAPID_KEY format. Use the Web Push public key from Firebase Cloud Messaging without quotes or extra spaces.",
+    );
+    return null;
+  }
+
   if (!(await isSupported())) {
     console.warn("Firebase messaging is not supported in this browser.");
     return null;
@@ -62,15 +91,51 @@ export async function initFirebasePush() {
   const messaging = getMessaging(app);
   const registration = await registerFirebaseMessagingServiceWorker();
 
-  const token = await getToken(messaging, {
-    vapidKey,
-    serviceWorkerRegistration: registration,
-  });
+  let token: string | null;
+  try {
+    token = await getToken(messaging, {
+      vapidKey: normalizedVapidKey,
+      serviceWorkerRegistration: registration,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "InvalidAccessError") {
+      console.error(
+        "Push subscribe failed: VAPID key is invalid for this Firebase project. Re-copy the Web Push public key from Firebase Console -> Cloud Messaging.",
+      );
+      return null;
+    }
+    throw error;
+  }
 
   if (!token) {
     console.warn("Firebase returned an empty token.");
     return null;
   }
+
+  currentPushToken = token;
+
+  return token;
+}
+
+export function getCurrentPushToken(): string | null {
+  return currentPushToken;
+}
+
+export async function initFirebasePushAndRegister(
+  username: string,
+) {
+  const trimmed = username.trim();
+  if (!trimmed) return null;
+
+  const token = await initFirebasePush();
+  if (!token) return null;
+
+  await registerNotificationToken({
+    username: trimmed,
+    token,
+    provider: "fcm",
+    userAgent: navigator.userAgent,
+  });
 
   return token;
 }

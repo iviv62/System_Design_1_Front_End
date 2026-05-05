@@ -14,6 +14,11 @@ import {
   fetchUnreadCount,
   ApiError,
 } from "../features/lib/chat/chat-room-api";
+import {
+  getCurrentPushToken,
+  initFirebasePushAndRegister,
+} from "../features/lib/notifications/firebase-messaging";
+import { subscribeToRoomNotifications } from "../features/lib/notifications/notification-room-subscription-api";
 import { ThemeController } from "../utils/theme-controller";
 import type { Room } from "../types/room";
 import type { ConversationSummary } from "../types/conversation-summary";
@@ -41,6 +46,8 @@ export class ChatApp extends LitElement {
   private themeCtrl = new ThemeController(this);
 
   private unreadLoadRequestId = 0;
+  private notificationRegistrationByUser: Record<string, boolean> = {};
+  private subscribedRooms = new Set<string>();
 
   async connectedCallback() {
     super.connectedCallback();
@@ -122,6 +129,39 @@ export class ChatApp extends LitElement {
     this.unreadByRoom = byRoom;
   }
 
+  private async registerPushForUser(username: string) {
+    const trimmed = username.trim();
+    if (!trimmed || this.notificationRegistrationByUser[trimmed]) return;
+
+    try {
+      await initFirebasePushAndRegister(trimmed);
+      this.notificationRegistrationByUser[trimmed] = true;
+    } catch (error) {
+      console.error("Failed to register push token", error);
+    }
+  }
+
+  private async syncRoomNotificationSubscription(roomId: string) {
+    const username = this.username.trim();
+    const targetRoomId = roomId.trim();
+    if (!username || !targetRoomId) return;
+
+    // Already subscribed to this room — backend handles dedup but avoid extra calls.
+    const key = `${username}:${targetRoomId}`;
+    if (this.subscribedRooms.has(key)) return;
+
+    await this.registerPushForUser(username);
+    const token = getCurrentPushToken();
+    if (!token) return;
+
+    try {
+      await subscribeToRoomNotifications({ username, roomId: targetRoomId, token, provider: "fcm" });
+      this.subscribedRooms.add(key);
+    } catch (error) {
+      console.error("Failed to subscribe to room notifications", error);
+    }
+  }
+
 
   private renderUnreadBadge(roomId: string) {
     const unread = this.unreadByRoom[roomId] ?? 0;
@@ -140,6 +180,7 @@ export class ChatApp extends LitElement {
       this.selectedRoomName = room.name;
       this.joined = true;
       this.error = "";
+      void this.syncRoomNotificationSubscription(room.id);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         this.error = "A room with that name already exists. Pick a different name.";
@@ -154,6 +195,7 @@ export class ChatApp extends LitElement {
     this.selectedRoomId = room.id;
     this.selectedRoomName = room.name;
     this.joined = true;
+    void this.syncRoomNotificationSubscription(room.id);
   }
 
   private async handleDeleteRoom(room: Room, e: Event) {
