@@ -75,6 +75,7 @@ export class ChatRoom extends LitElement {
       wsBase: import.meta.env.VITE_WS_BASE_URL,
       pageProtocol: window.location.protocol,
       onMessage: (message) => this.addMessage(message),
+      onPresenceChange: (users) => this.emitActiveUsers(users),
       onLoadingChange: (isLoading) => {
         this.isLoadingHistory = isLoading;
         // After history load completes, the first incoming user message from WS replay
@@ -121,6 +122,16 @@ export class ChatRoom extends LitElement {
     if (changedProperties.has("messages")) {
       this.handleMessagesUpdated();
     }
+  }
+
+  private emitActiveUsers(users: string[]) {
+    this.dispatchEvent(
+      new CustomEvent<{ users: string[] }>("active-users-change", {
+        detail: { users },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private updateControllerIdentity() {

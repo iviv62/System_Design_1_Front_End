@@ -6,6 +6,7 @@ import { authStore } from "../store/auth-store";
 import type { AuthState } from "../store/auth-store";
 import { navigate } from "../utils/navigate";
 import "../components/chat/chat-room";
+import "../components/chat/chat-room-users";
 
 /**
  * Page wrapper for the dedicated chat room view.
@@ -16,6 +17,7 @@ export class PageChat extends LitElement {
   @state() private authChecked = false;
   @state() private isAuthorized = false;
   @state() private username = "";
+  @state() private activeUsers: string[] = [];
 
   // zustand-lit manages subscribe/unsubscribe and re-renders automatically.
   @watch(authStore)
@@ -33,8 +35,21 @@ export class PageChat extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      max-width: 900px;
+      max-width: 1120px;
       margin: 0 auto;
+    }
+
+    .room-page__layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      gap: 0.85rem;
+      align-items: stretch;
+    }
+
+    chat-room {
+      width: 100%;
+      max-width: none;
+      margin: 0;
     }
 
     .room-page__back {
@@ -48,11 +63,6 @@ export class PageChat extends LitElement {
       font-size: 0.9rem;
     }
   `;
-
-  // Opt out of Shadow DOM so chat-app's global styles still apply.
-  createRenderRoot() {
-    return this;
-  }
 
   async connectedCallback() {
     super.connectedCallback();
@@ -75,6 +85,7 @@ export class PageChat extends LitElement {
         throw new Error("Authenticated user is missing a username.");
       }
       this.username = resolvedUsername;
+      this.activeUsers = [resolvedUsername];
       this.isAuthorized = true;
     } catch {
       authStore.getState().logout();
@@ -109,6 +120,10 @@ export class PageChat extends LitElement {
     return decodeURIComponent(encoded.split("/")[0]);
   }
 
+  private handleActiveUsersChange(e: CustomEvent<{ users: string[] }>) {
+    this.activeUsers = e.detail.users;
+  }
+
   render() {
     const currentRoomId = this.extractRoomIdFromUrl();
 
@@ -123,11 +138,20 @@ export class PageChat extends LitElement {
     return html`
       <div class="room-page">
         <button class="room-page__back" @click=${() => navigate("/chat")}>Back to Lobby</button>
-        <chat-room
-          .username=${this.username}
-          .roomId=${currentRoomId}
-          .roomName=${currentRoomId}
-        ></chat-room>
+        <div class="room-page__layout">
+          <chat-room
+            .username=${this.username}
+            .roomId=${currentRoomId}
+            .roomName=${currentRoomId}
+            @active-users-change=${this.handleActiveUsersChange}
+          ></chat-room>
+
+          <chat-room-users
+            .users=${this.activeUsers}
+            .currentUsername=${this.username}
+            .loading=${false}
+          ></chat-room-users>
+        </div>
       </div>
     `;
   }

@@ -157,9 +157,15 @@
     border-bottom: 1px solid var(--cr-border);
   }
 
+  &__content {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
   // ── Messages area ──────────────────────────────────────────────────────────
   &__messages {
-    flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
     display: flex;
@@ -179,6 +185,107 @@
     > chat-message-item {
       display: contents;
     }
+  }
+
+  &__users {
+    border-left: 1px solid var(--cr-border);
+    background: var(--cr-header-bg);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  &__users-header {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--cr-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  &__users-title {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--cr-title-color);
+    letter-spacing: 0.01em;
+  }
+
+  &__users-count {
+    min-width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--cr-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--cr-meta-color);
+    background: var(--cr-bg);
+  }
+
+  &__users-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--cr-scrollbar);
+      border-radius: 999px;
+    }
+  }
+
+  &__user-item {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.42rem 0.5rem;
+    border-radius: 7px;
+    border: 1px solid var(--cr-border);
+    background: var(--cr-bg);
+  }
+
+  &__user-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #10b981;
+  }
+
+  &__user-name {
+    font-size: 0.83rem;
+    line-height: 1.2;
+    color: var(--cr-title-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__user-self {
+    font-size: 0.68rem;
+    padding: 0.12rem 0.35rem;
+    border-radius: 999px;
+    border: 1px solid var(--cr-border);
+    color: var(--cr-meta-color);
+  }
+
+  &__users-empty {
+    margin: 0;
+    padding: 0.6rem;
+    color: var(--cr-meta-color);
+    font-size: 0.8rem;
+    text-align: center;
   }
 
   &__jump-last-seen {
@@ -442,6 +549,21 @@
     &__header,
     &__messages,
     &__composer { padding: 0.75rem 1rem; }
+
+    &__content {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__users {
+      border-left: none;
+      border-top: 1px solid var(--cr-border);
+      max-height: 170px;
+    }
+
+    &__users-list {
+      padding: 0.5rem;
+      gap: 0.35rem;
+    }
 
     &__input {
       min-height: 44px;

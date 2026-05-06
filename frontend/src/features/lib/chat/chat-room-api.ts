@@ -69,6 +69,11 @@ export async function fetchConversationSummary(
   return res.json();
 }
 
+export async function fetchRoomParticipants(room: string): Promise<string[]> {
+  const summary = await fetchConversationSummary(room);
+  return Array.isArray(summary.participants) ? summary.participants : [];
+}
+
 export async function updateConversationLastSeen(
   room: string,
   username: string,

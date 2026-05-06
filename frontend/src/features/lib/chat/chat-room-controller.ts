@@ -1,7 +1,9 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
 import {
   extractChatMessage,
+  extractPresenceUpdate,
   extractSystemText,
+  type PresenceUpdate,
   toSystemMessage,
   toUiMessage,
 } from "./chat-message-adapter";
@@ -19,6 +21,7 @@ export type ChatRoomControllerOptions = {
   wsBase: string | undefined;
   pageProtocol: string;
   onMessage: (message: UiMessage) => void;
+  onPresenceChange?: (users: string[]) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
 };
@@ -35,6 +38,7 @@ export class ChatRoomController {
   private username = "Guest";
   private seenSyncTimer: ReturnType<typeof setTimeout> | null = null;
   private lastSyncedSeen: string | null = null;
+  private readonly activeUsers = new Set<string>();
   private readonly options: ChatRoomControllerOptions;
 
   constructor(options: ChatRoomControllerOptions) {
@@ -44,6 +48,11 @@ export class ChatRoomController {
   updateIdentity(identity: Identity): void {
     this.room = identity.room;
     this.username = identity.username;
+    this.activeUsers.clear();
+    if (this.username.trim()) {
+      this.activeUsers.add(this.username.trim());
+    }
+    this.emitPresence();
   }
 
   start(): void {
@@ -85,6 +94,39 @@ export class ChatRoomController {
     if (this.isReconnecting === isReconnecting) return;
     this.isReconnecting = isReconnecting;
     this.options.onReconnectChange(isReconnecting);
+  }
+
+  private emitPresence(): void {
+    this.options.onPresenceChange?.(Array.from(this.activeUsers));
+  }
+
+  private applyPresenceUpdate(update: PresenceUpdate): void {
+    if (update.kind === "snapshot") {
+      this.activeUsers.clear();
+      for (const user of update.users) {
+        const trimmed = user.trim();
+        if (trimmed) {
+          this.activeUsers.add(trimmed);
+        }
+      }
+      if (this.username.trim()) {
+        this.activeUsers.add(this.username.trim());
+      }
+      this.emitPresence();
+      return;
+    }
+
+    if (update.kind === "join") {
+      this.activeUsers.add(update.username);
+      this.emitPresence();
+      return;
+    }
+
+    this.activeUsers.delete(update.username);
+    if (this.username.trim()) {
+      this.activeUsers.add(this.username.trim());
+    }
+    this.emitPresence();
   }
 
   private getResolvedApiBaseUrl(): string {
@@ -131,6 +173,10 @@ export class ChatRoomController {
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
+      if (this.username.trim()) {
+        this.activeUsers.add(this.username.trim());
+        this.emitPresence();
+      }
       this.setReconnectState(false);
       this.reconnectAttempt = 0;
       this.options.onMessage(
@@ -148,6 +194,11 @@ export class ChatRoomController {
         return;
       }
 
+      const presenceUpdate = extractPresenceUpdate(payload);
+      if (presenceUpdate) {
+        this.applyPresenceUpdate(presenceUpdate);
+      }
+
       const systemText = extractSystemText(payload);
       if (systemText) {
         this.options.onMessage(toSystemMessage(systemText));
@@ -160,6 +211,10 @@ export class ChatRoomController {
       }
 
       const uiMessage = toUiMessage(chatMessage);
+      if (uiMessage.username.trim()) {
+        this.activeUsers.add(uiMessage.username.trim());
+        this.emitPresence();
+      }
       this.lastSeen = uiMessage.createdAt;
       this.options.onMessage(uiMessage);
       this.scheduleSeenSync();
