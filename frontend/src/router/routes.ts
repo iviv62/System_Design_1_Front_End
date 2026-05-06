@@ -4,8 +4,8 @@ import { navigate } from "../utils/navigate";
 
 import "../pages/page-login";
 import "../pages/page-register";
+import "../pages/page-dashboard";
 import "../pages/page-chat";
-import "../pages/page-room";
 
 export const routes: RouteConfig[] = [
   {
@@ -26,11 +26,11 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/chat",
-    render: () => html`<page-chat></page-chat>`,
+    render: () => html`<page-dashboard></page-dashboard>`,
   },
   {
     path: "/chat/*",
-    render: () => html`<page-room></page-room>`,
+    render: () => html`<page-chat></page-chat>`,
   },
   // Catch-all: redirect unknown paths to /chat
   {
