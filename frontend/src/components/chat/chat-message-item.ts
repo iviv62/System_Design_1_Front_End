@@ -33,7 +33,21 @@ export class ChatMessageItem extends LitElement {
         ${!isOwnMessage && this.showMeta
           ? html`<div class="message__author">${this.message.username}</div>`
           : ""}
-        <div class="message__body">${this.message.text}</div>
+        <div class="message__body">
+          ${this.message.imageUrl
+            ? html`
+                <img
+                  class="message__image"
+                  src=${this.message.imageUrl}
+                  alt="Image from ${this.message.username}"
+                  loading="lazy"
+                />
+              `
+            : ""}
+          ${this.message.text
+            ? html`<div class="message__text">${this.message.text}</div>`
+            : ""}
+        </div>
         ${this.showMeta
           ? html`<div class="message__time">${formatTime(this.message.createdAt)}</div>`
           : ""}

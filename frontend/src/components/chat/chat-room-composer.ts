@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import "../ui/emoji-picker";
 
 @customElement("chat-room-composer")
@@ -8,10 +8,25 @@ export class ChatRoomComposer extends LitElement {
   private inputValue = "";
 
   @state()
+  private selectedImage: File | null = null;
+
+  @state()
+  private selectedImagePreviewUrl = "";
+
+  @state()
+  private imageError = "";
+
+  @property({ type: Boolean })
+  submitting = false;
+
+  @state()
   private isComposing = false;
 
   @query(".chat-room__input")
   private textareaEl?: HTMLTextAreaElement;
+
+  @query(".chat-room__file-input")
+  private fileInputEl?: HTMLInputElement;
 
   firstUpdated(): void {
     this.resizeTextarea();
@@ -21,20 +36,32 @@ export class ChatRoomComposer extends LitElement {
     return this;
   }
 
+  disconnectedCallback(): void {
+    if (this.selectedImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedImagePreviewUrl);
+    }
+    super.disconnectedCallback();
+  }
+
   private handleSubmit(e: Event) {
     e.preventDefault();
     const text = this.inputValue.trim();
-    if (!text) return;
+    if (!text && !this.selectedImage) return;
 
     this.dispatchEvent(
-      new CustomEvent<{ text: string }>("message-submit", {
-        detail: { text },
+      new CustomEvent<{ text: string; imageFile?: File }>("message-submit", {
+        detail: {
+          text,
+          imageFile: this.selectedImage ?? undefined,
+        },
         bubbles: true,
         composed: true,
       }),
     );
 
     this.inputValue = "";
+    this.clearSelectedImage();
+    this.imageError = "";
     this.resizeTextarea();
   }
 
@@ -54,6 +81,54 @@ export class ChatRoomComposer extends LitElement {
 
   private handleSendClick() {
     this.requestSubmit();
+  }
+
+  private openImagePicker() {
+    this.fileInputEl?.click();
+  }
+
+  private handleFileInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+    const maxBytes = 10 * 1024 * 1024;
+
+    if (!allowed.has(file.type)) {
+      this.imageError = "Only JPEG, PNG, WebP, and GIF images are supported.";
+      input.value = "";
+      return;
+    }
+
+    if (file.size > maxBytes) {
+      this.imageError = "Image is too large. Maximum allowed size is 10 MB.";
+      input.value = "";
+      return;
+    }
+
+    this.imageError = "";
+    this.setSelectedImage(file);
+    input.value = "";
+  }
+
+  private setSelectedImage(file: File) {
+    if (this.selectedImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedImagePreviewUrl);
+    }
+
+    this.selectedImage = file;
+    this.selectedImagePreviewUrl = URL.createObjectURL(file);
+  }
+
+  private clearSelectedImage() {
+    this.selectedImage = null;
+    if (this.selectedImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedImagePreviewUrl);
+      this.selectedImagePreviewUrl = "";
+    }
   }
 
   private requestSubmit() {
@@ -101,18 +176,64 @@ export class ChatRoomComposer extends LitElement {
   }
 
   render() {
+    const canSubmit = (!this.submitting) && (Boolean(this.inputValue.trim()) || Boolean(this.selectedImage));
+
     return html`
       <form class="chat-room__composer" @submit=${this.handleSubmit}>
+        <input
+          class="chat-room__file-input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          @change=${this.handleFileInput}
+          hidden
+        />
+
+        ${this.selectedImage && this.selectedImagePreviewUrl
+          ? html`
+              <div class="chat-room__composer-preview" role="status" aria-live="polite">
+                <img
+                  class="chat-room__composer-preview-image"
+                  src=${this.selectedImagePreviewUrl}
+                  alt="Selected image preview"
+                />
+                <div class="chat-room__composer-preview-meta">
+                  <span class="chat-room__composer-preview-name">${this.selectedImage.name}</span>
+                  <button
+                    class="chat-room__composer-preview-remove"
+                    type="button"
+                    @click=${this.clearSelectedImage}
+                    aria-label="Remove selected image"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            `
+          : null}
+
+        ${this.imageError
+          ? html`<p class="chat-room__composer-error" role="alert">${this.imageError}</p>`
+          : null}
+
         <div class="chat-room__composer-inner">
           <div class="chat-room__composer-tools">
             <emoji-picker @emoji-selected=${this.handleEmojiSelected}></emoji-picker>
-            <button class="chat-room__tool-btn" type="button" title="Attach" aria-label="Attach file">⎘</button>
+            <button
+              class="chat-room__tool-btn"
+              type="button"
+              title="Attach image"
+              aria-label="Attach image"
+              @click=${this.openImagePicker}
+            >
+              ⎘
+            </button>
           </div>
           <textarea
             class="chat-room__input"
             placeholder="Type a message..."
             rows="1"
             .value=${this.inputValue}
+            ?disabled=${this.submitting}
             @compositionstart=${() => (this.isComposing = true)}
             @compositionend=${() => (this.isComposing = false)}
             @keydown=${this.handleTextareaKeydown}
@@ -121,7 +242,7 @@ export class ChatRoomComposer extends LitElement {
           <button
             class="chat-room__send-icon"
             type="button"
-            ?disabled=${!this.inputValue.trim()}
+            ?disabled=${!canSubmit}
             @click=${this.handleSendClick}
             title="Send"
             aria-label="Send"

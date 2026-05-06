@@ -1,4 +1,5 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
+import { getApiBaseUrl } from "./chat-config";
 
 export type PresenceUpdate =
   | { kind: "snapshot"; room: string; users: string[]; total: number };
@@ -9,8 +10,20 @@ export function toUiMessage(msg: ChatMessage): UiMessage {
     kind: "user",
     username: msg.username,
     text: msg.text,
+    imageUrl: resolveImageUrl(msg.image_url),
     createdAt: msg.created_at,
   };
+}
+
+function resolveImageUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+
+  try {
+    return new URL(url).toString();
+  } catch {
+    const apiBase = getApiBaseUrl(import.meta.env.VITE_API_BASE_URL, import.meta.env.VITE_WS_BASE_URL);
+    return new URL(url, `${apiBase}/`).toString();
+  }
 }
 
 export function toSystemMessage(text: string): UiMessage {
@@ -24,14 +37,16 @@ export function toSystemMessage(text: string): UiMessage {
 }
 
 function isChatMessage(payload: unknown): payload is ChatMessage {
+  const candidate = payload as ChatMessage;
   return (
     typeof payload === "object" &&
     payload !== null &&
-    typeof (payload as ChatMessage).id === "string" &&
-    typeof (payload as ChatMessage).room === "string" &&
-    typeof (payload as ChatMessage).username === "string" &&
-    typeof (payload as ChatMessage).text === "string" &&
-    typeof (payload as ChatMessage).created_at === "string"
+    typeof candidate.id === "string" &&
+    typeof candidate.room === "string" &&
+    typeof candidate.username === "string" &&
+    typeof candidate.text === "string" &&
+    typeof candidate.created_at === "string" &&
+    (typeof candidate.image_url === "undefined" || typeof candidate.image_url === "string")
   );
 }
 

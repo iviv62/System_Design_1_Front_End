@@ -26,6 +26,12 @@ export type ConnectedUsersSnapshot = {
   total: number;
 };
 
+export type UploadedImage = {
+  url: string;
+  filename: string;
+  size: number;
+};
+
 export async function fetchRooms(): Promise<Room[]> {
   const res = await fetchWithAuth(`${getBase()}/rooms`);
   if (!res.ok) {
@@ -143,4 +149,54 @@ export async function fetchUnreadCount(
 
   const data = (await res.json()) as { unread_count?: number; count?: number };
   return data.unread_count ?? data.count ?? 0;
+}
+
+export async function uploadChatImage(file: File): Promise<UploadedImage> {
+  const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+  const maxBytes = 10 * 1024 * 1024;
+
+  if (!allowed.has(file.type)) {
+    throw new ApiError(400, "Only JPEG, PNG, WebP, and GIF images are supported.");
+  }
+
+  if (file.size > maxBytes) {
+    throw new ApiError(400, "Image is too large. Maximum allowed size is 10 MB.");
+  }
+
+  const body = new FormData();
+  body.append("file", file);
+
+  const res = await fetchWithAuth(`${getBase()}/upload/image`, {
+    method: "POST",
+    body,
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, `Failed to upload image: ${res.statusText}`);
+  }
+
+  const data = (await res.json()) as {
+    url?: unknown;
+    filename?: unknown;
+    size?: unknown;
+  };
+
+  const rawUrl = typeof data.url === "string" ? data.url : "";
+  if (!rawUrl) {
+    throw new ApiError(500, "Upload succeeded but no image URL was returned.");
+  }
+
+  const resolvedUrl = (() => {
+    try {
+      return new URL(rawUrl).toString();
+    } catch {
+      return new URL(rawUrl, `${getBase()}/`).toString();
+    }
+  })();
+
+  return {
+    url: resolvedUrl,
+    filename: typeof data.filename === "string" ? data.filename : file.name,
+    size: typeof data.size === "number" ? data.size : file.size,
+  };
 }

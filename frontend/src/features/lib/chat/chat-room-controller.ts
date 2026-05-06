@@ -16,6 +16,11 @@ export type Identity = {
   username: string;
 };
 
+export type OutgoingChatPayload = {
+  text: string;
+  imageUrl?: string;
+};
+
 export type ChatRoomControllerOptions = {
   apiBase: string | undefined;
   wsBase: string | undefined;
@@ -83,10 +88,32 @@ export class ChatRoomController {
     this.setReconnectState(false);
   }
 
-  send(text: string): boolean {
+  send(payload: string | OutgoingChatPayload): boolean {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       return false;
     }
+
+    if (typeof payload === "string") {
+      const text = payload.trim();
+      if (!text) return false;
+      this.socket.send(text);
+      return true;
+    }
+
+    const text = payload.text.trim();
+    const imageUrl = payload.imageUrl?.trim();
+    if (!text && !imageUrl) {
+      return false;
+    }
+
+    if (imageUrl) {
+      this.socket.send(JSON.stringify({
+        text,
+        image_url: imageUrl,
+      }));
+      return true;
+    }
+
     this.socket.send(text);
     return true;
   }

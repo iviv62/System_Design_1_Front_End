@@ -5,7 +5,7 @@ import { repeat } from "lit/directives/repeat.js";
 import chatRoomStylesRaw from "../../styles/chat-room.styles.scss?inline";
 import type { UiMessage } from "../../types/message";
 import { ChatRoomController } from "../../features/lib/chat/chat-room-controller";
-import { fetchUnreadCount } from "../../features/lib/chat/chat-room-api";
+import { fetchUnreadCount, uploadChatImage } from "../../features/lib/chat/chat-room-api";
 import {
   DEFAULT_NEAR_BOTTOM_THRESHOLD_PX,
   getMessagesContainer,
@@ -58,6 +58,9 @@ export class ChatRoom extends LitElement {
 
   @state()
   private pendingUnreadCount: number | null = null;
+
+  @state()
+  private isUploadingImage = false;
 
   private awaitingFirstReplayMessage = false;
   private pendingAutoScroll = false;
@@ -308,10 +311,42 @@ export class ChatRoom extends LitElement {
     return getUnreadCount(this.messages, this.unreadAnchorMessageId, this.username);
   }
 
-  private handleMessageSubmit(e: CustomEvent<{ text: string }>) {
+  private addSystemNotice(text: string) {
+    this.addMessage({
+      id: `sys-${Date.now()}-${Math.random()}`,
+      kind: "system",
+      username: "",
+      text,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  private async handleMessageSubmit(e: CustomEvent<{ text: string; imageFile?: File }>) {
     const text = e.detail.text.trim();
-    if (!text) return;
-    this.controller.send(text);
+    const imageFile = e.detail.imageFile;
+    if (!text && !imageFile) return;
+
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      this.isUploadingImage = true;
+      try {
+        const uploaded = await uploadChatImage(imageFile);
+        imageUrl = uploaded.url;
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.message
+          : "Image upload failed. Please try again.";
+        this.addSystemNotice(message);
+        return;
+      } finally {
+        this.isUploadingImage = false;
+      }
+    }
+
+    const sent = this.controller.send({ text, imageUrl });
+    if (!sent) {
+      this.addSystemNotice("Message could not be sent because the connection is not ready.");
+    }
   }
 
   private shouldShowMetaForMessage(index: number): boolean {
@@ -377,7 +412,10 @@ export class ChatRoom extends LitElement {
             : nothing}
         </div>
 
-        <chat-room-composer @message-submit=${this.handleMessageSubmit}></chat-room-composer>
+        <chat-room-composer
+          .submitting=${this.isUploadingImage}
+          @message-submit=${this.handleMessageSubmit}
+        ></chat-room-composer>
       </section>
     `;
   }

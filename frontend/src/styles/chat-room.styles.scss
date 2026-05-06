@@ -206,11 +206,67 @@
 
   &__composer {
     display: flex;
+    flex-direction: column;
     position: relative;
     padding: 0.85rem 1.25rem;
     background: transparent;
     width: 100%;
     box-sizing: border-box;
+    gap: 0.5rem;
+  }
+
+  &__composer-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    max-width: min(360px, 100%);
+    padding: 0.45rem;
+    border-radius: 12px;
+    border: 1px solid var(--cr-border);
+    background: var(--cr-header-bg);
+  }
+
+  &__composer-preview-image {
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--cr-border);
+    flex-shrink: 0;
+  }
+
+  &__composer-preview-meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__composer-preview-name {
+    color: var(--cr-meta-color);
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__composer-preview-remove {
+    width: fit-content;
+    border: 1px solid var(--cr-border);
+    background: transparent;
+    color: var(--cr-title-color);
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+  }
+
+  &__composer-error {
+    margin: 0;
+    color: #ef4444;
+    font-size: 0.78rem;
+    font-weight: 600;
   }
 
   &__composer-inner {
@@ -408,6 +464,20 @@
     line-height: 1.45;
     word-break: break-word;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  &__image {
+    display: block;
+    width: min(320px, 100%);
+    max-height: 320px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  &__text {
+    margin-top: 0.55rem;
+    white-space: pre-wrap;
   }
 
   &__time {

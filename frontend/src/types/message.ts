@@ -3,6 +3,7 @@ export interface ChatMessage {
   room: string;
   username: string;
   text: string;
+  image_url?: string;
   created_at: string; // ISO 8601 timestamp
 }
 
@@ -11,5 +12,6 @@ export type UiMessage = {
   kind: "user" | "system";
   username: string;
   text: string;
+  imageUrl?: string;
   createdAt: string;
 };
