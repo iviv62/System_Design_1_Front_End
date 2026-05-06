@@ -75,6 +75,7 @@ export class ChatRoom extends LitElement {
       wsBase: import.meta.env.VITE_WS_BASE_URL,
       pageProtocol: window.location.protocol,
       onMessage: (message) => this.addMessage(message),
+      onConnected: () => this.emitRoomConnected(),
       onPresenceChange: (users) => this.emitActiveUsers(users),
       onLoadingChange: (isLoading) => {
         this.isLoadingHistory = isLoading;
@@ -128,6 +129,15 @@ export class ChatRoom extends LitElement {
     this.dispatchEvent(
       new CustomEvent<{ users: string[] }>("active-users-change", {
         detail: { users },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  private emitRoomConnected() {
+    this.dispatchEvent(
+      new CustomEvent("room-connected", {
         bubbles: true,
         composed: true,
       }),

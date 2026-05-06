@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { watch } from "zustand-lit";
 import { fetchCurrentUser, tryRefreshSession } from "../features/lib/auth/auth-api";
+import { fetchConnectedUsers } from "../features/lib/chat/chat-room-api";
 import { authStore } from "../store/auth-store";
 import type { AuthState } from "../store/auth-store";
 import { navigate } from "../utils/navigate";
@@ -18,6 +19,8 @@ export class PageChat extends LitElement {
   @state() private isAuthorized = false;
   @state() private username = "";
   @state() private activeUsers: string[] = [];
+  @state() private activeUsersLoading = false;
+  @state() private currentRoomId = "";
 
   // zustand-lit manages subscribe/unsubscribe and re-renders automatically.
   @watch(authStore)
@@ -66,6 +69,7 @@ export class PageChat extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
+    this.currentRoomId = this.extractRoomIdFromUrl();
 
     if (!authStore.getState().accessToken) {
       const refreshed = await tryRefreshSession();
@@ -86,6 +90,9 @@ export class PageChat extends LitElement {
       }
       this.username = resolvedUsername;
       this.activeUsers = [resolvedUsername];
+      if (this.currentRoomId) {
+        void this.loadConnectedUsersSnapshot(this.currentRoomId);
+      }
       this.isAuthorized = true;
     } catch {
       authStore.getState().logout();
@@ -120,12 +127,38 @@ export class PageChat extends LitElement {
     return decodeURIComponent(encoded.split("/")[0]);
   }
 
+  private async loadConnectedUsersSnapshot(roomId: string) {
+    if (!roomId) return;
+
+    this.activeUsersLoading = true;
+    try {
+      const snapshot = await fetchConnectedUsers(roomId);
+      this.activeUsers = snapshot.users;
+    } catch {
+      // Websocket snapshot events can still keep this state in sync.
+    } finally {
+      this.activeUsersLoading = false;
+    }
+  }
+
   private handleActiveUsersChange(e: CustomEvent<{ users: string[] }>) {
     this.activeUsers = e.detail.users;
   }
 
+  private handleRoomConnected() {
+    if (this.currentRoomId) {
+      void this.loadConnectedUsersSnapshot(this.currentRoomId);
+    }
+  }
+
   render() {
     const currentRoomId = this.extractRoomIdFromUrl();
+    if (currentRoomId !== this.currentRoomId) {
+      this.currentRoomId = currentRoomId;
+      if (this.isAuthorized && currentRoomId) {
+        void this.loadConnectedUsersSnapshot(currentRoomId);
+      }
+    }
 
     if (!this.authChecked) {
       return html`<p style="padding: 1rem;">Checking session...</p>`;
@@ -143,13 +176,14 @@ export class PageChat extends LitElement {
             .username=${this.username}
             .roomId=${currentRoomId}
             .roomName=${currentRoomId}
+            @room-connected=${this.handleRoomConnected}
             @active-users-change=${this.handleActiveUsersChange}
           ></chat-room>
 
           <chat-room-users
             .users=${this.activeUsers}
             .currentUsername=${this.username}
-            .loading=${false}
+            .loading=${this.activeUsersLoading}
           ></chat-room-users>
         </div>
       </div>

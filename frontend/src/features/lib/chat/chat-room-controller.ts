@@ -21,6 +21,7 @@ export type ChatRoomControllerOptions = {
   wsBase: string | undefined;
   pageProtocol: string;
   onMessage: (message: UiMessage) => void;
+  onConnected?: () => void;
   onPresenceChange?: (users: string[]) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
@@ -102,27 +103,17 @@ export class ChatRoomController {
 
   private applyPresenceUpdate(update: PresenceUpdate): void {
     if (update.kind === "snapshot") {
+      const room = update.room.trim();
+      if (room && room !== this.room) {
+        return;
+      }
+
       this.activeUsers.clear();
       for (const user of update.users) {
-        const trimmed = user.trim();
-        if (trimmed) {
-          this.activeUsers.add(trimmed);
-        }
+        this.activeUsers.add(user);
       }
-      if (this.username.trim()) {
-        this.activeUsers.add(this.username.trim());
-      }
-      this.emitPresence();
-      return;
     }
 
-    if (update.kind === "join") {
-      this.activeUsers.add(update.username);
-      this.emitPresence();
-      return;
-    }
-
-    this.activeUsers.delete(update.username);
     if (this.username.trim()) {
       this.activeUsers.add(this.username.trim());
     }
@@ -177,6 +168,7 @@ export class ChatRoomController {
         this.activeUsers.add(this.username.trim());
         this.emitPresence();
       }
+      this.options.onConnected?.();
       this.setReconnectState(false);
       this.reconnectAttempt = 0;
       this.options.onMessage(

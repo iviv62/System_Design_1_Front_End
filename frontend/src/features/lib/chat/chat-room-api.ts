@@ -20,6 +20,12 @@ export type CreateRoomInput = {
   max_participants?: number;
 };
 
+export type ConnectedUsersSnapshot = {
+  room: string;
+  users: string[];
+  total: number;
+};
+
 export async function fetchRooms(): Promise<Room[]> {
   const res = await fetchWithAuth(`${getBase()}/rooms`);
   if (!res.ok) {
@@ -69,9 +75,32 @@ export async function fetchConversationSummary(
   return res.json();
 }
 
-export async function fetchRoomParticipants(room: string): Promise<string[]> {
-  const summary = await fetchConversationSummary(room);
-  return Array.isArray(summary.participants) ? summary.participants : [];
+export async function fetchConnectedUsers(room: string): Promise<ConnectedUsersSnapshot> {
+  const res = await fetchWithAuth(
+    `${getBase()}/rooms/${encodeURIComponent(room)}/connected-users`,
+  );
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      `Failed to fetch connected users: ${res.statusText}`,
+    );
+  }
+
+  const data = (await res.json()) as {
+    room?: unknown;
+    users?: unknown;
+    total?: unknown;
+  };
+
+  const users = Array.isArray(data.users)
+    ? data.users.filter((u): u is string => typeof u === "string")
+    : [];
+
+  return {
+    room: typeof data.room === "string" ? data.room : room,
+    users,
+    total: typeof data.total === "number" ? data.total : users.length,
+  };
 }
 
 export async function updateConversationLastSeen(

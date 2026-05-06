@@ -1,9 +1,7 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
 
 export type PresenceUpdate =
-  | { kind: "snapshot"; users: string[] }
-  | { kind: "join"; username: string }
-  | { kind: "leave"; username: string };
+  | { kind: "snapshot"; room: string; users: string[]; total: number };
 
 export function toUiMessage(msg: ChatMessage): UiMessage {
   return {
@@ -117,12 +115,6 @@ export function extractSystemText(payload: unknown): string | null {
   return `${eventName}${code}${reason}${detail}`;
 }
 
-function toStringArray(value: unknown): string[] | null {
-  if (!Array.isArray(value)) return null;
-  const users = value.filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean);
-  return users;
-}
-
 export function extractPresenceUpdate(payload: unknown): PresenceUpdate | null {
   if (typeof payload !== "object" || payload === null) {
     return null;
@@ -131,46 +123,21 @@ export function extractPresenceUpdate(payload: unknown): PresenceUpdate | null {
   const event = payload as {
     type?: unknown;
     event?: unknown;
+    room?: unknown;
     users?: unknown;
-    participants?: unknown;
-    active_users?: unknown;
-    username?: unknown;
-    user?: unknown;
+    total?: unknown;
   };
 
-  const snapshotUsers =
-    toStringArray(event.users) ??
-    toStringArray(event.participants) ??
-    toStringArray(event.active_users);
-
-  const eventType = typeof event.type === "string" ? event.type.toLowerCase() : "";
-  const eventName = typeof event.event === "string" ? event.event.toLowerCase() : "";
-  const normalizedEvent = eventType || eventName;
-
-  if (snapshotUsers && (
-    normalizedEvent === "presence" ||
-    normalizedEvent === "participants" ||
-    normalizedEvent === "active_users" ||
-    normalizedEvent === "snapshot"
-  )) {
-    return { kind: "snapshot", users: snapshotUsers };
-  }
-
-  const username =
-    (typeof event.username === "string" ? event.username : null) ??
-    (typeof event.user === "string" ? event.user : null);
-
-  if (!username?.trim()) {
+  if (event.type !== "presence" || event.event !== "snapshot") {
     return null;
   }
 
-  if (normalizedEvent === "user_joined" || normalizedEvent === "join" || normalizedEvent === "connected") {
-    return { kind: "join", username: username.trim() };
-  }
+  const users = Array.isArray(event.users)
+    ? event.users.filter((v): v is string => typeof v === "string").map((u) => u.trim()).filter(Boolean)
+    : [];
 
-  if (normalizedEvent === "user_left" || normalizedEvent === "leave" || normalizedEvent === "disconnected") {
-    return { kind: "leave", username: username.trim() };
-  }
+  const room = typeof event.room === "string" ? event.room : "";
+  const total = typeof event.total === "number" ? event.total : users.length;
 
-  return null;
+  return { kind: "snapshot", room, users, total };
 }
