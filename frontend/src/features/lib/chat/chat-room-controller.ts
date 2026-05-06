@@ -96,7 +96,7 @@ export class ChatRoomController {
     if (typeof payload === "string") {
       const text = payload.trim();
       if (!text) return false;
-      this.socket.send(text);
+      this.socket.send(JSON.stringify({ text }));
       return true;
     }
 
@@ -106,15 +106,12 @@ export class ChatRoomController {
       return false;
     }
 
+    const outgoing: { text: string; image_url?: string } = { text };
     if (imageUrl) {
-      this.socket.send(JSON.stringify({
-        text,
-        image_url: imageUrl,
-      }));
-      return true;
+      outgoing.image_url = imageUrl;
     }
 
-    this.socket.send(text);
+    this.socket.send(JSON.stringify(outgoing));
     return true;
   }
 

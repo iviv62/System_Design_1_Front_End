@@ -1,8 +1,16 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
 import { getApiBaseUrl } from "./chat-config";
 
-export type PresenceUpdate =
-  | { kind: "snapshot"; room: string; users: string[]; total: number };
+export type PresenceUpdate = {
+  kind: "snapshot";
+  room: string;
+  users: string[];
+  total: number;
+};
+
+// ==========================================
+// UI Converters
+// ==========================================
 
 export function toUiMessage(msg: ChatMessage): UiMessage {
   return {
@@ -17,7 +25,6 @@ export function toUiMessage(msg: ChatMessage): UiMessage {
 
 function resolveImageUrl(url?: string): string | undefined {
   if (!url) return undefined;
-
   try {
     return new URL(url).toString();
   } catch {
@@ -36,123 +43,82 @@ export function toSystemMessage(text: string): UiMessage {
   };
 }
 
-function isChatMessage(payload: unknown): payload is ChatMessage {
-  const candidate = payload as ChatMessage;
-  return (
-    typeof payload === "object" &&
-    payload !== null &&
-    typeof candidate.id === "string" &&
-    typeof candidate.room === "string" &&
-    typeof candidate.username === "string" &&
-    typeof candidate.text === "string" &&
-    typeof candidate.created_at === "string" &&
-    (typeof candidate.image_url === "undefined" || typeof candidate.image_url === "string")
-  );
-}
+// ==========================================
+// Extractors & Normalizers
+// ==========================================
 
-export function extractChatMessage(payload: unknown): ChatMessage | null {
-  if (isChatMessage(payload)) {
-    return payload;
-  }
-
+export function extractChatMessage(payload: any): ChatMessage | null {
   if (typeof payload !== "object" || payload === null) {
     return null;
   }
 
-  const wrapped = payload as {
-    message?: unknown;
-    data?: unknown;
-    payload?: unknown;
-  };
+  // 1. Unwrap the payload if the backend nested it inside a common key
+  const data = payload.message || payload.data || payload.payload || payload;
 
-  if (isChatMessage(wrapped.message)) {
-    return wrapped.message;
-  }
-  if (isChatMessage(wrapped.data)) {
-    return wrapped.data;
-  }
-  if (isChatMessage(wrapped.payload)) {
-    return wrapped.payload;
-  }
-
-  return null;
-}
-
-function isSystemEvent(payload: unknown): payload is { type: "system"; text: string } {
-  return (
-    typeof payload === "object" &&
-    payload !== null &&
-    (payload as { type?: unknown }).type === "system" &&
-    typeof (payload as { text?: unknown }).text === "string"
-  );
-}
-
-export function extractSystemText(payload: unknown): string | null {
-  if (isSystemEvent(payload)) {
-    return payload.text;
-  }
-
-  if (typeof payload !== "object" || payload === null) {
+  if (typeof data !== "object" || data === null) {
     return null;
   }
 
-  const event = payload as {
-    type?: unknown;
-    event?: unknown;
-    text?: unknown;
-    reason?: unknown;
-    code?: unknown;
-    detail?: unknown;
-    message?: unknown;
-  };
+  // 2. Extract fields with fallbacks for different backend naming conventions
+  const username = data.username || data.sender;
+  const text = data.text || data.content || data.message || "";
+  const createdAt = data.created_at || data.sent_at || data.timestamp;
+  const imageUrl = data.image_url || data.imageUrl;
 
-  if (event.type !== "system") {
+  // 3. Ensure we have the minimum required fields
+  if (!username || !createdAt || (!text && !imageUrl)) {
     return null;
   }
 
-  if (typeof event.text === "string") {
-    return event.text;
+  const room = data.room || "";
+  const id = data.id || `${room}:${username}:${createdAt}:${text || imageUrl}`;
+
+  return {
+    id: String(id),
+    room: String(room),
+    username: String(username),
+    text: String(text),
+    image_url: imageUrl ? String(imageUrl) : undefined,
+    created_at: String(createdAt),
+  };
+}
+
+export function extractSystemText(payload: any): string | null {
+  if (typeof payload !== "object" || payload === null || payload.type !== "system") {
+    return null;
   }
 
-  if (typeof event.message === "string") {
-    return event.message;
-  }
+  // Return direct text or message if available
+  if (typeof payload.text === "string") return payload.text;
+  if (typeof payload.message === "string") return payload.message;
 
-  const eventName = typeof event.event === "string" ? event.event : "event";
-  const code = typeof event.code === "number" ? `, code=${event.code}` : "";
-  const reason = typeof event.reason === "string" && event.reason
-    ? `, reason=${event.reason}`
-    : "";
-  const detail = typeof event.detail === "string" && event.detail
-    ? `, detail=${event.detail}`
-    : "";
+  // Fallback to building a string from the event details
+  const eventName = payload.event || "event";
+  const code = payload.code !== undefined ? `, code=${payload.code}` : "";
+  const reason = payload.reason ? `, reason=${payload.reason}` : "";
+  const detail = payload.detail ? `, detail=${payload.detail}` : "";
 
   return `${eventName}${code}${reason}${detail}`;
 }
 
-export function extractPresenceUpdate(payload: unknown): PresenceUpdate | null {
+export function extractPresenceUpdate(payload: any): PresenceUpdate | null {
   if (typeof payload !== "object" || payload === null) {
     return null;
   }
 
-  const event = payload as {
-    type?: unknown;
-    event?: unknown;
-    room?: unknown;
-    users?: unknown;
-    total?: unknown;
-  };
-
-  if (event.type !== "presence" || event.event !== "snapshot") {
+  if (payload.type !== "presence" || payload.event !== "snapshot") {
     return null;
   }
 
-  const users = Array.isArray(event.users)
-    ? event.users.filter((v): v is string => typeof v === "string").map((u) => u.trim()).filter(Boolean)
+  // Safely extract users array
+  const users = Array.isArray(payload.users)
+    ? payload.users.filter((u: any) => typeof u === "string").map((u: string) => u.trim()).filter(Boolean)
     : [];
 
-  const room = typeof event.room === "string" ? event.room : "";
-  const total = typeof event.total === "number" ? event.total : users.length;
-
-  return { kind: "snapshot", room, users, total };
+  return {
+    kind: "snapshot",
+    room: String(payload.room || ""),
+    users,
+    total: typeof payload.total === "number" ? payload.total : users.length,
+  };
 }
