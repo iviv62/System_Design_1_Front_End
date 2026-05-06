@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "../chat/chat-config";
+import { authStore } from "../../../store/auth-store";
 
 export type CurrentUser = {
   id?: string;
@@ -25,7 +26,7 @@ function getBase(): string {
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem("access_token");
+  return authStore.getState().accessToken;
 }
 
 export async function login(input: LoginInput): Promise<string> {

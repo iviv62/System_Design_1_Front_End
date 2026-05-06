@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { navigate, handleLink } from "../utils/navigate";
 import { login } from "../features/lib/auth/auth-api";
+import { authStore } from "../store/auth-store";
 
 @customElement("page-login")
 export class PageLogin extends LitElement {
@@ -30,7 +31,7 @@ export class PageLogin extends LitElement {
         password: String(formData.get("password") ?? ""),
       });
 
-      localStorage.setItem("access_token", accessToken);
+      authStore.getState().setAccessToken(accessToken);
 
       const redirect = localStorage.getItem("redirect_after_login") || "/chat";
       localStorage.removeItem("redirect_after_login");

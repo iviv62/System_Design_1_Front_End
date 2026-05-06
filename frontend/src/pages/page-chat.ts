@@ -1,6 +1,9 @@
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { fetchCurrentUser } from "../features/lib/auth/auth-api";
+import { watch } from "zustand-lit";
+import { authStore } from "../store/auth-store";
+import type { AuthState } from "../store/auth-store";
 import { navigate } from "../utils/navigate";
 import "../components/chat-app";
 
@@ -13,6 +16,10 @@ export class PageChat extends LitElement {
   @state() private authChecked = false;
   @state() private isAuthorized = false;
 
+  // zustand-lit manages subscribe/unsubscribe and re-renders automatically.
+  @watch(authStore)
+  private authState?: AuthState;
+
   // Opt out of Shadow DOM so chat-app's global styles still apply.
   createRenderRoot() {
     return this;
@@ -21,15 +28,34 @@ export class PageChat extends LitElement {
   async connectedCallback() {
     super.connectedCallback();
 
+    if (!authStore.getState().accessToken) {
+      this.authChecked = true;
+      this.isAuthorized = false;
+      localStorage.setItem("redirect_after_login", "/chat");
+      navigate("/login");
+      return;
+    }
+
     try {
       await fetchCurrentUser();
       this.isAuthorized = true;
     } catch {
+      authStore.getState().logout();
       localStorage.setItem("redirect_after_login", "/chat");
       this.isAuthorized = false;
       navigate("/login");
     } finally {
       this.authChecked = true;
+    }
+  }
+
+  protected updated(changedProperties: Map<PropertyKey, unknown>): void {
+    super.updated(changedProperties);
+
+    if (this.authChecked && this.isAuthorized && !this.authState?.accessToken) {
+      this.isAuthorized = false;
+      localStorage.setItem("redirect_after_login", "/chat");
+      navigate("/login");
     }
   }
 
