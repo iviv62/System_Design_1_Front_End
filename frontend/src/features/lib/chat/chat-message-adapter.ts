@@ -8,6 +8,36 @@ export type PresenceUpdate = {
   total: number;
 };
 
+export type ReactionUpdate = {
+  kind: "updated";
+  room: string;
+  messageId: string;
+  reactions: Record<string, string[]>;
+};
+
+function normalizeReactions(value: unknown): Record<string, string[]> {
+  if (typeof value !== "object" || value === null) {
+    return {};
+  }
+
+  const result: Record<string, string[]> = {};
+  for (const [emoji, users] of Object.entries(value as Record<string, unknown>)) {
+    if (!emoji) continue;
+    if (!Array.isArray(users)) continue;
+
+    const normalizedUsers = users
+      .filter((user): user is string => typeof user === "string")
+      .map((user) => user.trim())
+      .filter(Boolean);
+
+    if (normalizedUsers.length > 0) {
+      result[emoji] = normalizedUsers;
+    }
+  }
+
+  return result;
+}
+
 // ==========================================
 // UI Converters
 // ==========================================
@@ -20,6 +50,7 @@ export function toUiMessage(msg: ChatMessage): UiMessage {
     text: msg.text,
     imageUrl: resolveImageUrl(msg.image_url),
     createdAt: msg.created_at,
+    reactions: normalizeReactions(msg.reactions),
   };
 }
 
@@ -40,6 +71,7 @@ export function toSystemMessage(text: string): UiMessage {
     username: "",
     text,
     createdAt: new Date().toISOString(),
+    reactions: {},
   };
 }
 
@@ -64,6 +96,7 @@ export function extractChatMessage(payload: any): ChatMessage | null {
   const text = data.text || data.content || data.message || "";
   const createdAt = data.created_at || data.sent_at || data.timestamp;
   const imageUrl = data.image_url || data.imageUrl;
+  const reactions = normalizeReactions(data.reactions);
 
   // 3. Ensure we have the minimum required fields
   if (!username || !createdAt || (!text && !imageUrl)) {
@@ -80,6 +113,7 @@ export function extractChatMessage(payload: any): ChatMessage | null {
     text: String(text),
     image_url: imageUrl ? String(imageUrl) : undefined,
     created_at: String(createdAt),
+    reactions,
   };
 }
 
@@ -120,5 +154,26 @@ export function extractPresenceUpdate(payload: any): PresenceUpdate | null {
     room: String(payload.room || ""),
     users,
     total: typeof payload.total === "number" ? payload.total : users.length,
+  };
+}
+
+export function extractReactionUpdate(payload: any): ReactionUpdate | null {
+  if (typeof payload !== "object" || payload === null) {
+    return null;
+  }
+
+  if (payload.type !== "reaction" || payload.event !== "updated") {
+    return null;
+  }
+
+  if (typeof payload.message_id !== "string" || !payload.message_id.trim()) {
+    return null;
+  }
+
+  return {
+    kind: "updated",
+    room: typeof payload.room === "string" ? payload.room : "",
+    messageId: payload.message_id,
+    reactions: normalizeReactions(payload.reactions),
   };
 }

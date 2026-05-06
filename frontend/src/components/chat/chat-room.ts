@@ -5,7 +5,13 @@ import { repeat } from "lit/directives/repeat.js";
 import chatRoomStylesRaw from "../../styles/chat-room.styles.scss?inline";
 import type { UiMessage } from "../../types/message";
 import { ChatRoomController } from "../../features/lib/chat/chat-room-controller";
-import { fetchUnreadCount, uploadChatImage } from "../../features/lib/chat/chat-room-api";
+import {
+  addMessageReaction,
+  fetchUnreadCount,
+  removeMessageReaction,
+  uploadChatImage,
+} from "../../features/lib/chat/chat-room-api";
+import type { ReactionUpdate } from "../../features/lib/chat/chat-message-adapter";
 import {
   DEFAULT_NEAR_BOTTOM_THRESHOLD_PX,
   getMessagesContainer,
@@ -80,6 +86,7 @@ export class ChatRoom extends LitElement {
       onMessage: (message) => this.addMessage(message),
       onConnected: () => this.emitRoomConnected(),
       onPresenceChange: (users) => this.emitActiveUsers(users),
+      onReactionUpdate: (update) => this.applyReactionUpdate(update),
       onLoadingChange: (isLoading) => {
         this.isLoadingHistory = isLoading;
         // After history load completes, the first incoming user message from WS replay
@@ -318,7 +325,53 @@ export class ChatRoom extends LitElement {
       username: "",
       text,
       createdAt: new Date().toISOString(),
+      reactions: {},
     });
+  }
+
+  private applyReactionUpdate(update: ReactionUpdate) {
+    if (update.room && update.room !== this.roomId) {
+      return;
+    }
+
+    this.messages = this.messages.map((message) => {
+      if (message.id !== update.messageId || message.kind !== "user") {
+        return message;
+      }
+
+      return {
+        ...message,
+        reactions: update.reactions,
+      };
+    });
+  }
+
+  private async handleMessageReactionToggle(e: CustomEvent<{ messageId: string; emoji: string }>) {
+    const { messageId, emoji } = e.detail;
+    if (!messageId || !emoji) return;
+
+    const username = this.username.trim();
+    if (!username) return;
+
+    const message = this.messages.find((item) => item.id === messageId && item.kind === "user");
+    if (!message) return;
+
+    const alreadyReacted = (message.reactions[emoji] ?? []).includes(username);
+
+    try {
+      const response = alreadyReacted
+        ? await removeMessageReaction(this.roomId, messageId, username, emoji)
+        : await addMessageReaction(this.roomId, messageId, username, emoji);
+
+      this.applyReactionUpdate({
+        kind: "updated",
+        room: this.roomId,
+        messageId: response.message_id,
+        reactions: response.reactions,
+      });
+    } catch {
+      this.addSystemNotice("Could not update reaction. Please try again.");
+    }
   }
 
   private async handleMessageSubmit(e: CustomEvent<{ text: string; imageFile?: File }>) {
@@ -395,6 +448,7 @@ export class ChatRoom extends LitElement {
                         .message=${m}
                         .username=${this.username}
                         .showMeta=${this.shouldShowMetaForMessage(index)}
+                        @message-reaction-toggle=${this.handleMessageReactionToggle}
                       ></chat-message-item>
                     `,
                 )}

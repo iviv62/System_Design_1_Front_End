@@ -5,7 +5,10 @@ export interface ChatMessage {
   text: string;
   image_url?: string;
   created_at: string; // ISO 8601 timestamp
+  reactions?: MessageReactions;
 }
+
+export type MessageReactions = Record<string, string[]>;
 
 export type UiMessage = {
   id: string;
@@ -14,4 +17,5 @@ export type UiMessage = {
   text: string;
   imageUrl?: string;
   createdAt: string;
+  reactions: MessageReactions;
 };

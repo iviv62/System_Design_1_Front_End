@@ -2,8 +2,10 @@ import type { ChatMessage, UiMessage } from "../../../types/message";
 import {
   extractChatMessage,
   extractPresenceUpdate,
+  extractReactionUpdate,
   extractSystemText,
   type PresenceUpdate,
+  type ReactionUpdate,
   toSystemMessage,
   toUiMessage,
 } from "./chat-message-adapter";
@@ -28,6 +30,7 @@ export type ChatRoomControllerOptions = {
   onMessage: (message: UiMessage) => void;
   onConnected?: () => void;
   onPresenceChange?: (users: string[]) => void;
+  onReactionUpdate?: (update: ReactionUpdate) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
 };
@@ -213,6 +216,12 @@ export class ChatRoomController {
       const presenceUpdate = extractPresenceUpdate(payload);
       if (presenceUpdate) {
         this.applyPresenceUpdate(presenceUpdate);
+      }
+
+      const reactionUpdate = extractReactionUpdate(payload);
+      if (reactionUpdate) {
+        this.options.onReactionUpdate?.(reactionUpdate);
+        return;
       }
 
       const systemText = extractSystemText(payload);

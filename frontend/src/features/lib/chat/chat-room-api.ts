@@ -32,6 +32,11 @@ export type UploadedImage = {
   size: number;
 };
 
+export type ReactionUpdateResponse = {
+  message_id: string;
+  reactions: Record<string, string[]>;
+};
+
 export async function fetchRooms(): Promise<Room[]> {
   const res = await fetchWithAuth(`${getBase()}/rooms`);
   if (!res.ok) {
@@ -199,4 +204,58 @@ export async function uploadChatImage(file: File): Promise<UploadedImage> {
     filename: typeof data.filename === "string" ? data.filename : file.name,
     size: typeof data.size === "number" ? data.size : file.size,
   };
+}
+
+export async function addMessageReaction(
+  room: string,
+  messageId: string,
+  username: string,
+  emoji: string,
+): Promise<ReactionUpdateResponse> {
+  const res = await fetchWithAuth(
+    `${getBase()}/conversations/${encodeURIComponent(room)}/messages/${encodeURIComponent(messageId)}/reactions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        emoji,
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new ApiError(res.status, `Failed to add reaction: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function removeMessageReaction(
+  room: string,
+  messageId: string,
+  username: string,
+  emoji: string,
+): Promise<ReactionUpdateResponse> {
+  const res = await fetchWithAuth(
+    `${getBase()}/conversations/${encodeURIComponent(room)}/messages/${encodeURIComponent(messageId)}/reactions`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        emoji,
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new ApiError(res.status, `Failed to remove reaction: ${res.statusText}`);
+  }
+
+  return res.json();
 }
