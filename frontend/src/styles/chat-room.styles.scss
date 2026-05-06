@@ -204,10 +204,108 @@
   // ── Composer bar ───────────────────────────────────────────────────────────
   &__composer {
     display: flex;
+    align-items: flex-end;
+    position: relative;
     gap: 0.75rem;
     padding: 1rem 1.5rem;
     background: var(--cr-composer-bg);
     border-top: 1px solid var(--cr-border);
+  }
+
+  &__composer-tools {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  &__emoji-picker-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__emoji-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--cr-input-border);
+    background: var(--cr-input-bg);
+    color: var(--cr-input-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+
+    &:hover {
+      border-color: var(--cr-input-focus-border);
+      background: var(--cr-icon-btn-hover);
+    }
+  }
+
+  &__emoji-panel {
+    position: absolute;
+    bottom: 48px;
+    left: 0;
+    width: 220px;
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 10px;
+    border: 1px solid var(--cr-border);
+    background: var(--cr-header-bg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    z-index: 5;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--cr-scrollbar);
+      border-radius: 999px;
+    }
+  }
+
+  &__emoji-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  &__emoji-section-title {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--cr-meta-color);
+    background: var(--cr-header-bg);
+    padding: 0.2rem 0.1rem;
+  }
+
+  &__emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.3rem;
+  }
+
+  &__emoji-item {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.25rem;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--cr-border);
+      background: var(--cr-icon-btn-hover);
+    }
   }
 
   &__input {
@@ -349,6 +447,13 @@
       min-height: 44px;
       max-height: 120px;
     }
+
+    &__emoji-panel {
+      left: 0;
+      width: 200px;
+    }
+
+    &__emoji-grid { grid-template-columns: repeat(5, 1fr); }
 
     &__send { padding: 0 1.25rem; }
   }
