@@ -5,6 +5,7 @@ import { navigate } from "../utils/navigate";
 import "../pages/page-login";
 import "../pages/page-register";
 import "../pages/page-chat";
+import "../pages/page-room";
 
 export const routes: RouteConfig[] = [
   {
@@ -26,6 +27,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/chat",
     render: () => html`<page-chat></page-chat>`,
+  },
+  {
+    path: "/chat/*",
+    render: () => html`<page-room></page-room>`,
   },
   // Catch-all: redirect unknown paths to /chat
   {

@@ -2,7 +2,6 @@ import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
-import "./chat/chat-room";
 import "./lobby/lobby-header";
 import "./lobby/lobby-create-room";
 import {
@@ -19,6 +18,7 @@ import {
 } from "../features/lib/notifications/firebase-messaging";
 import { subscribeToRoomNotifications } from "../features/lib/notifications/notification-room-subscription-api";
 import { ThemeController } from "../utils/theme-controller";
+import { navigate } from "../utils/navigate";
 import type { Room } from "../types/room";
 import type { ConversationSummary } from "../types/conversation-summary";
 
@@ -31,8 +31,6 @@ export class ChatApp extends LitElement {
 
   @property() username = "";
   @state() private selectedRoomId = "";
-  @state() private selectedRoomName = "";
-  @state() private joined = false;
 
   @state() private rooms: Room[] = [];
   @state() private conversationByRoom: Record<string, ConversationSummary> = {};
@@ -98,7 +96,6 @@ export class ChatApp extends LitElement {
       // Auto-select the first room if available and none selected yet
       if (this.rooms.length > 0 && !this.selectedRoomId) {
         this.selectedRoomId = this.rooms[0].id;
-        this.selectedRoomName = this.rooms[0].name;
       }
     } catch {
       this.error = "Failed to load rooms. Ensure the backend is running.";
@@ -185,10 +182,9 @@ export class ChatApp extends LitElement {
       const room = await createRoom({ name: trimmed, created_by: this.username.trim() || undefined });
       await this.loadRooms();
       this.selectedRoomId = room.id;
-      this.selectedRoomName = room.name;
-      this.joined = true;
       this.error = "";
       void this.syncRoomNotificationSubscription(room.id);
+      navigate(`/chat/${encodeURIComponent(room.id)}`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         this.error = "A room with that name already exists. Pick a different name.";
@@ -201,9 +197,8 @@ export class ChatApp extends LitElement {
   private joinRoom(room: Room) {
     if (!this.username.trim()) return;
     this.selectedRoomId = room.id;
-    this.selectedRoomName = room.name;
-    this.joined = true;
     void this.syncRoomNotificationSubscription(room.id);
+    navigate(`/chat/${encodeURIComponent(room.id)}`);
   }
 
   private async handleDeleteRoom(room: Room, e: Event) {
@@ -212,9 +207,7 @@ export class ChatApp extends LitElement {
     try {
       await deleteRoom(room.id, this.username.trim());
       if (this.selectedRoomId === room.id) {
-        this.joined = false;
         this.selectedRoomId = "";
-        this.selectedRoomName = "";
       }
       await this.loadRooms();
     } catch (error) {
@@ -237,13 +230,12 @@ export class ChatApp extends LitElement {
   }
 
   render() {
-    if (!this.joined) {
-      const filteredRooms = this.rooms.filter((r) =>
-        r.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
+    const filteredRooms = this.rooms.filter((r) =>
+      r.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
 
-      return html`
-        <div class="lobby">
+    return html`
+      <div class="lobby">
           <!-- Top Header Bar -->
           <lobby-header .theme=${this.themeCtrl.theme} @toggle-theme=${this.toggleTheme}></lobby-header>
 
@@ -271,7 +263,6 @@ export class ChatApp extends LitElement {
                             class="lobby__room-card ${this.selectedRoomId === r.id ? "lobby__room-card--selected" : ""}"
                             @click=${() => {
                               this.selectedRoomId = r.id;
-                              this.selectedRoomName = r.name;
                             }}
                           >
                             <div class="lobby__room-card-head">
@@ -302,7 +293,6 @@ export class ChatApp extends LitElement {
                                 class="lobby__room-card ${this.selectedRoomId === r.id ? "lobby__room-card--selected" : ""}"
                                 @click=${() => {
                                   this.selectedRoomId = r.id;
-                                  this.selectedRoomName = r.name;
                                 }}
                               >
                                 <div class="lobby__room-card-head">
@@ -373,7 +363,6 @@ export class ChatApp extends LitElement {
                             (r) => html`
                               <tr class="${this.selectedRoomId === r.id ? "selected" : ""}" @click=${() => {
                                 this.selectedRoomId = r.id;
-                                this.selectedRoomName = r.name;
                               }}>
                                 <td>
                                   <div class="lobby__room-main-head">
@@ -415,12 +404,7 @@ export class ChatApp extends LitElement {
             <div class="lobby__col lobby__col--aside"></div>
 
           </div>
-        </div>
-      `;
-    }
-
-    return html`
-      <chat-room .username=${this.username} .roomId=${this.selectedRoomId} .roomName=${this.selectedRoomName}></chat-room>
+      </div>
     `;
   }
 }
