@@ -15,6 +15,7 @@ import "../components/chat-app";
 export class PageChat extends LitElement {
   @state() private authChecked = false;
   @state() private isAuthorized = false;
+  @state() private username = "";
 
   // zustand-lit manages subscribe/unsubscribe and re-renders automatically.
   @watch(authStore)
@@ -40,7 +41,12 @@ export class PageChat extends LitElement {
     }
 
     try {
-      await fetchCurrentUser();
+      const me = await fetchCurrentUser();
+      const resolvedUsername = me.username?.trim() ?? "";
+      if (!resolvedUsername) {
+        throw new Error("Authenticated user is missing a username.");
+      }
+      this.username = resolvedUsername;
       this.isAuthorized = true;
     } catch {
       authStore.getState().logout();
@@ -71,7 +77,7 @@ export class PageChat extends LitElement {
       return html``;
     }
 
-    return html`<chat-app></chat-app>`;
+    return html`<chat-app .username=${this.username}></chat-app>`;
   }
 }
 

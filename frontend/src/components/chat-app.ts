@@ -1,10 +1,9 @@
 import { LitElement, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
 import "./chat/chat-room";
 import "./lobby/lobby-header";
-import "./lobby/lobby-account";
 import "./lobby/lobby-create-room";
 import {
   fetchRooms,
@@ -30,7 +29,7 @@ export class ChatApp extends LitElement {
     return this;
   }
 
-  @state() private username = "";
+  @property() username = "";
   @state() private selectedRoomId = "";
   @state() private selectedRoomName = "";
   @state() private joined = false;
@@ -55,6 +54,15 @@ export class ChatApp extends LitElement {
     ThemeController.set(this.themeCtrl.theme);
 
     await this.loadRooms();
+  }
+
+  protected updated(changedProperties: Map<PropertyKey, unknown>): void {
+    super.updated(changedProperties);
+
+    if (changedProperties.has("username")) {
+      void this.loadUnreadCountsForUser(this.username);
+      this.subscribedRooms.clear();
+    }
   }
 
   private toggleTheme(e?: CustomEvent) {
@@ -242,15 +250,13 @@ export class ChatApp extends LitElement {
           <!-- Three-column layout -->
           <div class="lobby__layout">
 
-            <!-- Column 1: Account Setup + Recent Rooms -->
+            <!-- Column 1: Signed-In User + Recent Rooms -->
             <div class="lobby__col">
-              <lobby-account 
-                .username=${this.username} 
-                @username-change=${(e: CustomEvent) => {
-                  this.username = e.detail;
-                  this.loadUnreadCountsForUser(this.username);
-                }}>
-              </lobby-account>
+              <div class="lobby__card">
+                <h3 class="lobby__card-title">Signed In User</h3>
+                <div class="lobby__label">Username</div>
+                <div class="lobby__room-card-name">${this.username || "-"}</div>
+              </div>
 
               <div class="lobby__card">
                 <h3 class="lobby__card-title">Recent Rooms</h3>
