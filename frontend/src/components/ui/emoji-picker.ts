@@ -47,6 +47,16 @@ export class EmojiPicker extends LitElement {
   @state()
   private isOpen = false;
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    document.addEventListener("pointerdown", this.handleDocumentPointerDown, true);
+  }
+
+  disconnectedCallback(): void {
+    document.removeEventListener("pointerdown", this.handleDocumentPointerDown, true);
+    super.disconnectedCallback();
+  }
+
   createRenderRoot() {
     return this;
   }
@@ -54,6 +64,15 @@ export class EmojiPicker extends LitElement {
   private togglePicker() {
     this.isOpen = !this.isOpen;
   }
+
+  private handleDocumentPointerDown = (event: PointerEvent) => {
+    if (!this.isOpen) return;
+
+    const path = event.composedPath();
+    if (!path.includes(this)) {
+      this.isOpen = false;
+    }
+  };
 
   private handleSelect(emoji: string) {
     this.dispatchEvent(

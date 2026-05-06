@@ -225,7 +225,7 @@ export class ChatRoomComposer extends LitElement {
               aria-label="Attach image"
               @click=${this.openImagePicker}
             >
-              ⎘
+              +
             </button>
           </div>
           <textarea
