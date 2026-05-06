@@ -314,6 +314,21 @@ export class ChatRoom extends LitElement {
     this.controller.send(text);
   }
 
+  private shouldShowMetaForMessage(index: number): boolean {
+    const current = this.messages[index];
+    const next = this.messages[index + 1];
+
+    if (!current || current.kind !== "user") {
+      return true;
+    }
+
+    if (!next || next.kind !== "user") {
+      return true;
+    }
+
+    return current.username !== next.username;
+  }
+
   render() {
     const unreadCount = this.getUnreadCount();
 
@@ -336,12 +351,16 @@ export class ChatRoom extends LitElement {
               : repeat(
                   this.messages,
                   (m) => m.id,
-                  (m) =>
+                  (m, index) =>
                     html`
                       ${this.unreadAnchorMessageId === m.id
                         ? html`<unread-divider data-unread-anchor></unread-divider>`
                         : nothing}
-                      <chat-message-item .message=${m} .username=${this.username}></chat-message-item>
+                      <chat-message-item
+                        .message=${m}
+                        .username=${this.username}
+                        .showMeta=${this.shouldShowMetaForMessage(index)}
+                      ></chat-message-item>
                     `,
                 )}
 

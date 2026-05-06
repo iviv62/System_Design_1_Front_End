@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { watch } from "zustand-lit";
 import { fetchCurrentUser, tryRefreshSession } from "../features/lib/auth/auth-api";
@@ -6,6 +6,7 @@ import { fetchConnectedUsers } from "../features/lib/chat/chat-room-api";
 import { authStore } from "../store/auth-store";
 import type { AuthState } from "../store/auth-store";
 import { navigate } from "../utils/navigate";
+import pageChatStylesRaw from "../styles/page-chat.styles.scss?inline";
 import "../components/chat/chat-room";
 import "../components/chat/chat-room-users";
 
@@ -26,46 +27,7 @@ export class PageChat extends LitElement {
   @watch(authStore)
   private authState?: AuthState;
 
-  static styles = css`
-    :host {
-      display: block;
-      padding: 1rem;
-      box-sizing: border-box;
-      min-height: 100vh;
-    }
-
-    .room-page {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      max-width: 1120px;
-      margin: 0 auto;
-    }
-
-    .room-page__layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 250px;
-      gap: 0.85rem;
-      align-items: stretch;
-    }
-
-    chat-room {
-      width: 100%;
-      max-width: none;
-      margin: 0;
-    }
-
-    .room-page__back {
-      align-self: flex-start;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #1e293b;
-      border-radius: 8px;
-      padding: 0.45rem 0.8rem;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-  `;
+  static styles = unsafeCSS(pageChatStylesRaw);
 
   async connectedCallback() {
     super.connectedCallback();

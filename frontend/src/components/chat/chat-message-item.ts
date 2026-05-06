@@ -11,6 +11,9 @@ export class ChatMessageItem extends LitElement {
   @property()
   username = "Guest";
 
+  @property({ type: Boolean })
+  showMeta = true;
+
   createRenderRoot() {
     return this;
   }
@@ -24,12 +27,16 @@ export class ChatMessageItem extends LitElement {
 
     return html`
       <article
-        class="message message--user ${isOwnMessage ? "message--self" : ""}"
+        class="message message--user ${isOwnMessage ? "message--self" : ""} ${this.showMeta ? "" : "message--compact"}"
         data-message-id=${this.message.id}
       >
-        <div class="message__author">${this.message.username}</div>
+        ${!isOwnMessage && this.showMeta
+          ? html`<div class="message__author">${this.message.username}</div>`
+          : ""}
         <div class="message__body">${this.message.text}</div>
-        <div class="message__time">${formatTime(this.message.createdAt)}</div>
+        ${this.showMeta
+          ? html`<div class="message__time">${formatTime(this.message.createdAt)}</div>`
+          : ""}
       </article>
     `;
   }

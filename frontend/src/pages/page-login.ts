@@ -1,21 +1,16 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { navigate, handleLink } from "../utils/navigate";
 import { login } from "../features/lib/auth/auth-api";
 import { authStore } from "../store/auth-store";
+import pageLoginStylesRaw from "../styles/page-login.styles.scss?inline";
 
 @customElement("page-login")
 export class PageLogin extends LitElement {
   @state() private errorMsg = "";
   @state() private loading = false;
 
-  static styles = css`
-    :host { display: block; padding: 2rem; max-width: 400px; margin: 0 auto; }
-    .error { color: red; margin-bottom: 1rem; }
-    form { display: flex; flex-direction: column; gap: 12px; }
-    input, button { padding: 8px; font-size: 1rem; }
-    .links { margin-top: 1rem; font-size: 0.9rem; text-align: center; }
-  `;
+  static styles = unsafeCSS(pageLoginStylesRaw);
 
   private async handleSubmit(e: Event) {
     e.preventDefault();

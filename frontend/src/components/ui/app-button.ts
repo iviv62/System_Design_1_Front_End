@@ -1,31 +1,10 @@
-import { html, css, LitElement } from 'lit';
+import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, property } from 'lit/decorators.js';
+import appButtonStylesRaw from "../../styles/app-button.styles.scss?inline";
 
 @customElement('app-button')
 export class AppButton extends LitElement {
-  static styles = css`
-    :host {
-      display: inline-block;
-    }
-    button {
-      padding: 0.5em 1.5em;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    button.light {
-      background: #fff;
-      color: #222;
-      border: 1px solid #ccc;
-    }
-    button.dark {
-      background: #222;
-      color: #fff;
-      border: 1px solid #444;
-    }
-  `;
+  static styles = unsafeCSS(appButtonStylesRaw);
 
   @property({ type: String })
   theme: 'light' | 'dark' = 'light';

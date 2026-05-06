@@ -1,0 +1,29 @@
+:host {
+  display: block;
+  padding: 2rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.error {
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+input,
+button {
+  padding: 8px;
+  font-size: 1rem;
+}
+
+.links {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}

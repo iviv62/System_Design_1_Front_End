@@ -76,7 +76,7 @@ export class EmojiPicker extends LitElement {
           aria-label="Insert emoji"
           @click=${this.togglePicker}
         >
-          😀
+          ☺
         </button>
 
         ${this.isOpen

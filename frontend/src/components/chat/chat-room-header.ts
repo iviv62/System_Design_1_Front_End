@@ -1,6 +1,5 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import "../ui/theme-button";
 
 @customElement("chat-room-header")
 export class ChatRoomHeader extends LitElement {
@@ -23,9 +22,10 @@ export class ChatRoomHeader extends LitElement {
     return this;
   }
 
-  private handleToggleTheme(e: CustomEvent) {
+  private handleToggleTheme() {
+    const next = this.theme === "light" ? "dark" : "light";
     this.dispatchEvent(
-      new CustomEvent("theme-toggle", { detail: e.detail, bubbles: true, composed: true }),
+      new CustomEvent("theme-toggle", { detail: { theme: next }, bubbles: true, composed: true }),
     );
   }
 
@@ -34,12 +34,20 @@ export class ChatRoomHeader extends LitElement {
       <header class="chat-room__header">
         <div class="chat-room__header-left">
           <h2 class="chat-room__title">${this.roomName || this.roomId}</h2>
-          <p class="chat-room__meta">Logged in as <strong>${this.username}</strong></p>
+          <p class="chat-room__meta">Logged in as <strong>${this.username}</strong> • <span class="chat-room__online">Online</span></p>
         </div>
         <div class="chat-room__header-right">
-          <theme-button .theme=${this.theme} @theme-changed=${this.handleToggleTheme} title="Toggle theme">
-            ${this.theme === "light" ? "🌙" : "☀️"}
-          </theme-button>
+          <button class="chat-room__header-action" type="button" title="Search" aria-label="Search">⌕</button>
+          <button
+            class="chat-room__header-action chat-room__header-action--theme"
+            type="button"
+            title="Toggle theme"
+            aria-label="Toggle theme"
+            @click=${this.handleToggleTheme}
+          >
+            ${this.theme === "light" ? "☾" : "☀"}
+          </button>
+          <button class="chat-room__header-action" type="button" title="Menu" aria-label="Menu">⋮</button>
         </div>
       </header>
 
