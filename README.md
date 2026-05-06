@@ -173,3 +173,65 @@ This produces a static bundle you can serve via any HTTP server or integrate int
 ---
 
 If you describe how your `frontend/` is currently structured (Vite? plain `index.html`+Rollup? something else), a next step can be to add a “Quick Start (this repo)” section with the exact `npm` commands you’ll actually use.
+
+## Firebase Push Notifications (Web)
+
+This project now includes the basic Firebase Cloud Messaging wiring for web push:
+
+- Service worker: `frontend/public/firebase-messaging-sw.js`
+- Startup registration and token request: `frontend/src/features/lib/notifications/firebase-messaging.ts`
+- App bootstrap call: `frontend/src/main.ts`
+
+### 1) Create Firebase project + web app
+
+In Firebase Console:
+
+1. Create (or open) a project.
+2. Add a **Web app** and copy the config values.
+3. Enable **Cloud Messaging** for the project.
+4. Generate a **Web Push certificate key pair** and copy the public key (VAPID key).
+
+### 2) Configure environment variables
+
+In `frontend/`, create `.env` from `.env.example` and fill values:
+
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_VAPID_KEY=...
+```
+
+### 3) Install dependencies
+
+From `frontend/`:
+
+```bash
+npm install
+```
+
+### 4) Start app over secure origin
+
+Push notifications require HTTPS or localhost:
+
+```bash
+npm run dev
+```
+
+When the app loads, it requests notification permission and obtains an FCM token.
+
+### 5) Send token to backend
+
+The frontend now returns an FCM token from `initFirebasePush()`. Persist this token server-side per user/device, then use Firebase Admin SDK on backend to send notifications to that token.
+
+### 6) Test notification flow
+
+1. Open your app in browser and allow notifications.
+2. Confirm token is received and saved in backend.
+3. Send a test message from backend via Firebase Admin SDK.
+4. Verify:
+  - Background/tab hidden: system notification appears via service worker.
+  - Foreground/tab focused: handle in-app message UX as needed.

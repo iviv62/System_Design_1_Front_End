@@ -1,0 +1,44 @@
+name: Chat System CI
+
+# This tells GitHub to run this pipeline every time you push to 'main',
+# or if you ever open a Pull Request targeting 'main'.
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ==========================================
+  # Frontend Job: TypeScript & Linting
+  # ==========================================
+  frontend-check:
+    name: Frontend Check
+    runs-on: ubuntu-latest
+
+    # We define the working directory in case your frontend is in a subfolder.
+    # If your frontend is at the root of the repo, you can delete this 'defaults' block.
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ./frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: TypeScript Type Check
+        # This is the command that fails if there are TS errors
+        run: npx tsc --noEmit
