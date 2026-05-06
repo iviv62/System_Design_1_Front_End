@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "../chat/chat-config";
+import { getBase } from "./api-base";
 import { authStore } from "../../../store/auth-store";
 
 type FetchWithAuthOptions = {
@@ -9,16 +9,6 @@ type FetchWithAuthOptions = {
 // Acts as a lock/singleton to prevent multiple simultaneous refresh requests
 // if several API calls fail with a 401 at the exact same time.
 let refreshInFlight: Promise<string | null> | null = null;
-
-/**
- * Helper to resolve the correct backend API base URL from Vite environment variables.
- */
-function getBase(): string {
-  return getApiBaseUrl(
-    import.meta.env.VITE_API_BASE_URL,
-    import.meta.env.VITE_WS_BASE_URL,
-  );
-}
 
 /**
  * Injects the in-memory Access Token into the request headers.

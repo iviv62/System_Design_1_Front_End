@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "../chat/chat-config";
+import { getBase } from "../http/api-base";
 import { authStore } from "../../../store/auth-store";
 import {
   fetchWithAuth,
@@ -22,13 +22,6 @@ export type RegisterInput = {
   email: string;
   password: string;
 };
-
-function getBase(): string {
-  return getApiBaseUrl(
-    import.meta.env.VITE_API_BASE_URL,
-    import.meta.env.VITE_WS_BASE_URL,
-  );
-}
 
 export function getAccessToken(): string | null {
   return authStore.getState().accessToken;

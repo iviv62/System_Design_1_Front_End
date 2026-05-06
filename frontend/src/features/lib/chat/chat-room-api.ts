@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "./chat-config";
+import { getBase } from "../http/api-base";
 import { fetchWithAuth } from "../http/fetch-interceptor";
 import type { Room } from "../../../types/room";
 import type { ConversationSummary } from "../../../types/conversation-summary";
@@ -19,13 +19,6 @@ export type CreateRoomInput = {
   status?: string;
   max_participants?: number;
 };
-
-function getBase(): string {
-  return getApiBaseUrl(
-    import.meta.env.VITE_API_BASE_URL,
-    import.meta.env.VITE_WS_BASE_URL
-  );
-}
 
 export async function fetchRooms(): Promise<Room[]> {
   const res = await fetchWithAuth(`${getBase()}/rooms`);
