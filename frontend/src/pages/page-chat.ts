@@ -9,6 +9,7 @@ import { navigate } from "../utils/navigate";
 import pageChatStylesRaw from "../styles/page-chat.styles.scss?inline";
 import "../components/chat/chat-room";
 import "../components/chat/chat-room-users";
+import "../components/chat/chat-nav-sidebar";
 
 /**
  * Page wrapper for the dedicated chat room view.
@@ -132,22 +133,24 @@ export class PageChat extends LitElement {
 
     return html`
       <div class="room-page">
-        <button class="room-page__back" @click=${() => navigate("/chat")}>Back to Lobby</button>
-        <div class="room-page__layout">
-          <chat-room
-            .username=${this.username}
-            .roomId=${currentRoomId}
-            .roomName=${currentRoomId}
-            @room-connected=${this.handleRoomConnected}
-            @active-users-change=${this.handleActiveUsersChange}
-          ></chat-room>
+        <chat-nav-sidebar
+          .currentUsername=${this.username}
+          .roomName=${currentRoomId}
+        ></chat-nav-sidebar>
 
-          <chat-room-users
-            .users=${this.activeUsers}
-            .currentUsername=${this.username}
-            .loading=${this.activeUsersLoading}
-          ></chat-room-users>
-        </div>
+        <chat-room
+          .username=${this.username}
+          .roomId=${currentRoomId}
+          .roomName=${currentRoomId}
+          @room-connected=${this.handleRoomConnected}
+          @active-users-change=${this.handleActiveUsersChange}
+        ></chat-room>
+
+        <chat-room-users
+          .users=${this.activeUsers}
+          .currentUsername=${this.username}
+          .loading=${this.activeUsersLoading}
+        ></chat-room-users>
       </div>
     `;
   }

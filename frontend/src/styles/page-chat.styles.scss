@@ -1,44 +1,43 @@
 :host {
   display: block;
-  padding: 1rem;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   box-sizing: border-box;
-  min-height: 100vh;
 }
 
 .room-page {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 1120px;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 260px;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
-.room-page__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 250px;
-  gap: 0.85rem;
-  align-items: stretch;
+chat-nav-sidebar {
+  height: 100%;
+  min-height: 0;
 }
 
 chat-room {
+  height: 100%;
+  min-height: 0;
   width: 100%;
   max-width: none;
   margin: 0;
 }
 
-.room-page__back {
-  align-self: flex-start;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #1e293b;
-  border-radius: 12px;
-  padding: 0.45rem 0.8rem;
-  cursor: pointer;
-  font-size: 0.9rem;
+chat-room-users {
+  height: 100%;
+  min-height: 0;
 }
 
 @media (max-width: 900px) {
-  .room-page__layout {
-    grid-template-columns: minmax(0, 1fr);
+  .room-page {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  chat-room-users {
+    display: none;
   }
 }
