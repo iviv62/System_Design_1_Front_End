@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "./chat-config";
+import { fetchWithAuth } from "../http/fetch-interceptor";
 import type { Room } from "../../../types/room";
 import type { ConversationSummary } from "../../../types/conversation-summary";
 
@@ -27,7 +28,7 @@ function getBase(): string {
 }
 
 export async function fetchRooms(): Promise<Room[]> {
-  const res = await fetch(`${getBase()}/rooms`);
+  const res = await fetchWithAuth(`${getBase()}/rooms`);
   if (!res.ok) {
     throw new ApiError(res.status, `Failed to fetch rooms: ${res.statusText}`);
   }
@@ -37,7 +38,7 @@ export async function fetchRooms(): Promise<Room[]> {
 export async function createRoom(input: string | CreateRoomInput): Promise<Room> {
   const payload = typeof input === "string" ? { name: input } : input;
 
-  const res = await fetch(`${getBase()}/rooms`, {
+  const res = await fetchWithAuth(`${getBase()}/rooms`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -54,7 +55,7 @@ export async function deleteRoom(roomId: string, username: string): Promise<void
   const url = new URL(`${getBase()}/rooms/${encodeURIComponent(roomId)}`);
   url.searchParams.set("username", username);
 
-  const res = await fetch(url.toString(), { method: "DELETE" });
+  const res = await fetchWithAuth(url.toString(), { method: "DELETE" });
   if (!res.ok) {
     throw new ApiError(res.status, `Failed to delete room: ${res.statusText}`);
   }
@@ -63,7 +64,7 @@ export async function deleteRoom(roomId: string, username: string): Promise<void
 export async function fetchConversationSummary(
   room: string,
 ): Promise<ConversationSummary> {
-  const res = await fetch(
+  const res = await fetchWithAuth(
     `${getBase()}/conversations/${encodeURIComponent(room)}`,
   );
   if (!res.ok) {
@@ -80,7 +81,7 @@ export async function updateConversationLastSeen(
   username: string,
   lastSeen: string,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await fetchWithAuth(
     `${getBase()}/conversations/${encodeURIComponent(room)}/last-seen`,
     {
       method: "POST",
@@ -108,7 +109,7 @@ export async function fetchUnreadCount(
   );
   url.searchParams.set("username", username);
 
-  const res = await fetch(url.toString());
+  const res = await fetchWithAuth(url.toString());
   if (!res.ok) {
     throw new ApiError(res.status, `Failed to fetch unread count: ${res.statusText}`);
   }

@@ -22,7 +22,8 @@ export function getApiBaseUrl(
       .replace(/^ws:/, "http:");
   }
 
-  return "http://127.0.0.1:8000";
+  const host = window.location.hostname || "localhost";
+  return `http://${host}:8000`;
 }
 
 export function getSocketUrl({
@@ -32,9 +33,10 @@ export function getSocketUrl({
   lastSeen,
   pageProtocol,
 }: SocketUrlParams): string {
+  const host = window.location.hostname || "localhost";
   const base =
     configuredWsBase?.trim().replace(/\/$/, "") ||
-    `${pageProtocol === "https:" ? "wss:" : "ws:"}//127.0.0.1:8000`;
+    `${pageProtocol === "https:" ? "wss:" : "ws:"}//${host}:8000`;
 
   const url = new URL(`${base}/ws/${encodeURIComponent(room)}`);
   url.searchParams.set("username", username);

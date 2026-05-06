@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "../chat/chat-config";
+import { fetchWithAuth } from "../http/fetch-interceptor";
 import { ApiError } from "../chat/chat-room-api";
 
 type RoomSubscriptionInput = {
@@ -18,7 +19,7 @@ function getBase(): string {
 export async function subscribeToRoomNotifications(
   input: RoomSubscriptionInput,
 ): Promise<void> {
-  const res = await fetch(`${getBase()}/notifications/subscriptions`, {
+  const res = await fetchWithAuth(`${getBase()}/notifications/subscriptions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -42,7 +43,7 @@ export async function subscribeToRoomNotifications(
 export async function unsubscribeFromRoomNotifications(
   input: RoomSubscriptionInput,
 ): Promise<void> {
-  const res = await fetch(`${getBase()}/notifications/subscriptions`, {
+  const res = await fetchWithAuth(`${getBase()}/notifications/subscriptions`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",

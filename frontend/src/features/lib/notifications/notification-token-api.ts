@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "../chat/chat-config";
+import { fetchWithAuth } from "../http/fetch-interceptor";
 import { ApiError } from "../chat/chat-room-api";
 
 export type RegisterNotificationTokenInput = {
@@ -18,7 +19,7 @@ function getBase(): string {
 export async function registerNotificationToken(
   input: RegisterNotificationTokenInput,
 ): Promise<void> {
-  const res = await fetch(`${getBase()}/notifications/tokens`, {
+  const res = await fetchWithAuth(`${getBase()}/notifications/tokens`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

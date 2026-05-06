@@ -6,6 +6,7 @@ import {
   toUiMessage,
 } from "./chat-message-adapter";
 import { getApiBaseUrl, getSocketUrl } from "./chat-config";
+import { fetchWithAuth } from "../http/fetch-interceptor";
 import { updateConversationLastSeen } from "./chat-room-api";
 
 export type Identity = {
@@ -105,7 +106,7 @@ export class ChatRoomController {
 
     try {
       const base = this.getResolvedApiBaseUrl();
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`,
       );
       if (res.ok) {

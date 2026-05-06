@@ -1,5 +1,10 @@
 import { getApiBaseUrl } from "../chat/chat-config";
 import { authStore } from "../../../store/auth-store";
+import {
+  fetchWithAuth,
+  logoutWithServer,
+  refreshAccessToken,
+} from "../http/fetch-interceptor";
 
 export type CurrentUser = {
   id?: string;
@@ -36,11 +41,15 @@ export async function login(input: LoginInput): Promise<string> {
   body.append("password", input.password);
   body.append("grant_type", "password");
 
-  const res = await fetch(`${getBase()}/auth/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
+  const res = await fetchWithAuth(
+    `${getBase()}/auth/token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    },
+    { skipAuth: true, retryOn401: false },
+  );
 
   if (!res.ok) {
     throw new Error("Invalid email or password.");
@@ -51,11 +60,15 @@ export async function login(input: LoginInput): Promise<string> {
 }
 
 export async function register(input: RegisterInput): Promise<void> {
-  const res = await fetch(`${getBase()}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+  const res = await fetchWithAuth(
+    `${getBase()}/auth/register`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+    { skipAuth: true, retryOn401: false },
+  );
 
   if (!res.ok) {
     let message = "Registration failed.";
@@ -70,21 +83,19 @@ export async function register(input: RegisterInput): Promise<void> {
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser> {
-  const token = getAccessToken();
-  if (!token) {
-    throw new Error("Missing access token");
-  }
-
-  const res = await fetch(`${getBase()}/auth/users/me`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await fetchWithAuth(`${getBase()}/auth/users/me`, { method: "GET" });
 
   if (!res.ok) {
     throw new Error("Unauthorized");
   }
 
   return (await res.json()) as CurrentUser;
+}
+
+export async function tryRefreshSession(): Promise<string | null> {
+  return refreshAccessToken();
+}
+
+export async function logout(): Promise<void> {
+  await logoutWithServer();
 }

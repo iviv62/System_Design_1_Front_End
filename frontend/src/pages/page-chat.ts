@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { fetchCurrentUser } from "../features/lib/auth/auth-api";
+import { fetchCurrentUser, tryRefreshSession } from "../features/lib/auth/auth-api";
 import { watch } from "zustand-lit";
 import { authStore } from "../store/auth-store";
 import type { AuthState } from "../store/auth-store";
@@ -29,11 +29,14 @@ export class PageChat extends LitElement {
     super.connectedCallback();
 
     if (!authStore.getState().accessToken) {
-      this.authChecked = true;
-      this.isAuthorized = false;
-      localStorage.setItem("redirect_after_login", "/chat");
-      navigate("/login");
-      return;
+      const refreshed = await tryRefreshSession();
+      if (!refreshed) {
+        this.authChecked = true;
+        this.isAuthorized = false;
+        localStorage.setItem("redirect_after_login", "/chat");
+        navigate("/login");
+        return;
+      }
     }
 
     try {
