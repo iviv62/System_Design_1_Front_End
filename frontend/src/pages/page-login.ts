@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { navigate, handleLink } from "../utils/navigate";
+import { login } from "../features/lib/auth/auth-api";
 
 @customElement("page-login")
 export class PageLogin extends LitElement {
@@ -23,22 +24,13 @@ export class PageLogin extends LitElement {
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
-    // FastAPI OAuth2 expects form-encoded body
-    const body = new URLSearchParams();
-    body.append("username", formData.get("username") as string);
-    body.append("password", formData.get("password") as string);
-
     try {
-      const res = await fetch("/api/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
+      const accessToken = await login({
+        identifier: String(formData.get("identifier") ?? ""),
+        password: String(formData.get("password") ?? ""),
       });
 
-      if (!res.ok) throw new Error("Invalid username or password.");
-
-      const data = (await res.json()) as { access_token: string };
-      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("access_token", accessToken);
 
       const redirect = localStorage.getItem("redirect_after_login") || "/chat";
       localStorage.removeItem("redirect_after_login");
@@ -55,7 +47,13 @@ export class PageLogin extends LitElement {
       <h2>Log In</h2>
       ${this.errorMsg ? html`<div class="error">${this.errorMsg}</div>` : ""}
       <form @submit=${this.handleSubmit}>
-        <input type="text" name="username" placeholder="Username" required autocomplete="username" />
+        <input
+          type="text"
+          name="identifier"
+          placeholder="Email or Username"
+          required
+          autocomplete="username"
+        />
         <input type="password" name="password" placeholder="Password" required autocomplete="current-password" />
         <button type="submit" ?disabled=${this.loading}>
           ${this.loading ? "Logging in…" : "Log In"}

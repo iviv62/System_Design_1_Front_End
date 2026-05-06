@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { navigate, handleLink } from "../utils/navigate";
+import { register } from "../features/lib/auth/auth-api";
 
 @customElement("page-register")
 export class PageRegister extends LitElement {
@@ -24,16 +25,11 @@ export class PageRegister extends LitElement {
     const formData = new FormData(form);
 
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.fromEntries(formData.entries())),
+      await register({
+        username: String(formData.get("username") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
       });
-
-      if (!res.ok) {
-        const data = (await res.json()) as { detail?: string };
-        throw new Error(data.detail ?? "Registration failed.");
-      }
 
       navigate("/login");
     } catch (err) {
