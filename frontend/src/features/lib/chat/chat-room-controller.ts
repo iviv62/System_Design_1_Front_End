@@ -5,9 +5,11 @@ import {
   extractReactionUpdate,
   extractSystemText,
   extractVoiceEvent,
+  extractTypingEvent,
   type PresenceUpdate,
   type ReactionUpdate,
   type VoiceEvent,
+  type TypingEvent,
   toSystemMessage,
   toUiMessage,
 } from "./chat-message-adapter";
@@ -34,6 +36,7 @@ export type ChatRoomControllerOptions = {
   onPresenceChange?: (users: string[]) => void;
   onReactionUpdate?: (update: ReactionUpdate) => void;
   onVoiceEvent?: (event: VoiceEvent) => void;
+  onTypingEvent?: (event: TypingEvent) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
 };
@@ -130,6 +133,17 @@ export class ChatRoomController {
   }): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(payload));
+    }
+  }
+
+  sendTyping(): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({
+        type: "typing",
+        event: "started",
+        room: this.room,
+        username: this.username,
+      }));
     }
   }
 
@@ -255,6 +269,15 @@ export class ChatRoomController {
           this.options.onVoiceEvent(voiceEvent);
         }
         return;
+      }
+
+      const typingEvent = extractTypingEvent(payload);
+      if (typingEvent) {
+         if (!this.options.onTypingEvent) return;
+         if (!typingEvent.room || typingEvent.room === this.room) {
+           this.options.onTypingEvent(typingEvent);
+         }
+         return;
       }
 
       const systemText = extractSystemText(payload);

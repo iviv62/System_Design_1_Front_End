@@ -159,9 +159,20 @@ export class ChatRoomComposer extends LitElement {
     });
   }
 
+  private lastTypingSent = 0;
+  private readonly TYPING_THROTTLE_MS = 1000;
+
   private handleTextareaInput(e: Event) {
     this.inputValue = (e.target as HTMLTextAreaElement).value;
     this.resizeTextarea();
+
+    const now = Date.now();
+    if (now - this.lastTypingSent > this.TYPING_THROTTLE_MS) {
+      this.lastTypingSent = now;
+      this.dispatchEvent(new CustomEvent("user-typing", {
+        bubbles: true, composed: true
+      }));
+    }
   }
 
   private resizeTextarea() {

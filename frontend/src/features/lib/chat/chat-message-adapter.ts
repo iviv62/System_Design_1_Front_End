@@ -3,6 +3,14 @@ import { getApiBaseUrl } from "./chat-config";
 
 export { extractVoiceEvent, type VoiceEvent } from "./voice-call-adapter";
 
+export type TypingEvent = { username: string; room: string };
+
+export function extractTypingEvent(payload: any): TypingEvent | null {
+  if (payload?.type !== "typing" || payload?.event !== "started") return null;
+  if (!payload.username) return null;
+  return { username: String(payload.username), room: String(payload.room ?? "") };
+}
+
 export type PresenceUpdate =
   | { kind: "snapshot"; room: string; users: string[]; total: number }
   | { kind: "user_joined"; room: string; username: string }

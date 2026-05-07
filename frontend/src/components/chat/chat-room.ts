@@ -5,6 +5,7 @@ import { repeat } from "lit/directives/repeat.js";
 import chatRoomStylesRaw from "../../styles/chat-room.styles.scss?inline";
 import type { UiMessage } from "../../types/message";
 import { ChatRoomController } from "../../features/lib/chat/chat-room-controller";
+import type { TypingEvent } from "../../features/lib/chat/chat-message-adapter";
 import {
   addMessageReaction,
   fetchUnreadCount,
@@ -63,6 +64,9 @@ export class ChatRoom extends LitElement {
   @state() private _viewingActiveCall = false;
   
   @state() private _isMuted = false;
+
+  @state() private _typingUsers = new Set<string>();
+  private typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   private themeCtrl = new ThemeController(this);
 
@@ -132,6 +136,27 @@ export class ChatRoom extends LitElement {
 
         const names = { call_started: "started", call_error: "had a call error" };
         this.addSystemNotice(`${event.username} ${names[event.kind as "call_started" | "call_error"]} a voice call`);
+      },
+      onTypingEvent: (event: TypingEvent) => {
+        if (event.username === this.username) return;
+
+        this._typingUsers.add(event.username);
+        this._typingUsers = new Set(this._typingUsers); // trigger re-render
+        this.emitTypingUsers();
+
+        const existingTimer = this.typingTimers.get(event.username);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+        }
+
+        const newTimer = setTimeout(() => {
+          this._typingUsers.delete(event.username);
+          this._typingUsers = new Set(this._typingUsers); // trigger re-render
+          this.emitTypingUsers();
+          this.typingTimers.delete(event.username);
+        }, 1500);
+
+        this.typingTimers.set(event.username, newTimer);
       },
       onLoadingChange: (isLoading) => {
         this.isLoadingHistory = isLoading;
@@ -223,6 +248,16 @@ export class ChatRoom extends LitElement {
     this.dispatchEvent(
       new CustomEvent<{ users: string[] }>("active-users-change", {
         detail: { users },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  private emitTypingUsers() {
+    this.dispatchEvent(
+      new CustomEvent<{ users: string[] }>("typing-users-change", {
+        detail: { users: Array.from(this._typingUsers) },
         bubbles: true,
         composed: true,
       }),
@@ -601,6 +636,7 @@ export class ChatRoom extends LitElement {
         <chat-room-composer
           .submitting=${this.isUploadingImage}
           @message-submit=${this.handleMessageSubmit}
+          @user-typing=${() => this.controller.sendTyping()}
           style="${(this._voiceState === 'active' || this._voiceState === 'calling') && this._viewingActiveCall ? 'display: none;' : ''}"
         ></chat-room-composer>
       </section>

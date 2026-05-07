@@ -7,6 +7,9 @@ export class ChatRoomUsers extends LitElement {
   @property({ type: Array })
   users: string[] = [];
 
+  @property({ type: Array })
+  typingUsers: string[] = [];
+
   @property()
   currentUsername = "";
 
@@ -62,12 +65,16 @@ export class ChatRoomUsers extends LitElement {
                     <div class="chat-room__user-item">
                       <div class="chat-room__user-avatar-wrap">
                         <span class="chat-room__user-avatar ${this.getAvatarToneClass(user)}" aria-hidden="true">${this.getInitials(user)}</span>
-                        <span class="chat-room__user-presence-dot chat-room__user-presence-dot--online" aria-hidden="true"></span>
+                        <span class="chat-room__user-presence-dot ${this.typingUsers.includes(user) ? 'chat-room__user-presence-dot--typing' : 'chat-room__user-presence-dot--online'}" aria-hidden="true">
+                          ${this.typingUsers.includes(user) ? html`<span class="chat-room__user-presence-dot--typing-ping"></span>` : ''}
+                        </span>
                       </div>
 
                       <div class="chat-room__user-main">
                         <div class="chat-room__user-name">${user}</div>
-                        <div class="chat-room__user-status">Online</div>
+                        <div class="chat-room__user-status ${this.typingUsers.includes(user) ? 'chat-room__user-status--typing' : ''}">
+                          ${this.typingUsers.includes(user) ? "Typing..." : "Online"}
+                        </div>
                       </div>
 
                       ${user === this.currentUsername.trim()

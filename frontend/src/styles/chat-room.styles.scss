@@ -198,6 +198,15 @@
     border-bottom: 1px solid var(--cr-border);
   }
 
+.typing-indicator {
+  padding: 0.25rem 1rem;
+  font-size: 0.85rem;
+  color: var(--cr-text-muted);
+  font-style: italic;
+  min-height: 1.5rem;
+  background: var(--cr-bg);
+}
+
 .voice-bar {
   display: flex;
   align-items: center;

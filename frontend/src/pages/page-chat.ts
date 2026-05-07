@@ -22,6 +22,7 @@ export class PageChat extends LitElement {
   @state() private username = "";
   @state() private activeUsers: string[] = [];
   @state() private activeUsersLoading = false;
+  @state() private typingUsers: string[] = [];
   @state() private currentRoomId = "";
 
   // zustand-lit manages subscribe/unsubscribe and re-renders automatically.
@@ -104,6 +105,10 @@ export class PageChat extends LitElement {
     this.activeUsers = e.detail.users;
   }
 
+  private handleTypingUsersChange(e: CustomEvent<{ users: string[] }>) {
+    this.typingUsers = e.detail.users;
+  }
+
   private handleRoomConnected() {
     if (this.currentRoomId) {
       void this.loadConnectedUsersSnapshot(this.currentRoomId);
@@ -140,10 +145,12 @@ export class PageChat extends LitElement {
           .roomName=${currentRoomId}
           @room-connected=${this.handleRoomConnected}
           @active-users-change=${this.handleActiveUsersChange}
+          @typing-users-change=${this.handleTypingUsersChange}
         ></chat-room>
 
         <chat-room-users
           .users=${this.activeUsers}
+          .typingUsers=${this.typingUsers}
           .currentUsername=${this.username}
           .loading=${this.activeUsersLoading}
         ></chat-room-users>
