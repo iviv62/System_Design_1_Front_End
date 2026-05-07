@@ -16,6 +16,8 @@ export type VoiceCallControllerOptions = {
 export class VoiceCallController {
   private adapter = new VoiceCallAdapter();
   private peerId: string | null = null;
+  private starting = false;
+  private stopPromise: Promise<void> | null = null;
   private readonly options: VoiceCallControllerOptions;
 
   constructor(options: VoiceCallControllerOptions) {
@@ -32,7 +34,8 @@ export class VoiceCallController {
   }
 
   async start(): Promise<void> {
-    if (this.peerId) return;
+    if (this.peerId || this.starting) return;
+    this.starting = true;
     this.options.onStateChange("calling");
 
     try {
@@ -56,6 +59,13 @@ export class VoiceCallController {
       this.peerId = answer.peer_id;
 
       await this.adapter.applyAnswer(answer);
+      
+      const participants = answer.participants ?? [];
+      if (!participants.some(p => p.username === this.options.username)) {
+        participants.unshift({ peer_id: this.peerId, username: this.options.username });
+      }
+      this.options.onParticipantsChange?.(participants);
+
       this.adapter.onConnectionFailed(() => void this.stop());
 
       this.options.onStateChange("active");
@@ -63,18 +73,27 @@ export class VoiceCallController {
       console.error("[VoiceCallController] start failed", err);
       this.adapter.close();
       this.options.onStateChange("error");
+    } finally {
+      this.starting = false;
     }
   }
 
   async stop(): Promise<void> {
-    const peerId = this.peerId;
-    this.peerId = null;
-    this.adapter.close();
-    this.options.onStateChange("idle");
+    if (this.stopPromise) return this.stopPromise;
 
-    if (peerId) {
-      const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
-      await fetch(`${base}/voice/stop/${peerId}`, { method: "POST" }).catch(() => {});
-    }
+    this.stopPromise = (async () => {
+      const peerId = this.peerId;
+      this.peerId = null;
+      this.adapter.close();
+      this.options.onStateChange("idle");
+
+      if (peerId) {
+        const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
+        await fetch(`${base}/voice/stop/${peerId}`, { method: "POST" }).catch(() => {});
+      }
+    })();
+
+    await this.stopPromise;
+    this.stopPromise = null;
   }
 }

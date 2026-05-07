@@ -34,18 +34,14 @@ export class PageChat extends LitElement {
     super.connectedCallback();
     this.currentRoomId = this.extractRoomIdFromUrl();
 
-    if (!authStore.getState().accessToken) {
-      const refreshed = await tryRefreshSession();
-      if (!refreshed) {
-        this.authChecked = true;
-        this.isAuthorized = false;
-        localStorage.setItem("redirect_after_login", window.location.pathname);
-        navigate("/login");
-        return;
-      }
-    }
-
     try {
+      if (!authStore.getState().accessToken) {
+        const refreshed = await tryRefreshSession();
+        if (!refreshed) {
+          throw new Error("Session refresh failed");
+        }
+      }
+
       const me = await fetchCurrentUser();
       const resolvedUsername = me.username?.trim() ?? "";
       if (!resolvedUsername) {

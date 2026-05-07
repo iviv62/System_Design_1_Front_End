@@ -3,12 +3,10 @@ import { getApiBaseUrl } from "./chat-config";
 
 export { extractVoiceEvent, type VoiceEvent } from "./voice-call-adapter";
 
-export type PresenceUpdate = {
-  kind: "snapshot";
-  room: string;
-  users: string[];
-  total: number;
-};
+export type PresenceUpdate =
+  | { kind: "snapshot"; room: string; users: string[]; total: number }
+  | { kind: "user_joined"; room: string; username: string }
+  | { kind: "user_left"; room: string; username: string };
 
 export type ReactionUpdate = {
   kind: "updated";
@@ -142,21 +140,32 @@ export function extractPresenceUpdate(payload: any): PresenceUpdate | null {
     return null;
   }
 
-  if (payload.type !== "presence" || payload.event !== "snapshot") {
+  if (payload.type !== "presence") {
     return null;
   }
 
-  // Safely extract users array
-  const users = Array.isArray(payload.users)
-    ? payload.users.filter((u: any) => typeof u === "string").map((u: string) => u.trim()).filter(Boolean)
-    : [];
+  if (payload.event === "snapshot") {
+    const users = Array.isArray(payload.users)
+      ? payload.users.filter((u: any) => typeof u === "string").map((u: string) => u.trim()).filter(Boolean)
+      : [];
 
-  return {
-    kind: "snapshot",
-    room: String(payload.room || ""),
-    users,
-    total: typeof payload.total === "number" ? payload.total : users.length,
-  };
+    return {
+      kind: "snapshot",
+      room: String(payload.room || ""),
+      users,
+      total: typeof payload.total === "number" ? payload.total : users.length,
+    };
+  }
+
+  if (payload.event === "user_joined" || payload.event === "user_left") {
+    return {
+      kind: payload.event,
+      room: String(payload.room || ""),
+      username: String(payload.username || ""),
+    };
+  }
+
+  return null;
 }
 
 export function extractReactionUpdate(payload: any): ReactionUpdate | null {

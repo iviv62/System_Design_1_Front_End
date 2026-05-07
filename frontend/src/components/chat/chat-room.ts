@@ -112,6 +112,8 @@ export class ChatRoom extends LitElement {
         }
         if (event.kind === "call_ended") {
           this._voiceParticipants = this._voiceParticipants.filter(u => u.username !== event.username);
+          this.addSystemNotice(`${event.username} left the voice call`);
+          return;
         }
         if (event.kind === "call_started") {
           if (!this._voiceParticipants.some(u => u.username === event.username)) {
@@ -120,12 +122,12 @@ export class ChatRoom extends LitElement {
         }
         
         // As a fallback to ensure we are never out of sync, fetch the authoritative list
-        if (event.kind === "call_started" || event.kind === "call_ended") {
+        if (event.kind === "call_started") {
            void this.loadVoiceParticipants();
         }
 
-        const names = { call_started: "started", call_ended: "ended", call_error: "had a call error" };
-        this.addSystemNotice(`${event.username} ${names[event.kind]} a voice call`);
+        const names = { call_started: "started", call_error: "had a call error" };
+        this.addSystemNotice(`${event.username} ${names[event.kind as "call_started" | "call_error"]} a voice call`);
       },
       onLoadingChange: (isLoading) => {
         this.isLoadingHistory = isLoading;
@@ -143,7 +145,12 @@ export class ChatRoom extends LitElement {
       wsBase: import.meta.env.VITE_WS_BASE_URL,
       room: this.roomId,
       username: this.username,
-      onStateChange: (state) => { this._voiceState = state; },
+      onStateChange: (state) => {
+        this._voiceState = state;
+        if (state === "idle" || state === "error") {
+          this._voiceParticipants = [];
+        }
+      },
       onIceCandidate: (candidate) => {
         this.controller.sendVoiceSignal({
           type: "voice",

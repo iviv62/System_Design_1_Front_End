@@ -29,18 +29,14 @@ export class PageDashboard extends LitElement {
   async connectedCallback() {
     super.connectedCallback();
 
-    if (!authStore.getState().accessToken) {
-      const refreshed = await tryRefreshSession();
-      if (!refreshed) {
-        this.authChecked = true;
-        this.isAuthorized = false;
-        localStorage.setItem("redirect_after_login", "/chat");
-        navigate("/login");
-        return;
-      }
-    }
-
     try {
+      if (!authStore.getState().accessToken) {
+        const refreshed = await tryRefreshSession();
+        if (!refreshed) {
+          throw new Error("Session refresh failed");
+        }
+      }
+
       const me = await fetchCurrentUser();
       const resolvedUsername = me.username?.trim() ?? "";
       if (!resolvedUsername) {

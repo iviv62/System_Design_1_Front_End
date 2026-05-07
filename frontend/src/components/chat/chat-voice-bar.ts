@@ -13,17 +13,20 @@ export class ChatVoiceBar extends LitElement {
   render() {
     if (this.state === "idle") return nothing;
 
-    const label = this.state === "active"
-      ? `🎙 Live${this.participants.length > 1 ? ` · ${this.participants.length} in call` : ""} — click to end`
-      : this.state === "calling"
-        ? "Connecting…"
-        : "⚠ Call failed";
-
-    const btnLabel = this.state === "error" ? "Dismiss" : "End call";
-
     return html`
       <div class="voice-bar voice-bar--${this.state}">
-        <span class="voice-bar__label">${label}</span>
+        <span class="voice-bar__label">
+          ${this.state === "calling" ? "Connecting…" : this.state === "error" ? "⚠ Call failed" : "🎙 Live"}
+        </span>
+
+        ${this.participants.length > 0 ? html`
+          <ul class="voice-bar__participants" style="display: flex; gap: 8px; list-style: none; margin: 0; padding: 0; align-items: center; font-size: 0.875rem;">
+            ${this.participants.map(
+              (p) => html`<li class="voice-bar__participant">${p.username}</li>`
+            )}
+          </ul>
+        ` : nothing}
+
         <button
           class="voice-bar__btn"
           type="button"
@@ -33,7 +36,9 @@ export class ChatVoiceBar extends LitElement {
               { bubbles: true, composed: true }
             )
           )}
-        >${btnLabel}</button>
+        >
+          ${this.state === "error" ? "Dismiss" : "End call"}
+        </button>
       </div>
     `;
   }

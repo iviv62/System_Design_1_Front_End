@@ -144,15 +144,23 @@ export class ChatRoomController {
   }
 
   private applyPresenceUpdate(update: PresenceUpdate): void {
-    if (update.kind === "snapshot") {
-      const room = update.room.trim();
-      if (room && room !== this.room) {
-        return;
-      }
+    const room = update.room.trim();
+    if (room && room !== this.room) {
+      return;
+    }
 
+    if (update.kind === "snapshot") {
       this.activeUsers.clear();
       for (const user of update.users) {
         this.activeUsers.add(user);
+      }
+    } else if (update.kind === "user_joined") {
+      if (update.username.trim()) {
+        this.activeUsers.add(update.username.trim());
+      }
+    } else if (update.kind === "user_left") {
+      if (update.username.trim()) {
+        this.activeUsers.delete(update.username.trim());
       }
     }
 

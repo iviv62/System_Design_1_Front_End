@@ -1,5 +1,5 @@
 export type VoiceOffer = { sdp: string; type: RTCSdpType };
-export type VoiceAnswer = { peer_id: string; sdp: string; type: RTCSdpType };
+export type VoiceAnswer = { peer_id: string; sdp: string; type: RTCSdpType; participants?: { peer_id: string; username: string }[] };
 
 // ── Domain type: the only shape the rest of the app sees ──────────────────
 export type VoiceEvent =
@@ -52,6 +52,8 @@ export class VoiceCallAdapter {
   private stream: MediaStream | null = null;
 
   async openConnection(options?: VoiceCallAdapterOptions): Promise<void> {
+    document.querySelectorAll("audio[data-stream]").forEach((el) => el.remove());
+    
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true },
       video: false,
@@ -72,7 +74,7 @@ export class VoiceCallAdapter {
       }
     };
 
-    this.pc.onicecandidate = (event: RTCIceCandidateEvent) => {
+    this.pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
       if (event.candidate) {
         options?.onIceCandidate?.(event.candidate.toJSON());
       }
