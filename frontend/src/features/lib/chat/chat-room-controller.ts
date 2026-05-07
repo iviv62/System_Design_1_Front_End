@@ -121,6 +121,18 @@ export class ChatRoomController {
     return true;
   }
 
+  sendVoiceSignal(payload: {
+    type: "voice";
+    event: "ice_candidate";
+    room: string;
+    username: string;
+    candidate: RTCIceCandidateInit;
+  }): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(payload));
+    }
+  }
+
   private setReconnectState(isReconnecting: boolean): void {
     if (this.isReconnecting === isReconnecting) return;
     this.isReconnecting = isReconnecting;

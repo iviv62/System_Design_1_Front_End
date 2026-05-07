@@ -9,6 +9,8 @@ export type VoiceCallControllerOptions = {
   room: string;
   username: string;
   onStateChange: (state: VoiceCallState) => void;
+  onIceCandidate: (candidate: RTCIceCandidateInit) => void;
+  onParticipantsChange?: (participants: { peer_id: string; username: string }[]) => void;
 };
 
 export class VoiceCallController {
@@ -18,6 +20,10 @@ export class VoiceCallController {
 
   constructor(options: VoiceCallControllerOptions) {
     this.options = options;
+  }
+
+  async handleRemoteIceCandidate(candidate: RTCIceCandidateInit): Promise<void> {
+    await this.adapter.addIceCandidate(candidate);
   }
 
   updateIdentity(room: string, username: string): void {
@@ -30,7 +36,7 @@ export class VoiceCallController {
     this.options.onStateChange("calling");
 
     try {
-      await this.adapter.openConnection();
+      await this.adapter.openConnection({ onIceCandidate: this.options.onIceCandidate });
       const offer = await this.adapter.createOffer();
 
       const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);

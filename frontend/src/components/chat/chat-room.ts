@@ -8,6 +8,8 @@ import { ChatRoomController } from "../../features/lib/chat/chat-room-controller
 import {
   addMessageReaction,
   fetchUnreadCount,
+  fetchVoiceParticipants,
+  type VoiceParticipant,
   removeMessageReaction,
   uploadChatImage,
 } from "../../features/lib/chat/chat-room-api";
@@ -34,6 +36,7 @@ import "./chat-room-header";
 import "./chat-message-item";
 import "./chat-room-composer";
 import "./chat-voice-bar";
+import "./chat-active-call";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -82,6 +85,8 @@ export class ChatRoom extends LitElement {
   @state() private _voiceState: VoiceCallState = "idle";
   private readonly voiceController: VoiceCallController;
 
+  @state() private _voiceParticipants: VoiceParticipant[] = [];
+
   constructor() {
     super();
 
@@ -94,6 +99,31 @@ export class ChatRoom extends LitElement {
       onPresenceChange: (users) => this.emitActiveUsers(users),
       onReactionUpdate: (update) => this.applyReactionUpdate(update),
       onVoiceEvent: (event: VoiceEvent) => {
+        if (event.kind === "ice_candidate") {
+          void this.voiceController.handleRemoteIceCandidate(event.candidate);
+          return;
+        }
+        
+        // Optimistically update the participants array depending on the event
+        if (event.kind === "peer_joined") {
+          this._voiceParticipants = event.participants;
+          this.addSystemNotice(`${event.username} joined the voice call`);
+          return;
+        }
+        if (event.kind === "call_ended") {
+          this._voiceParticipants = this._voiceParticipants.filter(u => u.username !== event.username);
+        }
+        if (event.kind === "call_started") {
+          if (!this._voiceParticipants.some(u => u.username === event.username)) {
+            this._voiceParticipants = [...this._voiceParticipants, { peer_id: event.peerId, username: event.username }];
+          }
+        }
+        
+        // As a fallback to ensure we are never out of sync, fetch the authoritative list
+        if (event.kind === "call_started" || event.kind === "call_ended") {
+           void this.loadVoiceParticipants();
+        }
+
         const names = { call_started: "started", call_ended: "ended", call_error: "had a call error" };
         this.addSystemNotice(`${event.username} ${names[event.kind]} a voice call`);
       },
@@ -114,6 +144,18 @@ export class ChatRoom extends LitElement {
       room: this.roomId,
       username: this.username,
       onStateChange: (state) => { this._voiceState = state; },
+      onIceCandidate: (candidate) => {
+        this.controller.sendVoiceSignal({
+          type: "voice",
+          event: "ice_candidate",
+          room: this.roomId,
+          username: this.username,
+          candidate,
+        });
+      },
+      onParticipantsChange: (participants) => {
+        this._voiceParticipants = participants;
+      },
     });
   }
 
@@ -122,7 +164,16 @@ export class ChatRoom extends LitElement {
     this.updateControllerIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
+    void this.loadVoiceParticipants();
     ThemeController.set(this.themeCtrl.theme);
+  }
+
+  private async loadVoiceParticipants() {
+    try {
+      this._voiceParticipants = await fetchVoiceParticipants(this.roomId);
+    } catch {
+      // ignore
+    }
   }
 
   private async loadUnreadCountSnapshot() {
@@ -147,6 +198,9 @@ export class ChatRoom extends LitElement {
   updated(changedProperties: PropertyValues) {
     if (changedProperties.has("roomId") || changedProperties.has("username")) {
       this.updateControllerIdentity();
+      if (changedProperties.has("roomId")) {
+        void this.loadVoiceParticipants();
+      }
     }
 
     if (changedProperties.has("messages")) {
@@ -456,9 +510,20 @@ export class ChatRoom extends LitElement {
 
         <chat-voice-bar
           .state=${this._voiceState}
+          .participants=${this._voiceParticipants}
           @voice-stop=${() => this.voiceController.stop()}
           @voice-dismiss=${() => { this._voiceState = "idle"; }}
         ></chat-voice-bar>
+
+        ${this._voiceState === 'active' || this._voiceState === 'calling' ? html`
+          <chat-active-call
+            .callState=${this._voiceState}
+            .roomName=${this.roomName}
+            .username=${this.username}
+            .participants=${this._voiceParticipants}
+            @voice-stop=${() => this.voiceController.stop()}
+          ></chat-active-call>
+        ` : nothing}
 
         <div class="chat-room__messages" @scroll=${this.handleMessagesScroll}>
           ${this.isLoadingHistory

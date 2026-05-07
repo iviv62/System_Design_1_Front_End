@@ -26,6 +26,15 @@ export type ConnectedUsersSnapshot = {
   total: number;
 };
 
+export type VoiceParticipant = {
+  peer_id: string;
+  username: string;
+};
+
+export type VoiceParticipantsSnapshot = {
+  participants: VoiceParticipant[];
+};
+
 export type UploadedImage = {
   url: string;
   filename: string;
@@ -258,4 +267,20 @@ export async function removeMessageReaction(
   }
 
   return res.json();
+}
+
+export async function fetchVoiceParticipants(room: string): Promise<VoiceParticipant[]> {
+  const url = `${getBase()}/voice/rooms/${encodeURIComponent(room)}`;
+  try {
+    const res = await fetchWithAuth(url);
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.participants)) return data.participants;
+    return [];
+  } catch {
+    return [];
+  }
 }
