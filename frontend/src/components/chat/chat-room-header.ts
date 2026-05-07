@@ -1,5 +1,6 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import type { VoiceCallState } from "../../features/lib/chat/voice-call-controller";
 
 @customElement("chat-room-header")
 export class ChatRoomHeader extends LitElement {
@@ -18,6 +19,9 @@ export class ChatRoomHeader extends LitElement {
   @property({ type: Boolean })
   isReconnecting = false;
 
+  @property()
+  voiceState: VoiceCallState = "idle";
+
   createRenderRoot() {
     return this;
   }
@@ -29,6 +33,14 @@ export class ChatRoomHeader extends LitElement {
     );
   }
 
+  private handleVoiceClick() {
+    const event = this.voiceState === "active" || this.voiceState === "calling"
+      ? "voice-stop" : "voice-start";
+    this.dispatchEvent(
+      new CustomEvent(event, { bubbles: true, composed: true })
+    );
+  }
+
   render() {
     return html`
       <header class="chat-room__header">
@@ -37,6 +49,15 @@ export class ChatRoomHeader extends LitElement {
           <p class="chat-room__meta">Logged in as <strong>${this.username}</strong> • <span class="chat-room__online">Online</span></p>
         </div>
         <div class="chat-room__header-right">
+          <button
+            class="chat-room__header-action"
+            type="button"
+            title=${this.voiceState === "active" ? "End call" : "Start voice call"}
+            aria-label=${this.voiceState === "active" ? "End call" : "Start voice call"}
+            @click=${this.handleVoiceClick}
+          >
+            ${this.voiceState === "active" ? "🔴" : "🎙"}
+          </button>
           <button class="chat-room__header-action" type="button" title="Search" aria-label="Search">⌕</button>
           <button
             class="chat-room__header-action chat-room__header-action--theme"

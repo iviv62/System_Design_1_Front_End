@@ -1,6 +1,8 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
 import { getApiBaseUrl } from "./chat-config";
 
+export { extractVoiceEvent, type VoiceEvent } from "./voice-call-adapter";
+
 export type PresenceUpdate = {
   kind: "snapshot";
   room: string;

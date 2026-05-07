@@ -4,8 +4,10 @@ import {
   extractPresenceUpdate,
   extractReactionUpdate,
   extractSystemText,
+  extractVoiceEvent,
   type PresenceUpdate,
   type ReactionUpdate,
+  type VoiceEvent,
   toSystemMessage,
   toUiMessage,
 } from "./chat-message-adapter";
@@ -31,6 +33,7 @@ export type ChatRoomControllerOptions = {
   onConnected?: () => void;
   onPresenceChange?: (users: string[]) => void;
   onReactionUpdate?: (update: ReactionUpdate) => void;
+  onVoiceEvent?: (event: VoiceEvent) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
 };
@@ -221,6 +224,16 @@ export class ChatRoomController {
       const reactionUpdate = extractReactionUpdate(payload);
       if (reactionUpdate) {
         this.options.onReactionUpdate?.(reactionUpdate);
+        return;
+      }
+
+      const voiceEvent = extractVoiceEvent(payload);
+      if (voiceEvent) {
+        if (!this.options.onVoiceEvent) return;
+        // Only route events that belong to this room
+        if (!voiceEvent.room || voiceEvent.room === this.room) {
+          this.options.onVoiceEvent(voiceEvent);
+        }
         return;
       }
 

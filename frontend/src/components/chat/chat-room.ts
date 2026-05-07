@@ -27,10 +27,13 @@ import {
   shouldAutoScrollForUserMessage,
 } from "../../features/lib/chat/chat-room-unread";
 import { ThemeController } from "../../utils/theme-controller";
+import { VoiceCallController, type VoiceCallState } from "../../features/lib/chat/voice-call-controller";
+import type { VoiceEvent } from "../../features/lib/chat/voice-call-adapter";
 import "./unread-divider";
 import "./chat-room-header";
 import "./chat-message-item";
 import "./chat-room-composer";
+import "./chat-voice-bar";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -76,6 +79,9 @@ export class ChatRoom extends LitElement {
   private readonly seenMessageIds = new Set<string>();
   private readonly controller: ChatRoomController;
 
+  @state() private _voiceState: VoiceCallState = "idle";
+  private readonly voiceController: VoiceCallController;
+
   constructor() {
     super();
 
@@ -87,6 +93,10 @@ export class ChatRoom extends LitElement {
       onConnected: () => this.emitRoomConnected(),
       onPresenceChange: (users) => this.emitActiveUsers(users),
       onReactionUpdate: (update) => this.applyReactionUpdate(update),
+      onVoiceEvent: (event: VoiceEvent) => {
+        const names = { call_started: "started", call_ended: "ended", call_error: "had a call error" };
+        this.addSystemNotice(`${event.username} ${names[event.kind]} a voice call`);
+      },
       onLoadingChange: (isLoading) => {
         this.isLoadingHistory = isLoading;
         // After history load completes, the first incoming user message from WS replay
@@ -96,6 +106,14 @@ export class ChatRoom extends LitElement {
         }
       },
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
+    });
+
+    this.voiceController = new VoiceCallController({
+      apiBase: import.meta.env.VITE_API_BASE_URL,
+      wsBase: import.meta.env.VITE_WS_BASE_URL,
+      room: this.roomId,
+      username: this.username,
+      onStateChange: (state) => { this._voiceState = state; },
     });
   }
 
@@ -122,6 +140,7 @@ export class ChatRoom extends LitElement {
 
   disconnectedCallback(): void {
     this.controller.stop();
+    void this.voiceController.stop();
     super.disconnectedCallback();
   }
 
@@ -156,6 +175,7 @@ export class ChatRoom extends LitElement {
 
   private updateControllerIdentity() {
     this.controller.updateIdentity({ room: this.roomId, username: this.username });
+    this.voiceController.updateIdentity(this.roomId, this.username);
   }
 
   private handleMessagesUpdated() {
@@ -428,8 +448,17 @@ export class ChatRoom extends LitElement {
           .username=${this.username}
           .theme=${this.themeCtrl.theme}
           .isReconnecting=${this.isReconnecting}
+          .voiceState=${this._voiceState}
           @theme-toggle=${this.toggleTheme}
+          @voice-start=${() => this.voiceController.start()}
+          @voice-stop=${() => this.voiceController.stop()}
         ></chat-room-header>
+
+        <chat-voice-bar
+          .state=${this._voiceState}
+          @voice-stop=${() => this.voiceController.stop()}
+          @voice-dismiss=${() => { this._voiceState = "idle"; }}
+        ></chat-voice-bar>
 
         <div class="chat-room__messages" @scroll=${this.handleMessagesScroll}>
           ${this.isLoadingHistory
