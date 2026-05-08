@@ -64,12 +64,19 @@ export class VoiceCallAdapter {
   private iceQueue: RTCIceCandidateInit[] = [];
   private isRemoteDescriptionSet = false;
   private options?: VoiceCallAdapterOptions;
-  private audioSender: RTCRtpSender | null = null;
   private videoTransceiver: RTCRtpTransceiver | null = null;
   private screenSender: RTCRtpSender | null = null;
 
   get isScreenSharing(): boolean {
     return this.screenSender !== null;
+  }
+
+  getScreenStream(): MediaStream | null {
+    return this.screenStream;
+  }
+
+  resetRemoteDescriptionState(): void {
+    this.isRemoteDescriptionSet = false;
   }
 
   async openConnection(options?: VoiceCallAdapterOptions): Promise<void> {
@@ -91,9 +98,13 @@ export class VoiceCallAdapter {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
 
-    const audioTransceiver = this.pc.addTransceiver("audio", { direction: "sendrecv" });
+    const audioTrack = this.stream.getAudioTracks()[0];
+    if (!audioTrack) {
+      throw new Error("Microphone stream does not contain an audio track.");
+    }
+
+    this.pc.addTransceiver(audioTrack, { direction: "sendrecv" });
     this.videoTransceiver = this.pc.addTransceiver("video", { direction: "recvonly" });
-    this.audioSender = audioTransceiver.sender;
 
     this.pc.ontrack = (event: RTCTrackEvent) => {
       if (event.track.kind === "video") {
@@ -110,7 +121,9 @@ export class VoiceCallAdapter {
         return;
       }
 
-      for (const stream of event.streams) {
+      const audioStreams = event.streams.length > 0 ? event.streams : [new MediaStream([event.track])];
+
+      for (const stream of audioStreams) {
         if (document.querySelector(`audio[data-stream="${stream.id}"]`)) continue;
 
         const audio = document.createElement("audio");
@@ -132,9 +145,6 @@ export class VoiceCallAdapter {
       }
     };
 
-    for (const track of this.stream.getAudioTracks()) {
-      await this.audioSender?.replaceTrack(track);
-    }
   }
 
   async createOffer(): Promise<VoiceOffer> {
@@ -195,7 +205,6 @@ export class VoiceCallAdapter {
     this.videoTransceiver.direction = "sendrecv";
     await this.videoTransceiver.sender.replaceTrack(videoTrack);
     this.screenSender = this.videoTransceiver.sender;
-    this.options?.onScreenShareTrack?.(this.screenStream);
 
     videoTrack.onended = () => {
       void this.stopScreenShare().catch((error) => {
@@ -213,7 +222,6 @@ export class VoiceCallAdapter {
 
     this.screenStream?.getTracks().forEach((track) => track.stop());
     this.screenStream = null;
-    this.options?.onScreenShareTrack?.(null);
 
     await this.videoTransceiver.sender.replaceTrack(null);
     this.videoTransceiver.direction = "recvonly";
@@ -252,7 +260,6 @@ export class VoiceCallAdapter {
     this.stream = null;
     this.screenStream = null;
     this.pc = null;
-    this.audioSender = null;
     this.videoTransceiver = null;
     this.screenSender = null;
     this.options = undefined;

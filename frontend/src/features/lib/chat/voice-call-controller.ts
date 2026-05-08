@@ -124,6 +124,7 @@ export class VoiceCallController {
 
     const offer = await this.adapter.startScreenShare();
     await this.renegotiate(offer);
+    this.options.onScreenShareTrack?.(this.adapter.getScreenStream());
   }
 
   async stopScreenShare(): Promise<void> {
@@ -134,6 +135,7 @@ export class VoiceCallController {
 
     const offer = await this.adapter.stopScreenShare();
     await this.renegotiate(offer);
+    this.options.onScreenShareTrack?.(null);
   }
 
   /**
@@ -173,6 +175,8 @@ export class VoiceCallController {
 
   private async renegotiate(offer: VoiceOffer): Promise<void> {
     if (!this.peerId) return;
+
+    this.adapter.resetRemoteDescriptionState();
 
     const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
     const res = await fetchWithAuth(`${base}/voice/offer`, {

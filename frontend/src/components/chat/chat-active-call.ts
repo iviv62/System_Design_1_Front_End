@@ -47,6 +47,10 @@ export class ChatActiveCall extends LitElement {
 
     if (changedProperties.has("screenShareStream") || changedProperties.has("screenSharingUser")) {
       this.isScreenShareLoading = Boolean(this.screenSharingUser && !this.screenShareStream);
+      const video = this.renderRoot.querySelector<HTMLVideoElement>(".active-call__screen-video");
+      if (video) {
+        video.srcObject = this.screenShareStream ?? null;
+      }
       void this.bindScreenShareVideo();
     }
   }
@@ -56,16 +60,12 @@ export class ChatActiveCall extends LitElement {
     const video = this.screenVideoEl;
     if (!video) return;
 
-    if (video.srcObject !== this.screenShareStream) {
-      video.srcObject = this.screenShareStream;
-    }
+    if (!this.screenShareStream) return;
 
-    if (this.screenShareStream) {
-      await video.play().catch(() => {
-        // Autoplay can be blocked transiently by browser policies; user interaction will recover.
-      });
-      this.isScreenShareLoading = false;
-    }
+    await video.play().catch(() => {
+      // Autoplay can be blocked transiently by browser policies; user interaction will recover.
+    });
+    this.isScreenShareLoading = false;
   }
 
   private startTimer() {
@@ -187,7 +187,7 @@ export class ChatActiveCall extends LitElement {
           })}
         </div>
 
-        ${this.screenShareStream || this.screenSharingUser || this.isScreenSharing ? html`
+        ${this.screenShareStream || this.screenSharingUser ? html`
           <div class="active-call__screen-share">
             <div class="active-call__screen-share-header">
               <p class="active-call__screen-share-label">

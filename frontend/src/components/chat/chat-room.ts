@@ -119,17 +119,20 @@ export class ChatRoom extends LitElement {
         }
 
         if (event.kind === "screen_share_started") {
-          this._screenSharingUser = event.username;
-          if (this.screenSharePendingTimer) {
-            clearTimeout(this.screenSharePendingTimer);
-          }
-          this.screenSharePendingTimer = setTimeout(() => {
-            if (this._screenSharingUser === event.username && !this._screenShareStream) {
-              this._screenSharingUser = null;
-              this._isScreenSharing = false;
+          if (event.username !== this.username) {
+            this._screenSharingUser = event.username;
+            if (this.screenSharePendingTimer) {
+              clearTimeout(this.screenSharePendingTimer);
             }
-            this.screenSharePendingTimer = null;
-          }, 12000);
+            this.screenSharePendingTimer = setTimeout(() => {
+              if (this._screenSharingUser === event.username && !this._screenShareStream) {
+                this._screenSharingUser = null;
+                this._isScreenSharing = false;
+              }
+              this.screenSharePendingTimer = null;
+            }, 12000);
+            this.requestUpdate();
+          }
           this.addSystemNotice(`${event.username} started sharing their screen`);
           return;
         }
@@ -140,20 +143,10 @@ export class ChatRoom extends LitElement {
             this.screenSharePendingTimer = null;
           }
 
-          if (event.username === this.username && this.voiceController.isScreenSharing) {
-            void this.voiceController.stopScreenShare().catch((error) => {
-              console.error("[ChatRoom] failed to sync local screen share stop", error);
-            });
-          }
-
-          const wasCurrentSharer = !this._screenSharingUser || this._screenSharingUser === event.username;
-          if (wasCurrentSharer) {
-            this._screenShareStream = null;
-            this._isScreenSharing = false;
-          }
-          if (!this._screenSharingUser || this._screenSharingUser === event.username) {
-            this._screenSharingUser = null;
-          }
+          this._screenSharingUser = null;
+          this._screenShareStream = null;
+          this._isScreenSharing = false;
+          this.requestUpdate();
           this.addSystemNotice(`${event.username} stopped sharing their screen`);
           return;
         }
@@ -257,12 +250,6 @@ export class ChatRoom extends LitElement {
         }
         this._screenShareStream = stream;
         this._isScreenSharing = Boolean(stream);
-        if (stream && !this._screenSharingUser) {
-          this._screenSharingUser = this.username;
-        }
-        if (!stream) {
-          this._screenSharingUser = null;
-        }
       },
     });
   }
