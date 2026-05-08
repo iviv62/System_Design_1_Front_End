@@ -47,18 +47,17 @@ export class ChatActiveCall extends LitElement {
 
     if (changedProperties.has("screenShareStream") || changedProperties.has("screenSharingUser")) {
       this.isScreenShareLoading = Boolean(this.screenSharingUser && !this.screenShareStream);
-      const video = this.renderRoot.querySelector<HTMLVideoElement>(".active-call__screen-video");
-      if (video) {
-        video.srcObject = this.screenShareStream ?? null;
-      }
       void this.bindScreenShareVideo();
     }
   }
 
   private async bindScreenShareVideo() {
+    this.requestUpdate();
     await this.updateComplete;
     const video = this.screenVideoEl;
     if (!video) return;
+
+    video.srcObject = this.screenShareStream ?? null;
 
     if (!this.screenShareStream) return;
 

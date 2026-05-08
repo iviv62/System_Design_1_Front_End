@@ -108,8 +108,7 @@ export class VoiceCallAdapter {
 
     this.pc.ontrack = (event: RTCTrackEvent) => {
       if (event.track.kind === "video") {
-        const videoStream = new MediaStream([event.track]);
-        const emitAttached = () => this.options?.onScreenShareTrack?.(videoStream);
+        const emitAttached = () => this.options?.onScreenShareTrack?.(new MediaStream([event.track]));
         const emitDetached = () => this.options?.onScreenShareTrack?.(null);
 
         emitAttached();
@@ -177,7 +176,10 @@ export class VoiceCallAdapter {
   }
 
   async addIceCandidate(candidate: RTCIceCandidateInit): Promise<void> {
-    if (!this.pc) return;
+    if (!this.pc) {
+      console.debug("[VoiceCallAdapter] ignoring ICE candidate after peer connection closed");
+      return;
+    }
 
     if (!this.isRemoteDescriptionSet) {
       this.iceQueue.push(candidate);
@@ -188,7 +190,7 @@ export class VoiceCallAdapter {
   }
 
   async startScreenShare(): Promise<VoiceOffer> {
-    if (!this.pc || !this.videoTransceiver) {
+    if (!this.pc) {
       throw new Error("Peer connection is not initialized.");
     }
 
@@ -202,9 +204,27 @@ export class VoiceCallAdapter {
       throw new Error("Screen share stream does not contain a video track.");
     }
 
-    this.videoTransceiver.direction = "sendrecv";
-    await this.videoTransceiver.sender.replaceTrack(videoTrack);
-    this.screenSender = this.videoTransceiver.sender;
+    const existingVideoTransceiver = this.videoTransceiver;
+    const canReuseTransceiver =
+      existingVideoTransceiver !== null &&
+      existingVideoTransceiver.currentDirection !== "stopped";
+
+    if (canReuseTransceiver) {
+      existingVideoTransceiver.direction = "sendrecv";
+      try {
+        await existingVideoTransceiver.sender.replaceTrack(videoTrack);
+      } catch {
+        this.videoTransceiver = this.pc.addTransceiver(videoTrack, {
+          direction: "sendrecv",
+        });
+      }
+    } else {
+      this.videoTransceiver = this.pc.addTransceiver(videoTrack, {
+        direction: "sendrecv",
+      });
+    }
+
+    this.screenSender = this.videoTransceiver?.sender ?? null;
 
     videoTrack.onended = () => {
       void this.stopScreenShare().catch((error) => {
@@ -215,12 +235,31 @@ export class VoiceCallAdapter {
     return this.createOffer();
   }
 
+  abortScreenShare(): void {
+    this.screenStream?.getVideoTracks().forEach((track) => {
+      track.onended = null;
+      track.stop();
+    });
+    this.screenStream = null;
+    this.screenSender = null;
+
+    if (this.videoTransceiver) {
+      void this.videoTransceiver.sender.replaceTrack(null).catch(() => {
+        // Best-effort rollback for failed screen-share transitions.
+      });
+      this.videoTransceiver.direction = "recvonly";
+    }
+  }
+
   async stopScreenShare(): Promise<VoiceOffer> {
     if (!this.pc || !this.videoTransceiver) {
       throw new Error("Peer connection is not initialized.");
     }
 
-    this.screenStream?.getTracks().forEach((track) => track.stop());
+    this.screenStream?.getVideoTracks().forEach((track) => {
+      track.onended = null;
+      track.stop();
+    });
     this.screenStream = null;
 
     await this.videoTransceiver.sender.replaceTrack(null);
@@ -256,7 +295,6 @@ export class VoiceCallAdapter {
     this.screenStream?.getTracks().forEach((t) => t.stop());
     this.pc?.close();
     this.cleanupAudioElements();
-    this.options?.onScreenShareTrack?.(null);
     this.stream = null;
     this.screenStream = null;
     this.pc = null;

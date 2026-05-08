@@ -25,14 +25,20 @@ export type VoiceCallControllerOptions = {
 export class VoiceCallController {
   private adapter = new VoiceCallAdapter();
   private peerId: string | null = null;
+  private currentRoom: string;
+  private currentUsername: string;
   /** Guards against concurrent start() calls during the async offer/answer phase. */
   private starting = false;
+  private screenShareInProgress = false;
+  private pendingStopScreenShare = false;
   /** Shared promise so concurrent stop() calls (user click + ICE failure) run teardown only once. */
   private stopPromise: Promise<void> | null = null;
   private readonly options: VoiceCallControllerOptions;
 
   constructor(options: VoiceCallControllerOptions) {
     this.options = options;
+    this.currentRoom = options.room;
+    this.currentUsername = options.username;
   }
 
   get isScreenSharing(): boolean {
@@ -52,8 +58,8 @@ export class VoiceCallController {
    * so subsequent start() calls use the correct identity.
    */
   updateIdentity(room: string, username: string): void {
-    (this.options as Record<string, unknown>)["room"] = room;
-    (this.options as Record<string, unknown>)["username"] = username;
+    this.currentRoom = room;
+    this.currentUsername = username;
   }
 
   /**
@@ -68,6 +74,7 @@ export class VoiceCallController {
    * On any failure, closes the connection and transitions state to `"error"`.
    */
   async start(): Promise<void> {
+    this.stopPromise = null;
     if (this.peerId || this.starting) return;
     this.starting = true;
     this.options.onStateChange("calling");
@@ -85,8 +92,8 @@ export class VoiceCallController {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...offer,
-          room: this.options.room,
-          username: this.options.username,
+          room: this.currentRoom,
+          username: this.currentUsername,
         }),
       });
 
@@ -100,8 +107,8 @@ export class VoiceCallController {
       // Prepend self if missing — the server's peer_joined broadcast excludes the joining user,
       // so the caller must add themselves from the HTTP response instead of waiting for a WS event.
       const participants = answer.participants ?? [];
-      if (!participants.some(p => p.username === this.options.username)) {
-        participants.unshift({ peer_id: this.peerId, username: this.options.username });
+      if (!participants.some(p => p.username === this.currentUsername)) {
+        participants.unshift({ peer_id: this.peerId, username: this.currentUsername });
       }
       this.options.onParticipantsChange?.(participants);
 
@@ -120,22 +127,72 @@ export class VoiceCallController {
     if (!this.peerId) {
       throw new Error("Voice call is not active.");
     }
+    if (this.screenShareInProgress) return;
     if (this.adapter.isScreenSharing) return;
 
-    const offer = await this.adapter.startScreenShare();
-    await this.renegotiate(offer);
-    this.options.onScreenShareTrack?.(this.adapter.getScreenStream());
+    try {
+      this.screenShareInProgress = true;
+
+      let offer: VoiceOffer;
+      try {
+        offer = await this.adapter.startScreenShare();
+      } catch (err) {
+        this.adapter.abortScreenShare();
+        if (err instanceof Error && err.name !== "NotAllowedError") {
+          console.error("[VoiceCallController] screen capture failed", err);
+        }
+        return;
+      }
+
+      try {
+        await this.renegotiate(offer);
+        this.options.onScreenShareTrack?.(this.adapter.getScreenStream());
+      } catch (err) {
+        console.error("[VoiceCallController] renegotiation failed, reverting", err);
+        this.adapter.abortScreenShare();
+
+        try {
+          const restoreOffer = await this.adapter.createOffer();
+          await this.renegotiate(restoreOffer);
+        } catch {
+          void this.stop();
+        }
+      }
+    } finally {
+      this.screenShareInProgress = false;
+      if (this.pendingStopScreenShare) {
+        this.pendingStopScreenShare = false;
+        void this.stopScreenShare();
+      }
+    }
   }
 
   async stopScreenShare(): Promise<void> {
     if (!this.peerId) {
-      throw new Error("Voice call is not active.");
+      return;
     }
     if (!this.adapter.isScreenSharing) return;
 
-    const offer = await this.adapter.stopScreenShare();
-    await this.renegotiate(offer);
-    this.options.onScreenShareTrack?.(null);
+    if (this.screenShareInProgress) {
+      this.pendingStopScreenShare = true;
+      return;
+    }
+
+    this.screenShareInProgress = true;
+
+    try {
+      const offer = await this.adapter.stopScreenShare();
+      this.options.onScreenShareTrack?.(null);
+
+      try {
+        await this.renegotiate(offer);
+      } catch (err) {
+        console.error("[VoiceCallController] stop screen share renegotiation failed", err);
+        void this.stop();
+      }
+    } finally {
+      this.screenShareInProgress = false;
+    }
   }
 
   /**
@@ -150,8 +207,11 @@ export class VoiceCallController {
     this.stopPromise = (async () => {
       const peerId = this.peerId;
       this.peerId = null;
+      this.screenShareInProgress = false;
+      this.pendingStopScreenShare = false;
       this.adapter.close();
       this.options.onStateChange("idle");
+      this.options.onParticipantsChange?.([]);
 
       if (peerId) {
         const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
@@ -162,7 +222,6 @@ export class VoiceCallController {
     })();
 
     await this.stopPromise;
-    this.stopPromise = null;
   }
 
   setMuted(muted: boolean): void {
@@ -184,8 +243,8 @@ export class VoiceCallController {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...offer,
-        room: this.options.room,
-        username: this.options.username,
+        room: this.currentRoom,
+        username: this.currentUsername,
         peer_id: this.peerId,
         is_renegotiation: true,
       }),

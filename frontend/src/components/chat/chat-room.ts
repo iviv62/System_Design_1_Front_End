@@ -250,6 +250,13 @@ export class ChatRoom extends LitElement {
         }
         this._screenShareStream = stream;
         this._isScreenSharing = Boolean(stream);
+        if (stream && this.voiceController.isScreenSharing) {
+          this._screenSharingUser = this.username;
+        }
+        if (!stream && this._screenSharingUser === this.username) {
+          this._screenSharingUser = null;
+        }
+        this.requestUpdate();
       },
     });
   }
@@ -444,7 +451,9 @@ export class ChatRoom extends LitElement {
 
       await this.voiceController.startScreenShare();
       this._isScreenSharing = this.voiceController.isScreenSharing;
-      this._screenSharingUser = this.username;
+      if (!this._isScreenSharing && this._screenSharingUser === this.username) {
+        this._screenSharingUser = null;
+      }
     } catch (error) {
       console.error("[ChatRoom] screen share toggle failed", error);
       this.addSystemNotice("Screen sharing could not be updated.");
