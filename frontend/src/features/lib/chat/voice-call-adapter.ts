@@ -7,7 +7,9 @@ export type VoiceEvent =
   | { kind: "call_ended"; peerId: string; username: string; room: string }
   | { kind: "call_error"; peerId: string; username: string; room: string }
   | { kind: "peer_joined"; peerId: string; username: string; room: string; participants: { peer_id: string; username: string }[] }
-  | { kind: "ice_candidate"; peerId: string; room: string; candidate: RTCIceCandidateInit };
+  | { kind: "ice_candidate"; peerId: string; room: string; candidate: RTCIceCandidateInit }
+  | { kind: "screen_share_started"; peerId: string; username: string; room: string }
+  | { kind: "screen_share_stopped"; peerId: string; username: string; room: string };
 
 // ── Extractor (same pattern as extractPresenceUpdate / extractReactionUpdate) ──
 export function extractVoiceEvent(payload: unknown): VoiceEvent | null {
@@ -37,6 +39,13 @@ export function extractVoiceEvent(payload: unknown): VoiceEvent | null {
       room,
       candidate: p["candidate"] as RTCIceCandidateInit,
     };
+  } else if (event === "screen_share_started" || event === "screen_share_stopped") {
+    return {
+      kind: event,
+      peerId,
+      username,
+      room,
+    };
   }
 
   return null;
@@ -45,15 +54,26 @@ export function extractVoiceEvent(payload: unknown): VoiceEvent | null {
 // ── WebRTC adapter — wraps RTCPeerConnection lifecycle ────────────────────
 export type VoiceCallAdapterOptions = {
   onIceCandidate?: (candidate: RTCIceCandidateInit) => void;
+  onScreenShareTrack?: (stream: MediaStream | null) => void;
 };
 
 export class VoiceCallAdapter {
   private pc: RTCPeerConnection | null = null;
   private stream: MediaStream | null = null;
+  private screenStream: MediaStream | null = null;
   private iceQueue: RTCIceCandidateInit[] = [];
   private isRemoteDescriptionSet = false;
+  private options?: VoiceCallAdapterOptions;
+  private audioSender: RTCRtpSender | null = null;
+  private videoTransceiver: RTCRtpTransceiver | null = null;
+  private screenSender: RTCRtpSender | null = null;
+
+  get isScreenSharing(): boolean {
+    return this.screenSender !== null;
+  }
 
   async openConnection(options?: VoiceCallAdapterOptions): Promise<void> {
+    this.options = options;
     this.cleanupAudioElements();
     this.iceQueue = [];
     this.isRemoteDescriptionSet = false;
@@ -71,7 +91,25 @@ export class VoiceCallAdapter {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
 
+    const audioTransceiver = this.pc.addTransceiver("audio", { direction: "sendrecv" });
+    this.videoTransceiver = this.pc.addTransceiver("video", { direction: "recvonly" });
+    this.audioSender = audioTransceiver.sender;
+
     this.pc.ontrack = (event: RTCTrackEvent) => {
+      if (event.track.kind === "video") {
+        const videoStream = new MediaStream([event.track]);
+        const emitAttached = () => this.options?.onScreenShareTrack?.(videoStream);
+        const emitDetached = () => this.options?.onScreenShareTrack?.(null);
+
+        emitAttached();
+        event.track.onunmute = emitAttached;
+        event.track.onmute = emitDetached;
+        event.track.onended = () => {
+          emitDetached();
+        };
+        return;
+      }
+
       for (const stream of event.streams) {
         if (document.querySelector(`audio[data-stream="${stream.id}"]`)) continue;
 
@@ -90,12 +128,12 @@ export class VoiceCallAdapter {
 
     this.pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
       if (event.candidate) {
-        options?.onIceCandidate?.(event.candidate.toJSON());
+        this.options?.onIceCandidate?.(event.candidate.toJSON());
       }
     };
 
-    for (const track of this.stream.getTracks()) {
-      this.pc.addTrack(track, this.stream);
+    for (const track of this.stream.getAudioTracks()) {
+      await this.audioSender?.replaceTrack(track);
     }
   }
 
@@ -139,6 +177,51 @@ export class VoiceCallAdapter {
     await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
   }
 
+  async startScreenShare(): Promise<VoiceOffer> {
+    if (!this.pc || !this.videoTransceiver) {
+      throw new Error("Peer connection is not initialized.");
+    }
+
+    this.screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false,
+    });
+
+    const videoTrack = this.screenStream.getVideoTracks()[0];
+    if (!videoTrack) {
+      throw new Error("Screen share stream does not contain a video track.");
+    }
+
+    this.videoTransceiver.direction = "sendrecv";
+    await this.videoTransceiver.sender.replaceTrack(videoTrack);
+    this.screenSender = this.videoTransceiver.sender;
+    this.options?.onScreenShareTrack?.(this.screenStream);
+
+    videoTrack.onended = () => {
+      void this.stopScreenShare().catch((error) => {
+        console.error("Failed to stop screen share after track end", error);
+      });
+    };
+
+    return this.createOffer();
+  }
+
+  async stopScreenShare(): Promise<VoiceOffer> {
+    if (!this.pc || !this.videoTransceiver) {
+      throw new Error("Peer connection is not initialized.");
+    }
+
+    this.screenStream?.getTracks().forEach((track) => track.stop());
+    this.screenStream = null;
+    this.options?.onScreenShareTrack?.(null);
+
+    await this.videoTransceiver.sender.replaceTrack(null);
+    this.videoTransceiver.direction = "recvonly";
+    this.screenSender = null;
+
+    return this.createOffer();
+  }
+
   onConnectionFailed(cb: () => void): void {
     if (!this.pc) return;
     this.pc.onconnectionstatechange = () => {
@@ -162,10 +245,17 @@ export class VoiceCallAdapter {
 
   close(): void {
     this.stream?.getTracks().forEach((t) => t.stop());
+    this.screenStream?.getTracks().forEach((t) => t.stop());
     this.pc?.close();
     this.cleanupAudioElements();
+    this.options?.onScreenShareTrack?.(null);
     this.stream = null;
+    this.screenStream = null;
     this.pc = null;
+    this.audioSender = null;
+    this.videoTransceiver = null;
+    this.screenSender = null;
+    this.options = undefined;
     this.iceQueue = [];
     this.isRemoteDescriptionSet = false;
   }

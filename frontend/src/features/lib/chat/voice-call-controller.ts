@@ -1,4 +1,4 @@
-import { VoiceCallAdapter, type VoiceAnswer } from "./voice-call-adapter";
+import { VoiceCallAdapter, type VoiceAnswer, type VoiceOffer } from "./voice-call-adapter";
 import { getApiBaseUrl } from "./chat-config";
 import { fetchWithAuth } from "../http/fetch-interceptor";
 
@@ -15,6 +15,7 @@ export type VoiceCallControllerOptions = {
   onIceCandidate: (candidate: RTCIceCandidateInit) => void;
   /** Called with the full participant list after joining, and whenever it changes. */
   onParticipantsChange?: (participants: { peer_id: string; username: string }[]) => void;
+  onScreenShareTrack?: (stream: MediaStream | null) => void;
 };
 
 /**
@@ -32,6 +33,10 @@ export class VoiceCallController {
 
   constructor(options: VoiceCallControllerOptions) {
     this.options = options;
+  }
+
+  get isScreenSharing(): boolean {
+    return this.adapter.isScreenSharing;
   }
 
   /**
@@ -68,7 +73,10 @@ export class VoiceCallController {
     this.options.onStateChange("calling");
 
     try {
-      await this.adapter.openConnection({ onIceCandidate: this.options.onIceCandidate });
+      await this.adapter.openConnection({
+        onIceCandidate: this.options.onIceCandidate,
+        onScreenShareTrack: this.options.onScreenShareTrack,
+      });
       const offer = await this.adapter.createOffer();
 
       const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
@@ -108,6 +116,26 @@ export class VoiceCallController {
     }
   }
 
+  async startScreenShare(): Promise<void> {
+    if (!this.peerId) {
+      throw new Error("Voice call is not active.");
+    }
+    if (this.adapter.isScreenSharing) return;
+
+    const offer = await this.adapter.startScreenShare();
+    await this.renegotiate(offer);
+  }
+
+  async stopScreenShare(): Promise<void> {
+    if (!this.peerId) {
+      throw new Error("Voice call is not active.");
+    }
+    if (!this.adapter.isScreenSharing) return;
+
+    const offer = await this.adapter.stopScreenShare();
+    await this.renegotiate(offer);
+  }
+
   /**
    * Ends the active call and cleans up all resources.
    * Closes the RTCPeerConnection, transitions state to `"idle"`, and notifies
@@ -141,5 +169,27 @@ export class VoiceCallController {
 
   setVolume(volume: number): void {
     this.adapter.setVolume(volume);
+  }
+
+  private async renegotiate(offer: VoiceOffer): Promise<void> {
+    if (!this.peerId) return;
+
+    const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
+    const res = await fetchWithAuth(`${base}/voice/offer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...offer,
+        room: this.options.room,
+        username: this.options.username,
+        peer_id: this.peerId,
+        is_renegotiation: true,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Renegotiation rejected: ${res.status}`);
+
+    const answer: VoiceAnswer = await res.json();
+    await this.adapter.applyAnswer(answer);
   }
 }

@@ -1,5 +1,5 @@
 import { LitElement, html, nothing, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import chatActiveCallStylesRaw from "../../styles/chat-active-call.styles.scss?inline";
 import type { VoiceParticipant } from "../../features/lib/chat/chat-room-api";
 
@@ -12,10 +12,15 @@ export class ChatActiveCall extends LitElement {
   @property({ type: Array }) participants: VoiceParticipant[] = [];
   @property() callState: string = "idle"; // "idle", "calling", "active", "error"
   @property({ type: Boolean }) isMuted = false;
+  @property({ type: Boolean }) isScreenSharing = false;
+  @property() screenSharingUser: string | null = null;
+  @property({ attribute: false }) screenShareStream: MediaStream | null = null;
 
   @state() private timer = "00:00";
   @state() private showVolumeSlider = false;
   @state() private volume = 80;
+  @state() private isScreenShareLoading = false;
+  @query(".active-call__screen-video") private screenVideoEl?: HTMLVideoElement;
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private callStartTime = 0;
 
@@ -38,6 +43,28 @@ export class ChatActiveCall extends LitElement {
       } else {
         this.stopTimer();
       }
+    }
+
+    if (changedProperties.has("screenShareStream") || changedProperties.has("screenSharingUser")) {
+      this.isScreenShareLoading = Boolean(this.screenSharingUser && !this.screenShareStream);
+      void this.bindScreenShareVideo();
+    }
+  }
+
+  private async bindScreenShareVideo() {
+    await this.updateComplete;
+    const video = this.screenVideoEl;
+    if (!video) return;
+
+    if (video.srcObject !== this.screenShareStream) {
+      video.srcObject = this.screenShareStream;
+    }
+
+    if (this.screenShareStream) {
+      await video.play().catch(() => {
+        // Autoplay can be blocked transiently by browser policies; user interaction will recover.
+      });
+      this.isScreenShareLoading = false;
     }
   }
 
@@ -82,6 +109,25 @@ export class ChatActiveCall extends LitElement {
     const input = e.target as HTMLInputElement;
     this.volume = Number(input.value);
     this.dispatchEvent(new CustomEvent("voice-volume-change", { detail: { volume: this.volume }, bubbles: true, composed: true }));
+  }
+
+  private handleScreenShareToggle() {
+    this.dispatchEvent(new CustomEvent("screen-share-toggle", { bubbles: true, composed: true }));
+  }
+
+  private async handleScreenShareFullscreen() {
+    const video = this.screenVideoEl;
+    if (!video) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+      await video.requestFullscreen();
+    } catch {
+      // No-op: fullscreen can fail on unsupported browsers or policy restrictions.
+    }
   }
 
   render() {
@@ -141,13 +187,47 @@ export class ChatActiveCall extends LitElement {
           })}
         </div>
 
+        ${this.screenShareStream || this.screenSharingUser || this.isScreenSharing ? html`
+          <div class="active-call__screen-share">
+            <div class="active-call__screen-share-header">
+              <p class="active-call__screen-share-label">
+                ${this.screenSharingUser
+                  ? `${this.screenSharingUser} is sharing their screen`
+                  : "Screen share is live"}
+              </p>
+              <button
+                type="button"
+                class="active-call__screen-fullscreen-btn"
+                @click=${this.handleScreenShareFullscreen}
+                ?disabled=${!this.screenShareStream}
+                title="Fullscreen"
+                aria-label="Fullscreen screen share"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+              </button>
+            </div>
+            ${this.isScreenShareLoading ? html`
+              <div class="active-call__screen-loading" role="status" aria-live="polite">
+                <span class="active-call__screen-spinner"></span>
+                <span>Establishing screen share...</span>
+              </div>
+            ` : nothing}
+            <video class="active-call__screen-video" autoplay playsinline muted></video>
+          </div>
+        ` : nothing}
+
         <!-- Toolbar -->
         <div class="active-call__toolbar">
           <div class="active-call__toolbar-center">
             <button class="active-call__toolbar-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
             </button>
-            <button class="active-call__toolbar-btn">
+            <button
+              class="active-call__toolbar-btn ${this.isScreenSharing ? "active-call__toolbar-btn--active" : ""}"
+              title=${this.isScreenSharing ? "Stop sharing screen" : "Share screen"}
+              aria-label=${this.isScreenSharing ? "Stop sharing screen" : "Share screen"}
+              @click=${this.handleScreenShareToggle}
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
             </button>
             <div class="active-call__toolbar-divider"></div>

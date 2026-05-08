@@ -96,6 +96,10 @@ export class ChatRoom extends LitElement {
   private readonly voiceController: VoiceCallController;
 
   @state() private _voiceParticipants: VoiceParticipant[] = [];
+  @state() private _screenSharingUser: string | null = null;
+  @state() private _screenShareStream: MediaStream | null = null;
+  @state() private _isScreenSharing = false;
+  private screenSharePendingTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();
@@ -113,6 +117,46 @@ export class ChatRoom extends LitElement {
           void this.voiceController.handleRemoteIceCandidate(event.candidate);
           return;
         }
+
+        if (event.kind === "screen_share_started") {
+          this._screenSharingUser = event.username;
+          if (this.screenSharePendingTimer) {
+            clearTimeout(this.screenSharePendingTimer);
+          }
+          this.screenSharePendingTimer = setTimeout(() => {
+            if (this._screenSharingUser === event.username && !this._screenShareStream) {
+              this._screenSharingUser = null;
+              this._isScreenSharing = false;
+            }
+            this.screenSharePendingTimer = null;
+          }, 12000);
+          this.addSystemNotice(`${event.username} started sharing their screen`);
+          return;
+        }
+
+        if (event.kind === "screen_share_stopped") {
+          if (this.screenSharePendingTimer) {
+            clearTimeout(this.screenSharePendingTimer);
+            this.screenSharePendingTimer = null;
+          }
+
+          if (event.username === this.username && this.voiceController.isScreenSharing) {
+            void this.voiceController.stopScreenShare().catch((error) => {
+              console.error("[ChatRoom] failed to sync local screen share stop", error);
+            });
+          }
+
+          const wasCurrentSharer = !this._screenSharingUser || this._screenSharingUser === event.username;
+          if (wasCurrentSharer) {
+            this._screenShareStream = null;
+            this._isScreenSharing = false;
+          }
+          if (!this._screenSharingUser || this._screenSharingUser === event.username) {
+            this._screenSharingUser = null;
+          }
+          this.addSystemNotice(`${event.username} stopped sharing their screen`);
+          return;
+        }
         
         // Optimistically update the participants array depending on the event
         if (event.kind === "peer_joined") {
@@ -122,6 +166,15 @@ export class ChatRoom extends LitElement {
         }
         if (event.kind === "call_ended") {
           this._voiceParticipants = this._voiceParticipants.filter(u => u.username !== event.username);
+          if (this._screenSharingUser === event.username) {
+            if (this.screenSharePendingTimer) {
+              clearTimeout(this.screenSharePendingTimer);
+              this.screenSharePendingTimer = null;
+            }
+            this._screenSharingUser = null;
+            this._screenShareStream = null;
+            this._isScreenSharing = false;
+          }
           this.addSystemNotice(`${event.username} left the voice call`);
           return;
         }
@@ -180,6 +233,9 @@ export class ChatRoom extends LitElement {
         this._voiceState = state;
         if (state === "idle" || state === "error") {
           this._voiceParticipants = [];
+          this._screenSharingUser = null;
+          this._screenShareStream = null;
+          this._isScreenSharing = false;
         }
       },
       onIceCandidate: (candidate) => {
@@ -193,6 +249,20 @@ export class ChatRoom extends LitElement {
       },
       onParticipantsChange: (participants) => {
         this._voiceParticipants = participants;
+      },
+      onScreenShareTrack: (stream) => {
+        if (this.screenSharePendingTimer) {
+          clearTimeout(this.screenSharePendingTimer);
+          this.screenSharePendingTimer = null;
+        }
+        this._screenShareStream = stream;
+        this._isScreenSharing = Boolean(stream);
+        if (stream && !this._screenSharingUser) {
+          this._screenSharingUser = this.username;
+        }
+        if (!stream) {
+          this._screenSharingUser = null;
+        }
       },
     });
   }
@@ -230,6 +300,10 @@ export class ChatRoom extends LitElement {
   disconnectedCallback(): void {
     this.controller.stop();
     void this.voiceController.stop();
+    if (this.screenSharePendingTimer) {
+      clearTimeout(this.screenSharePendingTimer);
+      this.screenSharePendingTimer = null;
+    }
     super.disconnectedCallback();
   }
 
@@ -368,6 +442,26 @@ export class ChatRoom extends LitElement {
 
   private closePreview() {
     this._previewImageUrl = null;
+  }
+
+  private async handleScreenShareToggle() {
+    try {
+      if (this.voiceController.isScreenSharing) {
+        await this.voiceController.stopScreenShare();
+        this._isScreenSharing = this.voiceController.isScreenSharing;
+        if (this._screenSharingUser === this.username) {
+          this._screenSharingUser = null;
+        }
+        return;
+      }
+
+      await this.voiceController.startScreenShare();
+      this._isScreenSharing = this.voiceController.isScreenSharing;
+      this._screenSharingUser = this.username;
+    } catch (error) {
+      console.error("[ChatRoom] screen share toggle failed", error);
+      this.addSystemNotice("Screen sharing could not be updated.");
+    }
   }
 
   private handleMessagesScroll() {
@@ -581,6 +675,9 @@ export class ChatRoom extends LitElement {
               .username=${this.username}
               .participants=${this._voiceParticipants}
               .isMuted=${this._isMuted}
+              .isScreenSharing=${this._isScreenSharing}
+              .screenSharingUser=${this._screenSharingUser}
+              .screenShareStream=${this._screenShareStream}
               @voice-stop=${() => {
                 this._viewingActiveCall = false;
                 this.voiceController.stop();
@@ -592,6 +689,9 @@ export class ChatRoom extends LitElement {
               }}
               @voice-volume-change=${(e: CustomEvent) => {
                 this.voiceController.setVolume(e.detail.volume);
+              }}
+              @screen-share-toggle=${() => {
+                void this.handleScreenShareToggle();
               }}
             ></chat-active-call>
           ` : html`
