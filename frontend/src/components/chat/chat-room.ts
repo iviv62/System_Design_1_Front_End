@@ -251,7 +251,11 @@ export class ChatRoom extends LitElement {
         this._screenShareStream = stream;
         this._isScreenSharing = Boolean(stream);
         if (stream && this.voiceController.isScreenSharing) {
+          // Local sharer
           this._screenSharingUser = this.username;
+        } else if (stream && !this._screenSharingUser) {
+          // Remote track arrived before WS screen_share_started event
+          this._screenSharingUser = "Sharing…"; // WS event will update this imminently
         }
         if (!stream && this._screenSharingUser === this.username) {
           this._screenSharingUser = null;
@@ -442,18 +446,11 @@ export class ChatRoom extends LitElement {
     try {
       if (this.voiceController.isScreenSharing) {
         await this.voiceController.stopScreenShare();
-        this._isScreenSharing = this.voiceController.isScreenSharing;
-        if (this._screenSharingUser === this.username) {
-          this._screenSharingUser = null;
-        }
-        return;
+      } else {
+        await this.voiceController.startScreenShare();
       }
-
-      await this.voiceController.startScreenShare();
-      this._isScreenSharing = this.voiceController.isScreenSharing;
-      if (!this._isScreenSharing && this._screenSharingUser === this.username) {
-        this._screenSharingUser = null;
-      }
+      // All state (_isScreenSharing, _screenSharingUser, _screenShareStream)
+      // is managed exclusively by onScreenShareTrack callback
     } catch (error) {
       console.error("[ChatRoom] screen share toggle failed", error);
       this.addSystemNotice("Screen sharing could not be updated.");
@@ -698,7 +695,7 @@ export class ChatRoom extends LitElement {
               .isMuted=${this._isMuted}
               @return-to-call=${() => this._viewingActiveCall = true}
               @voice-stop=${() => this.voiceController.stop()}
-              @voice-dismiss=${() => { this._voiceState = "idle"; }}
+              @voice-dismiss=${() => { void this.voiceController.stop(); }}
               @voice-mute-toggle=${(e: CustomEvent) => {
                 this._isMuted = e.detail.muted;
                 this.voiceController.setMuted(this._isMuted);

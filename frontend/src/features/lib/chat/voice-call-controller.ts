@@ -31,6 +31,8 @@ export class VoiceCallController {
   private starting = false;
   private screenShareInProgress = false;
   private pendingStopScreenShare = false;
+  /** Tracks whether screen share was announced to the server (to handle abort races in stopScreenShare). */
+  private screenShareAnnounced = false;
   /** Shared promise so concurrent stop() calls (user click + ICE failure) run teardown only once. */
   private stopPromise: Promise<void> | null = null;
   private readonly options: VoiceCallControllerOptions;
@@ -144,10 +146,11 @@ export class VoiceCallController {
 
       try {
         await this.renegotiate(offer);
-        this.options.onScreenShareTrack?.(this.adapter.getScreenStream());
+        this.screenShareAnnounced = true;
       } catch (err) {
         console.error("[VoiceCallController] renegotiation failed, reverting", err);
         this.adapter.abortScreenShare();
+        this.screenShareAnnounced = false;
 
         try {
           const restoreOffer = await this.adapter.createOffer();
@@ -169,7 +172,7 @@ export class VoiceCallController {
     if (!this.peerId) {
       return;
     }
-    if (!this.adapter.isScreenSharing) return;
+    if (!this.screenShareAnnounced) return;
 
     if (this.screenShareInProgress) {
       this.pendingStopScreenShare = true;
@@ -183,10 +186,10 @@ export class VoiceCallController {
 
       try {
         await this.renegotiate(offer);
-        this.options.onScreenShareTrack?.(null);
+        this.screenShareAnnounced = false;
       } catch (err) {
         console.error("[VoiceCallController] stop screen share renegotiation failed", err);
-        this.options.onScreenShareTrack?.(null);
+        this.screenShareAnnounced = false;
         void this.stop();
       }
     } finally {
@@ -234,8 +237,6 @@ export class VoiceCallController {
   private async renegotiate(offer: VoiceOffer): Promise<void> {
     if (!this.peerId) return;
 
-    this.adapter.resetRemoteDescriptionState();
-
     const base = getApiBaseUrl(this.options.apiBase, this.options.wsBase);
     const res = await fetchWithAuth(`${base}/voice/offer`, {
       method: "POST",
@@ -251,6 +252,7 @@ export class VoiceCallController {
 
     if (!res.ok) throw new Error(`Renegotiation rejected: ${res.status}`);
 
+    this.adapter.resetRemoteDescriptionState();
     const answer: VoiceAnswer = await res.json();
     await this.adapter.applyAnswer(answer);
   }

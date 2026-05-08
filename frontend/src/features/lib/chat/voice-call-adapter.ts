@@ -77,6 +77,7 @@ export class VoiceCallAdapter {
 
   resetRemoteDescriptionState(): void {
     this.isRemoteDescriptionSet = false;
+    this.iceQueue = []; // discard stale pre-renegotiation candidates
   }
 
   async openConnection(options?: VoiceCallAdapterOptions): Promise<void> {
@@ -207,7 +208,7 @@ export class VoiceCallAdapter {
     const existingVideoTransceiver = this.videoTransceiver;
     const canReuseTransceiver =
       existingVideoTransceiver !== null &&
-      existingVideoTransceiver.currentDirection !== "stopped";
+      existingVideoTransceiver.direction !== "stopped";
 
     if (canReuseTransceiver) {
       existingVideoTransceiver.direction = "sendrecv";
@@ -242,6 +243,7 @@ export class VoiceCallAdapter {
     });
     this.screenStream = null;
     this.screenSender = null;
+    // Note: direction is reset to recvonly in startScreenShare's catch block
 
     if (this.videoTransceiver) {
       this.videoTransceiver.direction = "recvonly";
@@ -253,6 +255,7 @@ export class VoiceCallAdapter {
 
   async stopScreenShare(): Promise<VoiceOffer> {
     if (!this.pc || !this.videoTransceiver) {
+      this.screenSender = null; // ← ensure isScreenSharing resets to false
       throw new Error("Peer connection is not initialized.");
     }
 
