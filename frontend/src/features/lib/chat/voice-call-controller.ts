@@ -124,11 +124,9 @@ export class VoiceCallController {
   }
 
   async startScreenShare(): Promise<void> {
-    if (!this.peerId) {
-      throw new Error("Voice call is not active.");
-    }
     if (this.screenShareInProgress) return;
     if (this.adapter.isScreenSharing) return;
+    if (!this.peerId) return;
 
     try {
       this.screenShareInProgress = true;
@@ -182,12 +180,13 @@ export class VoiceCallController {
 
     try {
       const offer = await this.adapter.stopScreenShare();
-      this.options.onScreenShareTrack?.(null);
 
       try {
         await this.renegotiate(offer);
+        this.options.onScreenShareTrack?.(null);
       } catch (err) {
         console.error("[VoiceCallController] stop screen share renegotiation failed", err);
+        this.options.onScreenShareTrack?.(null);
         void this.stop();
       }
     } finally {

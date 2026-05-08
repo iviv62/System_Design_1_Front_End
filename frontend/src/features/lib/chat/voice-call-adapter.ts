@@ -244,10 +244,10 @@ export class VoiceCallAdapter {
     this.screenSender = null;
 
     if (this.videoTransceiver) {
+      this.videoTransceiver.direction = "recvonly";
       void this.videoTransceiver.sender.replaceTrack(null).catch(() => {
         // Best-effort rollback for failed screen-share transitions.
       });
-      this.videoTransceiver.direction = "recvonly";
     }
   }
 
