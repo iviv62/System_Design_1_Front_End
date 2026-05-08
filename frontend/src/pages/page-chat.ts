@@ -6,10 +6,13 @@ import { fetchConnectedUsers } from "../features/lib/chat/chat-room-api";
 import { authStore } from "../store/auth-store";
 import type { AuthState } from "../store/auth-store";
 import { navigate } from "../utils/navigate";
+import { ThemeController } from "../utils/theme-controller";
 import pageChatStylesRaw from "../styles/page-chat.styles.scss?inline";
+
 import "../components/chat/chat-room";
 import "../components/chat/chat-room-users";
 import "../components/chat/chat-nav-sidebar";
+import "../components/chat/chat-settings-modal";
 
 /**
  * Page wrapper for the dedicated chat room view.
@@ -17,6 +20,8 @@ import "../components/chat/chat-nav-sidebar";
  */
 @customElement("page-chat")
 export class PageChat extends LitElement {
+  private themeCtrl = new ThemeController(this);
+
   @state() private authChecked = false;
   @state() private isAuthorized = false;
   @state() private username = "";
@@ -24,6 +29,7 @@ export class PageChat extends LitElement {
   @state() private activeUsersLoading = false;
   @state() private typingUsers: string[] = [];
   @state() private currentRoomId = "";
+  @state() private isSettingsOpen = false;
 
   // zustand-lit manages subscribe/unsubscribe and re-renders automatically.
   @watch(authStore)
@@ -135,6 +141,8 @@ export class PageChat extends LitElement {
     return html`
       <div class="room-page">
         <chat-nav-sidebar
+          .theme=${this.themeCtrl.theme}
+          @open-settings=${() => { this.isSettingsOpen = true; }}
           .currentUsername=${this.username}
           .roomName=${currentRoomId}
         ></chat-nav-sidebar>
@@ -155,6 +163,11 @@ export class PageChat extends LitElement {
           .loading=${this.activeUsersLoading}
         ></chat-room-users>
       </div>
+
+      <chat-settings-modal
+        .open=${this.isSettingsOpen}
+        @closed=${() => { this.isSettingsOpen = false; }}
+      ></chat-settings-modal>
     `;
   }
 }

@@ -593,6 +593,7 @@
     margin-right: 0;
     margin-left: 0.15rem;
 
+    /* Make the popup expand to the left, preventing cropping on the right side of the screen */
     .message-reaction-picker__panel {
       left: auto;
       right: 0;

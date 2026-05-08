@@ -11,6 +11,9 @@ export class ChatNavSidebar extends LitElement {
   @property()
   roomName = "";
 
+  @property()
+  theme = "dark";
+
   static styles = unsafeCSS(chatNavSidebarStylesRaw);
 
   private getInitials(user: string): string {
@@ -70,6 +73,9 @@ export class ChatNavSidebar extends LitElement {
             class="nav-sidebar__icon-btn"
             title="Settings"
             aria-label="Settings"
+            @click=${() => {
+              this.dispatchEvent(new CustomEvent("open-settings", { bubbles: true, composed: true }));
+            }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="3"></circle>

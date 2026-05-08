@@ -29,12 +29,6 @@ export class ChatRoomHeader extends LitElement {
     return this;
   }
 
-  private handleToggleTheme() {
-    const next = this.theme === "light" ? "dark" : "light";
-    this.dispatchEvent(
-      new CustomEvent("theme-toggle", { detail: { theme: next }, bubbles: true, composed: true }),
-    );
-  }
 
   private handleVoiceClick() {
     const event = this.voiceState === "active" || this.voiceState === "calling"
@@ -67,16 +61,7 @@ export class ChatRoomHeader extends LitElement {
             </button>
           </div>
         
-          <button
-            class="chat-room__header-action chat-room__header-action--theme"
-            type="button"
-            title="Toggle theme"
-            aria-label="Toggle theme"
-            @click=${this.handleToggleTheme}
-          >
-            ${this.theme === "light" ? "☾" : "☀"}
-          </button>
-      
+         
         </div>
       </header>
 
