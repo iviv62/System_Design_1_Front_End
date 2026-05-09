@@ -126,10 +126,7 @@ export class ChatRoom extends LitElement {
       onStateChange: (state) => {
         this._voiceState = state;
         if (state === "idle" || state === "error") {
-          this._voiceParticipants = [];
-          this._screenSharingUser = null;
-          this._screenShareStream = null;
-          this._isScreenSharing = false;
+          this.resetVoiceUiState();
         }
       },
       onIceCandidate: (candidate) => {
@@ -195,10 +192,7 @@ export class ChatRoom extends LitElement {
   disconnectedCallback(): void {
     this.controller.stop();
     void this.voiceController.stop();
-    if (this.screenSharePendingTimer) {
-      clearTimeout(this.screenSharePendingTimer);
-      this.screenSharePendingTimer = null;
-    }
+    this.resetVoiceUiState();
     super.disconnectedCallback();
   }
 
@@ -252,6 +246,25 @@ export class ChatRoom extends LitElement {
     this.voiceController.updateIdentity(this.roomId, this.username);
   }
 
+  private resetVoiceUiState() {
+    this._voiceParticipants = [];
+    this._screenSharingUser = null;
+    this._screenShareStream = null;
+    this._isScreenSharing = false;
+    if (this.screenSharePendingTimer) {
+      clearTimeout(this.screenSharePendingTimer);
+      this.screenSharePendingTimer = null;
+    }
+  }
+
+  private get inCall() {
+    return this._voiceState === "active" || this._voiceState === "calling";
+  }
+
+  private get showCallView() {
+    return this.inCall && this._viewingActiveCall;
+  }
+
   private handleVoiceEvent(event: VoiceEvent) {
     if (event.kind === "ice_candidate") {
       void this.voiceController.handleRemoteIceCandidate(event.candidate);
@@ -278,14 +291,9 @@ export class ChatRoom extends LitElement {
     }
 
     if (event.kind === "screen_share_stopped") {
-      if (this.screenSharePendingTimer) {
-        clearTimeout(this.screenSharePendingTimer);
-        this.screenSharePendingTimer = null;
-      }
-
-      this._screenSharingUser = null;
-      this._screenShareStream = null;
-      this._isScreenSharing = false;
+      const participants = this._voiceParticipants;
+      this.resetVoiceUiState();
+      this._voiceParticipants = participants;
       this.requestUpdate();
       this.addSystemNotice(`${event.username} stopped sharing their screen`);
       return;
@@ -298,16 +306,9 @@ export class ChatRoom extends LitElement {
       return;
     }
     if (event.kind === "call_ended") {
-      this._voiceParticipants = this._voiceParticipants.filter(u => u.username !== event.username);
-      if (this._screenSharingUser === event.username) {
-        if (this.screenSharePendingTimer) {
-          clearTimeout(this.screenSharePendingTimer);
-          this.screenSharePendingTimer = null;
-        }
-        this._screenSharingUser = null;
-        this._screenShareStream = null;
-        this._isScreenSharing = false;
-      }
+      const participants = this._voiceParticipants.filter(u => u.username !== event.username);
+      this.resetVoiceUiState();
+      this._voiceParticipants = participants;
       this.addSystemNotice(`${event.username} left the voice call`);
       return;
     }
@@ -709,8 +710,8 @@ export class ChatRoom extends LitElement {
           @voice-stop=${this.handleVoiceStop}
         ></chat-room-header>
 
-        ${this._voiceState === 'active' || this._voiceState === 'calling' ? (
-          this._viewingActiveCall ? html`
+        ${this.inCall ? (
+          this.showCallView ? html`
             <chat-active-call
               .callState=${this._voiceState}
               .roomName=${this.roomName}
@@ -743,7 +744,7 @@ export class ChatRoom extends LitElement {
         <div class="chat-room__messages" 
              @scroll=${this.handleMessagesScroll}
              @image-preview=${this.handleImagePreview}
-             style="${(this._voiceState === 'active' || this._voiceState === 'calling') && this._viewingActiveCall ? 'display: none;' : ''}">
+             style="${this.showCallView ? 'display: none;' : ''}">
           ${this.isLoadingHistory
             ? html`<div class="message message--system">Loading history…</div>`
             : this.messages.length === 0
@@ -782,7 +783,7 @@ export class ChatRoom extends LitElement {
           .submitting=${this.isUploadingImage}
           @message-submit=${this.handleMessageSubmit}
           @user-typing=${this.handleUserTyping}
-          style="${(this._voiceState === 'active' || this._voiceState === 'calling') && this._viewingActiveCall ? 'display: none;' : ''}"
+          style="${this.showCallView ? 'display: none;' : ''}"
         ></chat-room-composer>
 
         ${this._previewImageUrl ? html`
