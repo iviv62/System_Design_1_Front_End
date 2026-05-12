@@ -1,8 +1,6 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
 import { getApiBaseUrl } from "./chat-config";
 
-export { extractVoiceEvent, type VoiceEvent } from "./voice-call-adapter";
-
 export type TypingEvent = { username: string; room: string };
 
 export function extractTypingEvent(payload: any): TypingEvent | null {
@@ -92,21 +90,18 @@ export function extractChatMessage(payload: any): ChatMessage | null {
     return null;
   }
 
-  // 1. Unwrap the payload if the backend nested it inside a common key
   const data = payload.message || payload.data || payload.payload || payload;
 
   if (typeof data !== "object" || data === null) {
     return null;
   }
 
-  // 2. Extract fields with fallbacks for different backend naming conventions
   const username = data.username || data.sender;
   const text = data.text || data.content || data.message || "";
   const createdAt = data.created_at || data.sent_at || data.timestamp;
   const imageUrl = data.image_url || data.imageUrl;
   const reactions = normalizeReactions(data.reactions);
 
-  // 3. Ensure we have the minimum required fields
   if (!username || !createdAt || (!text && !imageUrl)) {
     return null;
   }
@@ -130,11 +125,9 @@ export function extractSystemText(payload: any): string | null {
     return null;
   }
 
-  // Return direct text or message if available
   if (typeof payload.text === "string") return payload.text;
   if (typeof payload.message === "string") return payload.message;
 
-  // Fallback to building a string from the event details
   const eventName = payload.event || "event";
   const code = payload.code !== undefined ? `, code=${payload.code}` : "";
   const reason = payload.reason ? `, reason=${payload.reason}` : "";
