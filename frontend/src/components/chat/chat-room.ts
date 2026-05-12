@@ -128,8 +128,12 @@ export class ChatRoom extends LitElement {
     });
   }
 
+  private readonly boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
+
   connectedCallback(): void {
     super.connectedCallback();
+    window.addEventListener("visibilitychange", this.boundHandleVisibilityChange);
+    window.addEventListener("focus", this.boundHandleVisibilityChange);
     this.updateAdapterIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
@@ -137,6 +141,8 @@ export class ChatRoom extends LitElement {
   }
 
   disconnectedCallback(): void {
+    window.removeEventListener("visibilitychange", this.boundHandleVisibilityChange);
+    window.removeEventListener("focus", this.boundHandleVisibilityChange);
     this.controller.stop();
     this.webrtc.destroy();
     this.resetVoiceUiState();
@@ -258,6 +264,17 @@ export class ChatRoom extends LitElement {
   private handleMessagesUpdated() {
     this.applyPendingScrollEffect();
     this.applyUnreadFallbackFromSnapshot();
+    this.checkAndClearUnreadMarker();
+  }
+
+  private handleVisibilityChange() {
+    this.checkAndClearUnreadMarker();
+  }
+
+  private checkAndClearUnreadMarker() {
+    if (this.hasUnseenMessages && this.isPageActive() && this.isMessagesNearBottom()) {
+      this.clearUnreadMarker();
+    }
   }
 
   private applyPendingScrollEffect() {
