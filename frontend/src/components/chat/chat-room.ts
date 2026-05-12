@@ -61,6 +61,7 @@ export class ChatRoom extends LitElement {
   @state() private hasUnseenMessages = false;
   @state() private pendingUnreadCount: number | null = null;
   @state() private isUploadingImage = false;
+  @state() private isScrolledUp = false;
 
   private awaitingFirstReplayMessage = false;
   private pendingAutoScroll = false;
@@ -323,7 +324,20 @@ export class ChatRoom extends LitElement {
 
   private handleMessagesScroll() {
     if (this.isAutoScrolling) return;
-    if (this.isMessagesNearBottom() && this.hasUnseenMessages) this.clearUnreadMarker();
+    const nearBottom = this.isMessagesNearBottom();
+    this.isScrolledUp = !nearBottom;
+    if (nearBottom && this.hasUnseenMessages) this.clearUnreadMarker();
+  }
+
+  private forceScrollToBottom() {
+    const messagesEl = getMessagesContainer(this);
+    if (messagesEl) {
+      this.isAutoScrolling = true;
+      scrollMessagesToBottom(messagesEl, () => {
+        this.isAutoScrolling = false;
+        this.isScrolledUp = false;
+      });
+    }
   }
 
   private addMessage(msg: UiMessage) {
@@ -519,7 +533,17 @@ export class ChatRoom extends LitElement {
                   ${unreadCount} unread • Scroll to last seen
                 </button>
               `
-            : nothing}
+            : this.isScrolledUp
+              ? html`
+                  <button
+                    class="chat-room__jump-bottom"
+                    @click=${this.forceScrollToBottom}
+                    title="Jump to bottom"
+                  >
+                    Scroll to bottom ↓
+                  </button>
+                `
+              : nothing}
         </div>
 
         <chat-room-composer
