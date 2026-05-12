@@ -7,34 +7,39 @@ const THEME_STORAGE_KEY = "theme";
 
 export class ThemeController {
   private host: ReactiveControllerHost;
-  private _observer: MutationObserver | null = null;
+  private _handleThemeChange: EventListener;
 
   theme: ThemeMode = ThemeController.get();
 
   constructor(host: ReactiveControllerHost) {
     this.host = host;
+    this._handleThemeChange = () => {
+      this.theme = ThemeController.get();
+      if (this.host instanceof HTMLElement) {
+        this.host.setAttribute("data-theme", this.theme);
+      }
+      this.host.requestUpdate();
+    };
     host.addController(this);
   }
 
   hostConnected() {
-    this._observer = new MutationObserver(() => {
+    window.addEventListener("theme-changed", this._handleThemeChange);
+    // sync in case it changed before connection
     this.theme = ThemeController.get();
-      this.host.requestUpdate();
-    });
-    this._observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
+    if (this.host instanceof HTMLElement) {
+      this.host.setAttribute("data-theme", this.theme);
+    }
   }
 
   hostDisconnected() {
-    this._observer?.disconnect();
-    this._observer = null;
+    window.removeEventListener("theme-changed", this._handleThemeChange);
   }
 
   static set(theme: ThemeMode) {
     browserKeyValueStorage.set(THEME_STORAGE_KEY, theme);
     document.body.setAttribute("data-theme", theme);
+    window.dispatchEvent(new Event("theme-changed"));
   }
 
   static get(): ThemeMode {

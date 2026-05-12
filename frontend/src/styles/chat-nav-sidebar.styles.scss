@@ -112,30 +112,30 @@
 }
 
 /* Light theme overrides */
-:host-context([data-theme="light"]) .nav-sidebar {
+:host([data-theme="light"]) .nav-sidebar {
   background: #f1f5f9;
   border-right-color: rgba(148, 163, 184, 0.45);
 }
 
-:host-context([data-theme="light"]) .nav-sidebar__top,
-:host-context([data-theme="light"]) .nav-sidebar__bottom {
+:host([data-theme="light"]) .nav-sidebar__top,
+:host([data-theme="light"]) .nav-sidebar__bottom {
   border-color: rgba(148, 163, 184, 0.45);
 }
 
-:host-context([data-theme="light"]) .nav-sidebar__icon-btn {
+:host([data-theme="light"]) .nav-sidebar__icon-btn {
   color: #94a3b8;
 }
 
-:host-context([data-theme="light"]) .nav-sidebar__icon-btn:hover {
+:host([data-theme="light"]) .nav-sidebar__icon-btn:hover {
   background: rgba(0, 0, 0, 0.06);
   color: #475569;
 }
 
-:host-context([data-theme="light"]) .nav-sidebar__avatar {
+:host([data-theme="light"]) .nav-sidebar__avatar {
   background: #cbd5e1;
   color: #1e293b;
 }
 
-:host-context([data-theme="light"]) .nav-sidebar__avatar:hover {
+:host([data-theme="light"]) .nav-sidebar__avatar:hover {
   background: #94a3b8;
 }
