@@ -11,6 +11,8 @@ export interface WebRTCAdapterConfig {
   username: string;
 }
 
+export type VoiceCallState = 'idle' | 'calling' | 'active' | 'error';
+
 export type WebRTCAdapterEvents = {
   onStatusChange?: (status: 'disconnected' | 'connected' | 'error', message?: string) => void;
   onCallStateChange?: (state: 'idle' | 'calling' | 'active' | 'error') => void;
@@ -58,12 +60,18 @@ export class WebRTCAdapter {
   private currentSharerName: string | null = null;
 
   // ── State ───────────────────────────────────────────────────────────────────
-  private callState: 'idle' | 'calling' | 'active' | 'error' = 'idle';
+  private callState: VoiceCallState = 'idle';
+  private _isMuted = false;
+
+  private config: WebRTCAdapterConfig;
+  private events: WebRTCAdapterEvents;
 
   constructor(
-    private config: WebRTCAdapterConfig,
-    private events: WebRTCAdapterEvents = {},
+    config: WebRTCAdapterConfig,
+    events: WebRTCAdapterEvents = {},
   ) {
+    this.config = config;
+    this.events = events;
     this._room = config.room;
     this._username = config.username;
   }
@@ -86,6 +94,7 @@ export class WebRTCAdapter {
 
     try {
       this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.micStream.getAudioTracks().forEach(t => { t.enabled = !this._isMuted; });
     } catch {
       this.setCallState('error');
       throw new Error('Microphone access denied or unavailable.');
@@ -165,7 +174,7 @@ export class WebRTCAdapter {
 
   // ── Screen share: stop ──────────────────────────────────────────────────────
   stopScreenShare(): void {
-    if (!this.isScreenSharing) return;
+    if (!this.screenTrack && !this.screenStream) return;
     this.screenTrack?.stop();
     this.screenTrack = null;
     this.screenStream = null;
@@ -271,6 +280,7 @@ export class WebRTCAdapter {
 
   // ── Mute / volume ───────────────────────────────────────────────────────────
   setMuted(muted: boolean): void {
+    this._isMuted = muted;
     this.micStream?.getAudioTracks().forEach(t => { t.enabled = !muted; });
   }
 
@@ -287,7 +297,7 @@ export class WebRTCAdapter {
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 
-  private setCallState(state: 'idle' | 'calling' | 'active' | 'error'): void {
+  private setCallState(state: VoiceCallState): void {
     this.callState = state;
     this.events.onCallStateChange?.(state);
   }

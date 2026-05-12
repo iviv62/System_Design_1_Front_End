@@ -243,7 +243,7 @@ export class ChatRoom extends LitElement {
 
   private async handleScreenShareToggle() {
     try {
-      if (this.webrtc.isScreenSharing) {
+      if (this._isScreenSharing) {
         this.webrtc.stopScreenShare();
       } else {
         await this.webrtc.startScreenShare();
