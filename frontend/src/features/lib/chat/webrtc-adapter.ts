@@ -348,20 +348,20 @@ export class WebRTCAdapter {
       // Emit for components that want to handle audio manually
       this.events.onAudioTrack?.(track, streams);
 
-      // Also auto-attach to a hidden <audio> element
-      const s = streams[0] ?? new MediaStream([track]);
-      if (document.querySelector(`audio[data-webrtc-stream="${s.id}"]`)) return;
+      // Create a separate MediaStream for this specific track
+      // to avoid multiple tracks multiplexed in the same stream from conflicting
+      const singleTrackStream = new MediaStream([track]);
+      if (document.querySelector(`audio[data-webrtc-stream="${track.id}"]`)) return;
 
       const audio = document.createElement('audio');
       audio.autoplay = true;
-      audio.dataset['webrtcStream'] = s.id;
-      audio.srcObject = s;
+      audio.dataset['webrtcStream'] = track.id;
+      audio.srcObject = singleTrackStream;
       audio.style.display = 'none';
       document.body.appendChild(audio);
 
-      // Remove when the track/stream ends
+      // Remove when the track ends
       track.onended = () => audio.remove();
-      s.getAudioTracks().forEach(t => { t.onended = () => audio.remove(); });
     };
 
     peer.oniceconnectionstatechange = () => {
