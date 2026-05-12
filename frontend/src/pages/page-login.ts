@@ -40,24 +40,42 @@ export class PageLogin extends LitElement {
 
   render() {
     return html`
-      <h2>Log In</h2>
-      ${this.errorMsg ? html`<div class="error">${this.errorMsg}</div>` : ""}
-      <form @submit=${this.handleSubmit}>
-        <input
-          type="text"
-          name="identifier"
-          placeholder="Email or Username"
-          required
-          autocomplete="username"
-        />
-        <input type="password" name="password" placeholder="Password" required autocomplete="current-password" />
-        <button type="submit" ?disabled=${this.loading}>
-          ${this.loading ? "Logging in…" : "Log In"}
-        </button>
-      </form>
-      <div class="links">
-        Don't have an account?
-        <a href="/register" @click=${handleLink}>Register here</a>
+      <div class="auth-container">
+        <div class="auth-card">
+          <h2>Welcome Back</h2>
+          <p class="subtitle">Log in to continue to Chat System</p>
+
+          ${this.errorMsg ? html`<div class="error">${this.errorMsg}</div>` : ""}
+
+          <form @submit=${this.handleSubmit}>
+            <div class="form-group">
+              <input
+                type="text"
+                name="identifier"
+                placeholder="Email or Username"
+                required
+                autocomplete="username"
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+                autocomplete="current-password"
+              />
+            </div>
+            <button type="submit" ?disabled=${this.loading}>
+              ${this.loading ? "Logging in…" : "Log In"}
+            </button>
+          </form>
+
+          <div class="links">
+            Don't have an account?
+            <a href="/register" @click=${handleLink}>Register here</a>
+          </div>
+        </div>
       </div>
     `;
   }

@@ -36,19 +36,33 @@ export class PageRegister extends LitElement {
 
   render() {
     return html`
-      <h2>Create an Account</h2>
-      ${this.errorMsg ? html`<div class="error">${this.errorMsg}</div>` : ""}
-      <form @submit=${this.handleSubmit}>
-        <input type="text" name="username" placeholder="Username" required autocomplete="username" />
-        <input type="email" name="email" placeholder="Email Address" required autocomplete="email" />
-        <input type="password" name="password" placeholder="Password" required autocomplete="new-password" />
-        <button type="submit" ?disabled=${this.loading}>
-          ${this.loading ? "Registering…" : "Register"}
-        </button>
-      </form>
-      <div class="links">
-        Already have an account?
-        <a href="/login" @click=${handleLink}>Log In</a>
+      <div class="auth-container">
+        <div class="auth-card">
+          <h2>Create an Account</h2>
+          <p class="subtitle">Join Chat System today</p>
+
+          ${this.errorMsg ? html`<div class="error">${this.errorMsg}</div>` : ""}
+
+          <form @submit=${this.handleSubmit}>
+            <div class="form-group">
+              <input type="text" name="username" placeholder="Username" required autocomplete="username" />
+            </div>
+            <div class="form-group">
+              <input type="email" name="email" placeholder="Email Address" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <input type="password" name="password" placeholder="Password" required autocomplete="new-password" />
+            </div>
+            <button type="submit" ?disabled=${this.loading}>
+              ${this.loading ? "Registering…" : "Register"}
+            </button>
+          </form>
+
+          <div class="links">
+            Already have an account?
+            <a href="/login" @click=${handleLink}>Log In</a>
+          </div>
+        </div>
       </div>
     `;
   }
