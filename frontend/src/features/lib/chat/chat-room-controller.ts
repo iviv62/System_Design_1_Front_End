@@ -99,15 +99,19 @@ export class ChatRoomController {
     return true;
   }
 
+  /**
+   * Generic voice/screen signaling sender.
+   * Used for: ice_candidate, screen_offer, screen_answer, screen_ice, screen_share_start/stop.
+   */
   sendVoiceSignal(payload: {
     type: "voice";
     event: string;
-    room: string;
+    room?: string;
     username?: string;
-    candidate?: RTCIceCandidateInit;
+    peer_id?: string;
     to?: string;
     sdp?: string;
-    peer_id?: string;
+    candidate?: RTCIceCandidateInit;
     [key: string]: unknown;
   }): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
@@ -203,5 +207,85 @@ export class ChatRoomController {
       if (voiceEvent) {
         if (!this.options.onVoiceEvent) return;
 
-        // server_offer: apply → POST answer back via HTTP
-     
+        // server_offer: apply offer locally, POST answer back via HTTP
+        if (voiceEvent.kind === "server_offer") {
+          const { peerId, sdp, sdpType, room } = voiceEvent;
+          if (!room || room === this.room) {
+            void this.options.onServerOffer?.(peerId, sdp, sdpType).then((answer) => {
+              const base = this.getResolvedApiBaseUrl();
+              void fetchWithAuth(`${base}/voice/answer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ peer_id: peerId, sdp: answer.sdp, type: answer.type }),
+              }).catch((err) => console.error("[ChatRoomController] failed to POST voice answer", err));
+            }).catch((err) => console.error("[ChatRoomController] failed to handle server_offer", err));
+          }
+          return;
+        }
+
+        if (!voiceEvent.room || voiceEvent.room === this.room) {
+          this.options.onVoiceEvent(voiceEvent);
+        }
+        return;
+      }
+
+      const typingEvent = extractTypingEvent(payload);
+      if (typingEvent) {
+        if (!this.options.onTypingEvent) return;
+        if (!typingEvent.room || typingEvent.room === this.room) this.options.onTypingEvent(typingEvent);
+        return;
+      }
+
+      const systemText = extractSystemText(payload);
+      if (systemText) { this.options.onMessage(toSystemMessage(systemText)); return; }
+
+      const chatMessage = extractChatMessage(payload);
+      if (!chatMessage) return;
+
+      const uiMessage = toUiMessage(chatMessage);
+      if (uiMessage.username.trim()) { this.activeUsers.add(uiMessage.username.trim()); this.emitPresence(); }
+      this.lastSeen = uiMessage.createdAt;
+      this.options.onMessage(uiMessage);
+      this.scheduleSeenSync();
+    };
+
+    this.socket.onclose = (event: CloseEvent) => {
+      if (this.intentionalClose) return;
+      if (!this.isReconnecting) {
+        const details = event.reason ? `code=${event.code}, reason=${event.reason}` : `code=${event.code}`;
+        this.options.onMessage(toSystemMessage(`Disconnected (${details})`));
+      }
+      this.scheduleReconnect();
+    };
+
+    this.socket.onerror = () => {};
+  }
+
+  private scheduleReconnect(): void {
+    this.setReconnectState(true);
+    const baseDelay = Math.min(1000 * 2 ** this.reconnectAttempt, 30_000);
+    const jitter = Math.random() * 0.2 * baseDelay;
+    this.reconnectAttempt++;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (!this.intentionalClose) this.connect();
+    }, baseDelay + jitter);
+  }
+
+  private scheduleSeenSync(): void {
+    if (!this.lastSeen || this.lastSeen === this.lastSyncedSeen) return;
+    if (this.seenSyncTimer !== null) clearTimeout(this.seenSyncTimer);
+    this.seenSyncTimer = setTimeout(() => {
+      this.seenSyncTimer = null;
+      this.flushSeenToServer();
+    }, 800);
+  }
+
+  private flushSeenToServer(): void {
+    if (!this.lastSeen || this.lastSeen === this.lastSyncedSeen) return;
+    const valueToSync = this.lastSeen;
+    void updateConversationLastSeen(this.room, this.username, valueToSync)
+      .then(() => { this.lastSyncedSeen = valueToSync; })
+      .catch(() => {});
+  }
+}
