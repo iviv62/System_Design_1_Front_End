@@ -4,17 +4,14 @@ import {
   extractPresenceUpdate,
   extractReactionUpdate,
   extractSystemText,
-  extractVoiceEvent,
   extractTypingEvent,
   type PresenceUpdate,
   type ReactionUpdate,
-  type VoiceEvent,
   type TypingEvent,
   toSystemMessage,
   toUiMessage,
 } from "./chat-message-adapter";
 import { getApiBaseUrl, getSocketUrl } from "./chat-config";
-import { fetchWithAuth } from "../http/fetch-interceptor";
 import { updateConversationLastSeen } from "./chat-room-api";
 
 export type Identity = { room: string; username: string; };
@@ -28,12 +25,11 @@ export type ChatRoomControllerOptions = {
   onConnected?: () => void;
   onPresenceChange?: (users: string[]) => void;
   onReactionUpdate?: (update: ReactionUpdate) => void;
-  onVoiceEvent?: (event: VoiceEvent) => void;
+  /** Raw voice WS event — forwarded directly to WebRTCAdapter.handleVoiceEvent() */
+  onVoiceEvent?: (msg: Record<string, unknown>) => void;
   onTypingEvent?: (event: TypingEvent) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
-  /** Called when the server sends a renegotiation offer; must return the SDP answer. */
-  onServerOffer?: (peerId: string, sdp: string, sdpType: RTCSdpType) => Promise<{ sdp: string; type: RTCSdpType }>;
 };
 
 export class ChatRoomController {
@@ -99,21 +95,8 @@ export class ChatRoomController {
     return true;
   }
 
-  /**
-   * Generic voice/screen signaling sender.
-   * Used for: ice_candidate, screen_offer, screen_answer, screen_ice, screen_share_start/stop.
-   */
-  sendVoiceSignal(payload: {
-    type: "voice";
-    event: string;
-    room?: string;
-    username?: string;
-    peer_id?: string;
-    to?: string;
-    sdp?: string;
-    candidate?: RTCIceCandidateInit;
-    [key: string]: unknown;
-  }): void {
+  /** Send any voice/screen WS signal. Called by WebRTCAdapter via onVoiceSignal. */
+  sendRawSignal(payload: Record<string, unknown>): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(payload));
     }
@@ -166,7 +149,7 @@ export class ChatRoomController {
     this.options.onLoadingChange(true);
     try {
       const base = this.getResolvedApiBaseUrl();
-      const res = await fetchWithAuth(`${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`);
+      const res = await fetch(`${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`);
       if (res.ok) {
         const data: ChatMessage[] = await res.json();
         for (const msg of data) this.options.onMessage(toUiMessage(msg));
@@ -203,30 +186,16 @@ export class ChatRoomController {
       const reactionUpdate = extractReactionUpdate(payload);
       if (reactionUpdate) { this.options.onReactionUpdate?.(reactionUpdate); return; }
 
-      const voiceEvent = extractVoiceEvent(payload);
-      if (voiceEvent) {
-        if (!this.options.onVoiceEvent) return;
-
-        // server_offer: apply offer locally, POST answer back via HTTP
-        if (voiceEvent.kind === "server_offer") {
-          const { peerId, sdp, sdpType, room } = voiceEvent;
+      // Route ALL voice events (including server_offer) to WebRTCAdapter
+      if (typeof payload === 'object' && payload !== null) {
+        const p = payload as Record<string, unknown>;
+        if (p['type'] === 'voice') {
+          const room = String(p['room'] ?? '');
           if (!room || room === this.room) {
-            void this.options.onServerOffer?.(peerId, sdp, sdpType).then((answer) => {
-              const base = this.getResolvedApiBaseUrl();
-              void fetchWithAuth(`${base}/voice/answer`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ peer_id: peerId, sdp: answer.sdp, type: answer.type }),
-              }).catch((err) => console.error("[ChatRoomController] failed to POST voice answer", err));
-            }).catch((err) => console.error("[ChatRoomController] failed to handle server_offer", err));
+            this.options.onVoiceEvent?.(p);
           }
           return;
         }
-
-        if (!voiceEvent.room || voiceEvent.room === this.room) {
-          this.options.onVoiceEvent(voiceEvent);
-        }
-        return;
       }
 
       const typingEvent = extractTypingEvent(payload);
@@ -241,7 +210,6 @@ export class ChatRoomController {
 
       const chatMessage = extractChatMessage(payload);
       if (!chatMessage) return;
-
       const uiMessage = toUiMessage(chatMessage);
       if (uiMessage.username.trim()) { this.activeUsers.add(uiMessage.username.trim()); this.emitPresence(); }
       this.lastSeen = uiMessage.createdAt;

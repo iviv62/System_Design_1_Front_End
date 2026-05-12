@@ -30,8 +30,7 @@ import {
   shouldAutoScrollForUserMessage,
 } from "../../features/lib/chat/chat-room-unread";
 import { ThemeController } from "../../utils/theme-controller";
-import { VoiceCallController, type VoiceCallState } from "../../features/lib/chat/voice-call-controller";
-import type { VoiceEvent } from "../../features/lib/chat/voice-call-adapter";
+import { WebRTCAdapter, type Participant } from "../../features/lib/chat/webrtc-adapter";
 import "./unread-divider";
 import "./chat-room-header";
 import "./chat-message-item";
@@ -70,69 +69,50 @@ export class ChatRoom extends LitElement {
   private isAutoScrolling = false;
   private readonly seenMessageIds = new Set<string>();
 
-  private readonly controller: ChatRoomController;
-  @state() private _voiceState: VoiceCallState = "idle";
-  private readonly voiceController: VoiceCallController;
-
+  // ── Voice / WebRTC ───────────────────────────────────────────────────────
+  @state() private _voiceState: 'idle' | 'calling' | 'active' | 'error' = 'idle';
   @state() private _voiceParticipants: VoiceParticipant[] = [];
+  @state() private _isScreenSharing = false;
   @state() private _screenSharingUser: string | null = null;
   @state() private _screenShareStream: MediaStream | null = null;
-  @state() private _isScreenSharing = false;
-  private screenSharePendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly webrtc: WebRTCAdapter;
+  private readonly controller: ChatRoomController;
 
   constructor() {
     super();
 
-    this.voiceController = new VoiceCallController({
-      apiBase: import.meta.env.VITE_API_BASE_URL,
-      wsBase: import.meta.env.VITE_WS_BASE_URL,
-      room: this.roomId,
-      username: this.username,
-      onStateChange: (state) => {
-        this._voiceState = state;
-        if (state === "idle" || state === "error") this.resetVoiceUiState();
-      },
-      onIceCandidate: (candidate) => {
-        this.controller.sendVoiceSignal({
-          type: "voice",
-          event: "ice_candidate",
-          room: this.roomId,
-          username: this.username,
-          candidate,
-        });
-      },
-      onParticipantsChange: (participants) => {
-        this._voiceParticipants = participants;
-      },
-      onScreenShareStream: (stream) => {
-        if (this.screenSharePendingTimer) {
-          clearTimeout(this.screenSharePendingTimer);
-          this.screenSharePendingTimer = null;
-        }
-        this._screenShareStream = stream;
-        this._isScreenSharing = Boolean(stream);
-        if (stream && this.voiceController.isScreenSharing) {
-          this._screenSharingUser = this.username;
-        }
-        if (!stream && this._screenSharingUser === this.username) {
-          this._screenSharingUser = null;
-        }
-        this.requestUpdate();
-      },
-    });
-
-    // Wire the WS signaling sender so VoiceCallController can send screen P2P signals
-    this.voiceController.setSignalSender((event, to, payload) => {
-      this.controller.sendVoiceSignal({
-        type: "voice",
-        event,
-        peer_id: undefined,
+    this.webrtc = new WebRTCAdapter(
+      {
+        baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',
+        wsBase: import.meta.env.VITE_WS_BASE_URL ?? '',
         room: this.roomId,
         username: this.username,
-        ...(to ? { to } : {}),
-        ...payload,
-      });
-    });
+      },
+      {
+        onCallStateChange: (state) => {
+          this._voiceState = state;
+          if (state === 'idle' || state === 'error') this.resetVoiceUiState();
+        },
+        onParticipantsChange: (participants: Participant[]) => {
+          this._voiceParticipants = participants as VoiceParticipant[];
+        },
+        onScreenShareStarted: (stream, sharerName, isLocal) => {
+          this._screenShareStream = stream;
+          this._isScreenSharing = isLocal || this.webrtc.isScreenSharing;
+          this._screenSharingUser = sharerName.replace(' (you)', '') || this.username;
+          this.requestUpdate();
+        },
+        onScreenShareStopped: () => {
+          this._screenShareStream = null;
+          this._isScreenSharing = false;
+          this._screenSharingUser = null;
+          this.requestUpdate();
+        },
+        onSystemNotice: (text) => this.addSystemNotice(text),
+        onVoiceSignal: (payload) => this.controller.sendRawSignal(payload),
+      },
+    );
 
     this.controller = new ChatRoomController({
       apiBase: import.meta.env.VITE_API_BASE_URL,
@@ -142,22 +122,42 @@ export class ChatRoom extends LitElement {
       onConnected: () => this.emitRoomConnected(),
       onPresenceChange: (users) => this.emitActiveUsers(users),
       onReactionUpdate: (update) => this.applyReactionUpdate(update),
-      onVoiceEvent: (event: VoiceEvent) => this.handleVoiceEvent(event),
+      onVoiceEvent: (msg) => this.webrtc.handleVoiceEvent(msg),
       onTypingEvent: (event: TypingEvent) => this.handleTypingEvent(event),
       onLoadingChange: (isLoading) => this.handleLoadingChange(isLoading),
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
-      onServerOffer: (peerId, sdp, sdpType) =>
-        this.voiceController.handleServerOffer(sdp, sdpType),
     });
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.updateControllerIdentity();
+    this.updateAdapterIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
     void this.loadVoiceParticipants();
     ThemeController.set(this.themeCtrl.theme);
+  }
+
+  disconnectedCallback(): void {
+    this.controller.stop();
+    this.webrtc.destroy();
+    this.resetVoiceUiState();
+    super.disconnectedCallback();
+  }
+
+  updated(changedProperties: PropertyValues) {
+    if (changedProperties.has("roomId") || changedProperties.has("username")) {
+      this.updateAdapterIdentity();
+      if (changedProperties.has("roomId")) void this.loadVoiceParticipants();
+    }
+    if (changedProperties.has("messages")) this.handleMessagesUpdated();
+  }
+
+  @state() private _activeUsersCount = 0;
+
+  private updateAdapterIdentity(): void {
+    this.controller.updateIdentity({ room: this.roomId, username: this.username });
+    this.webrtc.updateIdentity(this.roomId, this.username);
   }
 
   private async loadVoiceParticipants() {
@@ -174,23 +174,6 @@ export class ChatRoom extends LitElement {
     const next = e?.detail?.theme ?? (this.themeCtrl.theme === "light" ? "dark" : "light");
     ThemeController.set(next);
   }
-
-  disconnectedCallback(): void {
-    this.controller.stop();
-    void this.voiceController.stop();
-    this.resetVoiceUiState();
-    super.disconnectedCallback();
-  }
-
-  updated(changedProperties: PropertyValues) {
-    if (changedProperties.has("roomId") || changedProperties.has("username")) {
-      this.updateControllerIdentity();
-      if (changedProperties.has("roomId")) void this.loadVoiceParticipants();
-    }
-    if (changedProperties.has("messages")) this.handleMessagesUpdated();
-  }
-
-  @state() private _activeUsersCount = 0;
 
   private emitActiveUsers(users: string[]) {
     this._activeUsersCount = users.length;
@@ -209,102 +192,15 @@ export class ChatRoom extends LitElement {
     this.dispatchEvent(new CustomEvent("room-connected", { bubbles: true, composed: true }));
   }
 
-  private updateControllerIdentity() {
-    this.controller.updateIdentity({ room: this.roomId, username: this.username });
-    this.voiceController.updateIdentity(this.roomId, this.username);
-  }
-
   private resetVoiceUiState() {
     this._voiceParticipants = [];
     this._screenSharingUser = null;
     this._screenShareStream = null;
     this._isScreenSharing = false;
-    if (this.screenSharePendingTimer) {
-      clearTimeout(this.screenSharePendingTimer);
-      this.screenSharePendingTimer = null;
-    }
   }
 
   private get inCall() { return this._voiceState === "active" || this._voiceState === "calling"; }
   private get showCallView() { return this.inCall && this._viewingActiveCall; }
-
-  private handleVoiceEvent(event: VoiceEvent) {
-    if (event.kind === "ice_candidate") {
-      void this.voiceController.handleRemoteIceCandidate(event.candidate);
-      return;
-    }
-
-    // P2P screen share signaling — route directly to voiceController
-    if (event.kind === "screen_offer") {
-      void this.voiceController.handleScreenOffer(event.fromPeerId, event.sdp)
-        .catch(err => console.error("[ChatRoom] screen_offer error", err));
-      return;
-    }
-    if (event.kind === "screen_answer") {
-      void this.voiceController.handleScreenAnswer(event.fromPeerId, event.sdp)
-        .catch(err => console.error("[ChatRoom] screen_answer error", err));
-      return;
-    }
-    if (event.kind === "screen_ice") {
-      void this.voiceController.handleScreenIce(event.fromPeerId, event.candidate)
-        .catch(err => console.error("[ChatRoom] screen_ice error", err));
-      return;
-    }
-
-    if (event.kind === "screen_share_started") {
-      if (event.username !== this.username) {
-        this._screenSharingUser = event.username;
-        if (this.screenSharePendingTimer) clearTimeout(this.screenSharePendingTimer);
-        this.screenSharePendingTimer = setTimeout(() => {
-          if (this._screenSharingUser === event.username && !this._screenShareStream) {
-            this._screenSharingUser = null;
-            this._isScreenSharing = false;
-          }
-          this.screenSharePendingTimer = null;
-        }, 12000);
-        this.requestUpdate();
-      }
-      this.addSystemNotice(`${event.username} started sharing their screen`);
-      return;
-    }
-
-    if (event.kind === "screen_share_stopped") {
-      const participants = this._voiceParticipants;
-      this.resetVoiceUiState();
-      this._voiceParticipants = participants;
-      this.requestUpdate();
-      this.addSystemNotice(`${event.username} stopped sharing their screen`);
-      return;
-    }
-
-    if (event.kind === "peer_joined") {
-      this._voiceParticipants = event.participants;
-      this.voiceController.updateParticipants(event.participants);
-      // If we are sharing, open a P2P connection to the late joiner
-      void this.voiceController.handleLateJoiner(event.peerId)
-        .catch(err => console.error("[ChatRoom] late joiner screen share failed", err));
-      this.addSystemNotice(`${event.username} joined the voice call`);
-      return;
-    }
-
-    if (event.kind === "call_ended") {
-      const participants = this._voiceParticipants.filter(u => u.username !== event.username);
-      this.resetVoiceUiState();
-      this._voiceParticipants = participants;
-      this.addSystemNotice(`${event.username} left the voice call`);
-      return;
-    }
-
-    if (event.kind === "call_started") {
-      if (!this._voiceParticipants.some(u => u.username === event.username)) {
-        this._voiceParticipants = [...this._voiceParticipants, { peer_id: event.peerId, username: event.username }];
-      }
-      void this.loadVoiceParticipants();
-    }
-
-    const names = { call_started: "started", call_error: "had a call error" };
-    this.addSystemNotice(`${event.username} ${names[event.kind as "call_started" | "call_error"]} a voice call`);
-  }
 
   private handleTypingEvent(event: TypingEvent) {
     if (event.username === this.username) return;
@@ -327,31 +223,46 @@ export class ChatRoom extends LitElement {
     if (!isLoading) this.awaitingFirstReplayMessage = true;
   }
 
+  // ── Voice call handlers ──────────────────────────────────────────────────
   private handleVoiceStart = () => {
     this._viewingActiveCall = true;
     this._isMuted = false;
-    this.voiceController.setMuted(false);
-    this.voiceController.start();
+    this.webrtc.setMuted(false);
+    void this.webrtc.joinCall();
   };
 
-  private handleVoiceStop = () => { this.voiceController.stop(); };
-  private handleActiveCallVoiceStop = () => { this._viewingActiveCall = false; this.voiceController.stop(); };
+  private handleVoiceStop = () => { this.webrtc.leaveCall(); };
+  private handleActiveCallVoiceStop = () => { this._viewingActiveCall = false; this.webrtc.leaveCall(); };
   private handleReturnToChat = () => { this._viewingActiveCall = false; };
   private handleReturnToCall = () => { this._viewingActiveCall = true; };
-  private handleVoiceDismiss = () => { this._voiceState = "idle"; };
+  private handleVoiceDismiss = () => { this._voiceState = 'idle'; };
 
   private handleMuteToggle = (e: CustomEvent<{ muted: boolean }>) => {
     this._isMuted = e.detail.muted;
-    this.voiceController.setMuted(this._isMuted);
+    this.webrtc.setMuted(this._isMuted);
   };
 
   private handleVolumeChange = (e: CustomEvent<{ volume: number }>) => {
-    this.voiceController.setVolume(e.detail.volume);
+    this.webrtc.setVolume(e.detail.volume);
   };
 
   private handleScreenShareToggleRequest = () => { void this.handleScreenShareToggle(); };
   private handleUserTyping = () => { this.controller.sendTyping(); };
 
+  private async handleScreenShareToggle() {
+    try {
+      if (this.webrtc.isScreenSharing) {
+        this.webrtc.stopScreenShare();
+      } else {
+        await this.webrtc.startScreenShare();
+      }
+    } catch (error) {
+      console.error("[ChatRoom] screen share toggle failed", error);
+      this.addSystemNotice("Screen sharing could not be updated.");
+    }
+  }
+
+  // ── Scroll helpers ───────────────────────────────────────────────────────
   private handleMessagesUpdated() {
     this.applyPendingScrollEffect();
     this.applyUnreadFallbackFromSnapshot();
@@ -400,19 +311,6 @@ export class ChatRoom extends LitElement {
 
   private handleImagePreview(e: CustomEvent<{ url: string }>) { this._previewImageUrl = e.detail.url; }
   private closePreview() { this._previewImageUrl = null; }
-
-  private async handleScreenShareToggle() {
-    try {
-      if (this.voiceController.isScreenSharing) {
-        await this.voiceController.stopScreenShare();
-      } else {
-        await this.voiceController.startScreenShare();
-      }
-    } catch (error) {
-      console.error("[ChatRoom] screen share toggle failed", error);
-      this.addSystemNotice("Screen sharing could not be updated.");
-    }
-  }
 
   private handleMessagesScroll() {
     if (this.isAutoScrolling) return;
