@@ -1,6 +1,6 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import type { VoiceCallState } from "../../features/lib/chat/voice-call-controller";
+import type { VoiceCallState } from "../../features/lib/chat/webrtc-adapter";
 
 @customElement("chat-room-header")
 export class ChatRoomHeader extends LitElement {

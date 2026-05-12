@@ -4,28 +4,18 @@ import {
   extractPresenceUpdate,
   extractReactionUpdate,
   extractSystemText,
-  extractVoiceEvent,
   extractTypingEvent,
   type PresenceUpdate,
   type ReactionUpdate,
-  type VoiceEvent,
   type TypingEvent,
   toSystemMessage,
   toUiMessage,
 } from "./chat-message-adapter";
 import { getApiBaseUrl, getSocketUrl } from "./chat-config";
-import { fetchWithAuth } from "../http/fetch-interceptor";
 import { updateConversationLastSeen } from "./chat-room-api";
 
-export type Identity = {
-  room: string;
-  username: string;
-};
-
-export type OutgoingChatPayload = {
-  text: string;
-  imageUrl?: string;
-};
+export type Identity = { room: string; username: string; };
+export type OutgoingChatPayload = { text: string; imageUrl?: string; };
 
 export type ChatRoomControllerOptions = {
   apiBase: string | undefined;
@@ -35,7 +25,8 @@ export type ChatRoomControllerOptions = {
   onConnected?: () => void;
   onPresenceChange?: (users: string[]) => void;
   onReactionUpdate?: (update: ReactionUpdate) => void;
-  onVoiceEvent?: (event: VoiceEvent) => void;
+  /** Raw voice WS event — forwarded directly to WebRTCAdapter.handleVoiceEvent() */
+  onVoiceEvent?: (msg: Record<string, unknown>) => void;
   onTypingEvent?: (event: TypingEvent) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
@@ -64,9 +55,7 @@ export class ChatRoomController {
     this.room = identity.room;
     this.username = identity.username;
     this.activeUsers.clear();
-    if (this.username.trim()) {
-      this.activeUsers.add(this.username.trim());
-    }
+    if (this.username.trim()) this.activeUsers.add(this.username.trim());
     this.emitPresence();
   }
 
@@ -81,56 +70,33 @@ export class ChatRoomController {
     this.started = false;
     this.intentionalClose = true;
     this.flushSeenToServer();
-    if (this.seenSyncTimer !== null) {
-      clearTimeout(this.seenSyncTimer);
-      this.seenSyncTimer = null;
-    }
-    if (this.reconnectTimer !== null) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.close();
-    }
+    if (this.seenSyncTimer !== null) { clearTimeout(this.seenSyncTimer); this.seenSyncTimer = null; }
+    if (this.reconnectTimer !== null) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.close();
     this.socket = null;
     this.reconnectAttempt = 0;
     this.setReconnectState(false);
   }
 
   send(payload: string | OutgoingChatPayload): boolean {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      return false;
-    }
-
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return false;
     if (typeof payload === "string") {
       const text = payload.trim();
       if (!text) return false;
       this.socket.send(JSON.stringify({ text }));
       return true;
     }
-
     const text = payload.text.trim();
     const imageUrl = payload.imageUrl?.trim();
-    if (!text && !imageUrl) {
-      return false;
-    }
-
+    if (!text && !imageUrl) return false;
     const outgoing: { text: string; image_url?: string } = { text };
-    if (imageUrl) {
-      outgoing.image_url = imageUrl;
-    }
-
+    if (imageUrl) outgoing.image_url = imageUrl;
     this.socket.send(JSON.stringify(outgoing));
     return true;
   }
 
-  sendVoiceSignal(payload: {
-    type: "voice";
-    event: "ice_candidate";
-    room: string;
-    username: string;
-    candidate: RTCIceCandidateInit;
-  }): void {
+  /** Send any voice/screen WS signal. Called by WebRTCAdapter via onVoiceSignal. */
+  sendRawSignal(payload: Record<string, unknown>): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(payload));
     }
@@ -139,10 +105,7 @@ export class ChatRoomController {
   sendTyping(): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({
-        type: "typing",
-        event: "started",
-        room: this.room,
-        username: this.username,
+        type: "typing", event: "started", room: this.room, username: this.username,
       }));
     }
   }
@@ -153,40 +116,24 @@ export class ChatRoomController {
     this.options.onReconnectChange(isReconnecting);
   }
 
-  private emitPresence(): void {
-    this.options.onPresenceChange?.(Array.from(this.activeUsers));
-  }
+  private emitPresence(): void { this.options.onPresenceChange?.(Array.from(this.activeUsers)); }
 
   private applyPresenceUpdate(update: PresenceUpdate): void {
     const room = update.room.trim();
-    if (room && room !== this.room) {
-      return;
-    }
-
+    if (room && room !== this.room) return;
     if (update.kind === "snapshot") {
       this.activeUsers.clear();
-      for (const user of update.users) {
-        this.activeUsers.add(user);
-      }
+      for (const user of update.users) this.activeUsers.add(user);
     } else if (update.kind === "user_joined") {
-      if (update.username.trim()) {
-        this.activeUsers.add(update.username.trim());
-      }
+      if (update.username.trim()) this.activeUsers.add(update.username.trim());
     } else if (update.kind === "user_left") {
-      if (update.username.trim()) {
-        this.activeUsers.delete(update.username.trim());
-      }
+      if (update.username.trim()) this.activeUsers.delete(update.username.trim());
     }
-
-    if (this.username.trim()) {
-      this.activeUsers.add(this.username.trim());
-    }
+    if (this.username.trim()) this.activeUsers.add(this.username.trim());
     this.emitPresence();
   }
 
-  private getResolvedApiBaseUrl(): string {
-    return getApiBaseUrl(this.options.apiBase, this.options.wsBase);
-  }
+  private getResolvedApiBaseUrl(): string { return getApiBaseUrl(this.options.apiBase, this.options.wsBase); }
 
   private getResolvedSocketUrl(): string {
     return getSocketUrl({
@@ -200,25 +147,18 @@ export class ChatRoomController {
 
   private async loadHistory(): Promise<void> {
     this.options.onLoadingChange(true);
-
     try {
       const base = this.getResolvedApiBaseUrl();
-      const res = await fetchWithAuth(
-        `${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`,
-      );
+      const res = await fetch(`${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`);
       if (res.ok) {
         const data: ChatMessage[] = await res.json();
-        for (const msg of data) {
-          this.options.onMessage(toUiMessage(msg));
-        }
+        for (const msg of data) this.options.onMessage(toUiMessage(msg));
       }
     } catch {
-      // History unavailable &mdash; proceed to live connection
+      // history unavailable — proceed to live connection
     } finally {
       this.options.onLoadingChange(false);
-      if (!this.intentionalClose) {
-        this.connect();
-      }
+      if (!this.intentionalClose) this.connect();
     }
   }
 
@@ -228,74 +168,50 @@ export class ChatRoomController {
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
-      if (this.username.trim()) {
-        this.activeUsers.add(this.username.trim());
-        this.emitPresence();
-      }
+      if (this.username.trim()) { this.activeUsers.add(this.username.trim()); this.emitPresence(); }
       this.options.onConnected?.();
       this.setReconnectState(false);
       this.reconnectAttempt = 0;
-      this.options.onMessage(
-        toSystemMessage(`Connected as ${this.username} to room "${this.room}"`)
-      );
+      this.options.onMessage(toSystemMessage(`Connected as ${this.username} to room "${this.room}"`));
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
       let payload: unknown;
-      try {
-        payload = JSON.parse(String(event.data));
-      } catch {
-        // Fallback to plain text for transitional servers.
-        this.options.onMessage(toSystemMessage(String(event.data)));
-        return;
-      }
+      try { payload = JSON.parse(String(event.data)); }
+      catch { this.options.onMessage(toSystemMessage(String(event.data))); return; }
 
       const presenceUpdate = extractPresenceUpdate(payload);
-      if (presenceUpdate) {
-        this.applyPresenceUpdate(presenceUpdate);
-      }
+      if (presenceUpdate) { this.applyPresenceUpdate(presenceUpdate); }
 
       const reactionUpdate = extractReactionUpdate(payload);
-      if (reactionUpdate) {
-        this.options.onReactionUpdate?.(reactionUpdate);
-        return;
-      }
+      if (reactionUpdate) { this.options.onReactionUpdate?.(reactionUpdate); return; }
 
-      const voiceEvent = extractVoiceEvent(payload);
-      if (voiceEvent) {
-        if (!this.options.onVoiceEvent) return;
-        // Only route events that belong to this room
-        if (!voiceEvent.room || voiceEvent.room === this.room) {
-          this.options.onVoiceEvent(voiceEvent);
+      // Route ALL voice events (including server_offer) to WebRTCAdapter
+      if (typeof payload === 'object' && payload !== null) {
+        const p = payload as Record<string, unknown>;
+        if (p['type'] === 'voice') {
+          const room = String(p['room'] ?? '');
+          if (!room || room === this.room) {
+            this.options.onVoiceEvent?.(p);
+          }
+          return;
         }
-        return;
       }
 
       const typingEvent = extractTypingEvent(payload);
       if (typingEvent) {
-         if (!this.options.onTypingEvent) return;
-         if (!typingEvent.room || typingEvent.room === this.room) {
-           this.options.onTypingEvent(typingEvent);
-         }
-         return;
+        if (!this.options.onTypingEvent) return;
+        if (!typingEvent.room || typingEvent.room === this.room) this.options.onTypingEvent(typingEvent);
+        return;
       }
 
       const systemText = extractSystemText(payload);
-      if (systemText) {
-        this.options.onMessage(toSystemMessage(systemText));
-        return;
-      }
+      if (systemText) { this.options.onMessage(toSystemMessage(systemText)); return; }
 
       const chatMessage = extractChatMessage(payload);
-      if (!chatMessage) {
-        return;
-      }
-
+      if (!chatMessage) return;
       const uiMessage = toUiMessage(chatMessage);
-      if (uiMessage.username.trim()) {
-        this.activeUsers.add(uiMessage.username.trim());
-        this.emitPresence();
-      }
+      if (uiMessage.username.trim()) { this.activeUsers.add(uiMessage.username.trim()); this.emitPresence(); }
       this.lastSeen = uiMessage.createdAt;
       this.options.onMessage(uiMessage);
       this.scheduleSeenSync();
@@ -304,40 +220,29 @@ export class ChatRoomController {
     this.socket.onclose = (event: CloseEvent) => {
       if (this.intentionalClose) return;
       if (!this.isReconnecting) {
-        const details = event.reason
-          ? `code=${event.code}, reason=${event.reason}`
-          : `code=${event.code}`;
+        const details = event.reason ? `code=${event.code}, reason=${event.reason}` : `code=${event.code}`;
         this.options.onMessage(toSystemMessage(`Disconnected (${details})`));
       }
       this.scheduleReconnect();
     };
 
-    this.socket.onerror = () => {
-      // onclose fires after onerror; reconnect is handled there
-    };
+    this.socket.onerror = () => {};
   }
 
   private scheduleReconnect(): void {
     this.setReconnectState(true);
     const baseDelay = Math.min(1000 * 2 ** this.reconnectAttempt, 30_000);
     const jitter = Math.random() * 0.2 * baseDelay;
-    const delay = baseDelay + jitter;
     this.reconnectAttempt++;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      if (!this.intentionalClose) {
-        this.connect();
-      }
-    }, delay);
+      if (!this.intentionalClose) this.connect();
+    }, baseDelay + jitter);
   }
 
   private scheduleSeenSync(): void {
     if (!this.lastSeen || this.lastSeen === this.lastSyncedSeen) return;
-    if (this.seenSyncTimer !== null) {
-      clearTimeout(this.seenSyncTimer);
-    }
-
-    // Throttle to avoid posting on every message burst.
+    if (this.seenSyncTimer !== null) clearTimeout(this.seenSyncTimer);
     this.seenSyncTimer = setTimeout(() => {
       this.seenSyncTimer = null;
       this.flushSeenToServer();
@@ -346,14 +251,9 @@ export class ChatRoomController {
 
   private flushSeenToServer(): void {
     if (!this.lastSeen || this.lastSeen === this.lastSyncedSeen) return;
-
     const valueToSync = this.lastSeen;
     void updateConversationLastSeen(this.room, this.username, valueToSync)
-      .then(() => {
-        this.lastSyncedSeen = valueToSync;
-      })
-      .catch(() => {
-        // Best-effort only: chat flow should not fail if this endpoint is absent.
-      });
+      .then(() => { this.lastSyncedSeen = valueToSync; })
+      .catch(() => {});
   }
 }

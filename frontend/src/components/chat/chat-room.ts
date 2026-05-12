@@ -9,7 +9,6 @@ import type { TypingEvent } from "../../features/lib/chat/chat-message-adapter";
 import {
   addMessageReaction,
   fetchUnreadCount,
-  fetchVoiceParticipants,
   type VoiceParticipant,
   removeMessageReaction,
   uploadChatImage,
@@ -30,8 +29,7 @@ import {
   shouldAutoScrollForUserMessage,
 } from "../../features/lib/chat/chat-room-unread";
 import { ThemeController } from "../../utils/theme-controller";
-import { VoiceCallController, type VoiceCallState } from "../../features/lib/chat/voice-call-controller";
-import type { VoiceEvent } from "../../features/lib/chat/voice-call-adapter";
+import { WebRTCAdapter, type Participant } from "../../features/lib/chat/webrtc-adapter";
 import "./unread-divider";
 import "./chat-room-header";
 import "./chat-message-item";
@@ -44,65 +42,76 @@ import "./chat-image-preview";
 export class ChatRoom extends LitElement {
   static styles = unsafeCSS(chatRoomStylesRaw);
 
-  @property()
-  username = "Guest";
+  @property() username = "Guest";
+  @property() roomId = "general";
+  @property() roomName = "general";
 
-  @property()
-  roomId = "general";
-
-  @property()
-  roomName = "general";
-
-  @state()
-  private messages: UiMessage[] = [];
-
-  @state()
-  private isLoadingHistory = true;
-
-  @state()
-  private isReconnecting = false;
-  
+  @state() private messages: UiMessage[] = [];
+  @state() private isLoadingHistory = true;
+  @state() private isReconnecting = false;
   @state() private _viewingActiveCall = false;
-  
   @state() private _isMuted = false;
-
   @state() private _previewImageUrl: string | null = null;
   @state() private _typingUsers = new Set<string>();
   private typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   private themeCtrl = new ThemeController(this);
 
-  @state()
-  private unreadAnchorMessageId: string | null = null;
-
-  @state()
-  private hasUnseenMessages = false;
-
-  @state()
-  private pendingUnreadCount: number | null = null;
-
-  @state()
-  private isUploadingImage = false;
+  @state() private unreadAnchorMessageId: string | null = null;
+  @state() private hasUnseenMessages = false;
+  @state() private pendingUnreadCount: number | null = null;
+  @state() private isUploadingImage = false;
 
   private awaitingFirstReplayMessage = false;
   private pendingAutoScroll = false;
   private pendingScrollToAnchor = false;
   private isAutoScrolling = false;
-
   private readonly seenMessageIds = new Set<string>();
-  private readonly controller: ChatRoomController;
 
-  @state() private _voiceState: VoiceCallState = "idle";
-  private readonly voiceController: VoiceCallController;
-
+  // Voice / WebRTC
+  @state() private _voiceState: 'idle' | 'calling' | 'active' | 'error' = 'idle';
   @state() private _voiceParticipants: VoiceParticipant[] = [];
+  @state() private _isScreenSharing = false;
   @state() private _screenSharingUser: string | null = null;
   @state() private _screenShareStream: MediaStream | null = null;
-  @state() private _isScreenSharing = false;
-  private screenSharePendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly webrtc: WebRTCAdapter;
+  private readonly controller: ChatRoomController;
 
   constructor() {
     super();
+
+    this.webrtc = new WebRTCAdapter(
+      {
+        baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',
+        wsBase: import.meta.env.VITE_WS_BASE_URL ?? '',
+        room: this.roomId,
+        username: this.username,
+      },
+      {
+        onCallStateChange: (state) => {
+          this._voiceState = state;
+          if (state === 'idle' || state === 'error') this.resetVoiceUiState();
+        },
+        onParticipantsChange: (participants: Participant[]) => {
+          this._voiceParticipants = participants as VoiceParticipant[];
+        },
+        onScreenShareStarted: (stream, sharerName, isLocal) => {
+          this._screenShareStream = stream;
+          this._isScreenSharing = isLocal || this.webrtc.isScreenSharing;
+          this._screenSharingUser = sharerName.replace(' (you)', '') || this.username;
+          this.requestUpdate();
+        },
+        onScreenShareStopped: () => {
+          this._screenShareStream = null;
+          this._isScreenSharing = false;
+          this._screenSharingUser = null;
+          this.requestUpdate();
+        },
+        onSystemNotice: (text) => this.addSystemNotice(text),
+        onVoiceSignal: (payload) => this.controller.sendRawSignal(payload),
+      },
+    );
 
     this.controller = new ChatRoomController({
       apiBase: import.meta.env.VITE_API_BASE_URL,
@@ -112,76 +121,45 @@ export class ChatRoom extends LitElement {
       onConnected: () => this.emitRoomConnected(),
       onPresenceChange: (users) => this.emitActiveUsers(users),
       onReactionUpdate: (update) => this.applyReactionUpdate(update),
-      onVoiceEvent: (event: VoiceEvent) => this.handleVoiceEvent(event),
+      onVoiceEvent: (msg) => this.webrtc.handleVoiceEvent(msg),
       onTypingEvent: (event: TypingEvent) => this.handleTypingEvent(event),
       onLoadingChange: (isLoading) => this.handleLoadingChange(isLoading),
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
-    });
-
-    this.voiceController = new VoiceCallController({
-      apiBase: import.meta.env.VITE_API_BASE_URL,
-      wsBase: import.meta.env.VITE_WS_BASE_URL,
-      room: this.roomId,
-      username: this.username,
-      onStateChange: (state) => {
-        this._voiceState = state;
-        if (state === "idle" || state === "error") {
-          this.resetVoiceUiState();
-        }
-      },
-      onIceCandidate: (candidate) => {
-        this.controller.sendVoiceSignal({
-          type: "voice",
-          event: "ice_candidate",
-          room: this.roomId,
-          username: this.username,
-          candidate,
-        });
-      },
-      onParticipantsChange: (participants) => {
-        this._voiceParticipants = participants;
-      },
-      onScreenShareTrack: (stream) => {
-        if (this.screenSharePendingTimer) {
-          clearTimeout(this.screenSharePendingTimer);
-          this.screenSharePendingTimer = null;
-        }
-        this._screenShareStream = stream;
-        this._isScreenSharing = Boolean(stream);
-        if (stream && this.voiceController.isScreenSharing) {
-          this._screenSharingUser = this.username;
-        }
-        if (!stream && this._screenSharingUser === this.username) {
-          this._screenSharingUser = null;
-        }
-        this.requestUpdate();
-      },
     });
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.updateControllerIdentity();
+    this.updateAdapterIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
-    void this.loadVoiceParticipants();
     ThemeController.set(this.themeCtrl.theme);
   }
 
-  private async loadVoiceParticipants() {
-    try {
-      this._voiceParticipants = await fetchVoiceParticipants(this.roomId);
-    } catch {
-      // ignore
+  disconnectedCallback(): void {
+    this.controller.stop();
+    this.webrtc.destroy();
+    this.resetVoiceUiState();
+    super.disconnectedCallback();
+  }
+
+  updated(changedProperties: PropertyValues) {
+    if (changedProperties.has("roomId") || changedProperties.has("username")) {
+      this.updateAdapterIdentity();
     }
+    if (changedProperties.has("messages")) this.handleMessagesUpdated();
+  }
+
+  @state() private _activeUsersCount = 0;
+
+  private updateAdapterIdentity(): void {
+    this.controller.updateIdentity({ room: this.roomId, username: this.username });
+    this.webrtc.updateIdentity(this.roomId, this.username);
   }
 
   private async loadUnreadCountSnapshot() {
-    try {
-      this.pendingUnreadCount = await fetchUnreadCount(this.roomId, this.username);
-    } catch {
-      this.pendingUnreadCount = null;
-    }
+    try { this.pendingUnreadCount = await fetchUnreadCount(this.roomId, this.username); }
+    catch { this.pendingUnreadCount = null; }
   }
 
   private toggleTheme(e?: CustomEvent) {
@@ -189,61 +167,21 @@ export class ChatRoom extends LitElement {
     ThemeController.set(next);
   }
 
-  disconnectedCallback(): void {
-    this.controller.stop();
-    void this.voiceController.stop();
-    this.resetVoiceUiState();
-    super.disconnectedCallback();
-  }
-
-  updated(changedProperties: PropertyValues) {
-    if (changedProperties.has("roomId") || changedProperties.has("username")) {
-      this.updateControllerIdentity();
-      if (changedProperties.has("roomId")) {
-        void this.loadVoiceParticipants();
-      }
-    }
-
-    if (changedProperties.has("messages")) {
-      this.handleMessagesUpdated();
-    }
-  }
-
-  @state() private _activeUsersCount = 0;
-
   private emitActiveUsers(users: string[]) {
     this._activeUsersCount = users.length;
-    this.dispatchEvent(
-      new CustomEvent<{ users: string[] }>("active-users-change", {
-        detail: { users },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.dispatchEvent(new CustomEvent<{ users: string[] }>("active-users-change", {
+      detail: { users }, bubbles: true, composed: true,
+    }));
   }
 
   private emitTypingUsers() {
-    this.dispatchEvent(
-      new CustomEvent<{ users: string[] }>("typing-users-change", {
-        detail: { users: Array.from(this._typingUsers) },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.dispatchEvent(new CustomEvent<{ users: string[] }>("typing-users-change", {
+      detail: { users: Array.from(this._typingUsers) }, bubbles: true, composed: true,
+    }));
   }
 
   private emitRoomConnected() {
-    this.dispatchEvent(
-      new CustomEvent("room-connected", {
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  }
-
-  private updateControllerIdentity() {
-    this.controller.updateIdentity({ room: this.roomId, username: this.username });
-    this.voiceController.updateIdentity(this.roomId, this.username);
+    this.dispatchEvent(new CustomEvent("room-connected", { bubbles: true, composed: true }));
   }
 
   private resetVoiceUiState() {
@@ -251,260 +189,64 @@ export class ChatRoom extends LitElement {
     this._screenSharingUser = null;
     this._screenShareStream = null;
     this._isScreenSharing = false;
-    if (this.screenSharePendingTimer) {
-      clearTimeout(this.screenSharePendingTimer);
-      this.screenSharePendingTimer = null;
-    }
   }
 
-  private get inCall() {
-    return this._voiceState === "active" || this._voiceState === "calling";
-  }
-
-  private get showCallView() {
-    return this.inCall && this._viewingActiveCall;
-  }
-
-  private handleVoiceEvent(event: VoiceEvent) {
-    if (event.kind === "ice_candidate") {
-      void this.voiceController.handleRemoteIceCandidate(event.candidate);
-      return;
-    }
-
-    if (event.kind === "screen_share_started") {
-      if (event.username !== this.username) {
-        this._screenSharingUser = event.username;
-        if (this.screenSharePendingTimer) {
-          clearTimeout(this.screenSharePendingTimer);
-        }
-        this.screenSharePendingTimer = setTimeout(() => {
-          if (this._screenSharingUser === event.username && !this._screenShareStream) {
-            this._screenSharingUser = null;
-            this._isScreenSharing = false;
-          }
-          this.screenSharePendingTimer = null;
-        }, 12000);
-        this.requestUpdate();
-      }
-      this.addSystemNotice(`${event.username} started sharing their screen`);
-      return;
-    }
-
-    if (event.kind === "screen_share_stopped") {
-      const participants = this._voiceParticipants;
-      this.resetVoiceUiState();
-      this._voiceParticipants = participants;
-      this.requestUpdate();
-      this.addSystemNotice(`${event.username} stopped sharing their screen`);
-      return;
-    }
-
-    // Optimistically update the participants array depending on the event
-    if (event.kind === "peer_joined") {
-      this._voiceParticipants = event.participants;
-      this.addSystemNotice(`${event.username} joined the voice call`);
-      return;
-    }
-    if (event.kind === "call_ended") {
-      const participants = this._voiceParticipants.filter(u => u.username !== event.username);
-      this.resetVoiceUiState();
-      this._voiceParticipants = participants;
-      this.addSystemNotice(`${event.username} left the voice call`);
-      return;
-    }
-    if (event.kind === "call_started") {
-      if (!this._voiceParticipants.some(u => u.username === event.username)) {
-        this._voiceParticipants = [...this._voiceParticipants, { peer_id: event.peerId, username: event.username }];
-      }
-    }
-
-    // As a fallback to ensure we are never out of sync, fetch the authoritative list
-    if (event.kind === "call_started") {
-      void this.loadVoiceParticipants();
-    }
-
-    const names = { call_started: "started", call_error: "had a call error" };
-    this.addSystemNotice(`${event.username} ${names[event.kind as "call_started" | "call_error"]} a voice call`);
-  }
+  private get inCall() { return this._voiceState === "active" || this._voiceState === "calling"; }
+  private get showCallView() { return this.inCall && this._viewingActiveCall; }
 
   private handleTypingEvent(event: TypingEvent) {
     if (event.username === this.username) return;
-
     this._typingUsers.add(event.username);
-    this._typingUsers = new Set(this._typingUsers); // trigger re-render
+    this._typingUsers = new Set(this._typingUsers);
     this.emitTypingUsers();
-
     const existingTimer = this.typingTimers.get(event.username);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-
+    if (existingTimer) clearTimeout(existingTimer);
     const newTimer = setTimeout(() => {
       this._typingUsers.delete(event.username);
-      this._typingUsers = new Set(this._typingUsers); // trigger re-render
+      this._typingUsers = new Set(this._typingUsers);
       this.emitTypingUsers();
       this.typingTimers.delete(event.username);
     }, 1500);
-
     this.typingTimers.set(event.username, newTimer);
   }
 
   private handleLoadingChange(isLoading: boolean) {
     this.isLoadingHistory = isLoading;
-    // After history load completes, the first incoming user message from WS replay
-    // is treated as the "last seen" boundary anchor.
-    if (!isLoading) {
-      this.awaitingFirstReplayMessage = true;
-    }
+    if (!isLoading) this.awaitingFirstReplayMessage = true;
   }
 
+  // Voice call handlers
   private handleVoiceStart = () => {
     this._viewingActiveCall = true;
     this._isMuted = false;
-    this.voiceController.setMuted(false);
-    this.voiceController.start();
+    this.webrtc.setMuted(false);
+    void this.webrtc.joinCall();
   };
 
-  private handleVoiceStop = () => {
-    this.voiceController.stop();
-  };
-
-  private handleActiveCallVoiceStop = () => {
-    this._viewingActiveCall = false;
-    this.voiceController.stop();
-  };
-
-  private handleReturnToChat = () => {
-    this._viewingActiveCall = false;
-  };
-
-  private handleReturnToCall = () => {
-    this._viewingActiveCall = true;
-  };
-
-  private handleVoiceDismiss = () => {
-    this._voiceState = "idle";
-  };
+  private handleVoiceStop = () => { this.webrtc.leaveCall(); };
+  private handleActiveCallVoiceStop = () => { this._viewingActiveCall = false; this.webrtc.leaveCall(); };
+  private handleReturnToChat = () => { this._viewingActiveCall = false; };
+  private handleReturnToCall = () => { this._viewingActiveCall = true; };
+  private handleVoiceDismiss = () => { this._voiceState = 'idle'; };
 
   private handleMuteToggle = (e: CustomEvent<{ muted: boolean }>) => {
     this._isMuted = e.detail.muted;
-    this.voiceController.setMuted(this._isMuted);
+    this.webrtc.setMuted(this._isMuted);
   };
 
   private handleVolumeChange = (e: CustomEvent<{ volume: number }>) => {
-    this.voiceController.setVolume(e.detail.volume);
+    this.webrtc.setVolume(e.detail.volume);
   };
 
-  private handleScreenShareToggleRequest = () => {
-    void this.handleScreenShareToggle();
-  };
-
-  private handleUserTyping = () => {
-    this.controller.sendTyping();
-  };
-
-  private handleMessagesUpdated() {
-    this.applyPendingScrollEffect();
-    this.applyUnreadFallbackFromSnapshot();
-  }
-
-  private applyPendingScrollEffect() {
-    const messagesEl = getMessagesContainer(this);
-    if (
-      messagesEl &&
-      this.pendingAutoScroll &&
-      !this.pendingScrollToAnchor
-    ) {
-      this.runBottomScroll(messagesEl);
-      this.pendingAutoScroll = false;
-      return;
-    }
-
-    if (this.pendingScrollToAnchor) {
-      this.pendingScrollToAnchor = false;
-      scrollToUnreadBoundary(this, "instant");
-    }
-  }
-
-  private applyUnreadFallbackFromSnapshot() {
-    if (
-      this.isLoadingHistory ||
-      this.unreadAnchorMessageId ||
-      this.pendingUnreadCount === null ||
-      this.pendingUnreadCount <= 0
-    ) {
-      return;
-    }
-
-    const anchorId = getUnreadAnchorFromSnapshot(
-      this.messages,
-      this.username,
-      this.pendingUnreadCount,
-    );
-    if (anchorId) {
-      this.markUnreadFromMessage(anchorId);
-      this.pendingScrollToAnchor = true;
-    }
-
-    this.pendingUnreadCount = null;
-  }
-
-  private runBottomScroll(messagesEl: HTMLElement) {
-    this.isAutoScrolling = true;
-    scrollMessagesToBottom(messagesEl, () => {
-      this.isAutoScrolling = false;
-    });
-  }
-
-  private markUnreadFromMessage(messageId: string) {
-    this.unreadAnchorMessageId = messageId;
-    this.hasUnseenMessages = true;
-  }
-
-  private scheduleAutoScroll() {
-    this.pendingAutoScroll = true;
-  }
-
-  private scheduleScrollToUnreadBoundary() {
-    this.pendingScrollToAnchor = true;
-  }
-
-  private isPageActive(): boolean {
-    return document.visibilityState === "visible" && document.hasFocus();
-  }
-
-  private isMessagesNearBottom(): boolean {
-    return isMessagesNearBottom(this, DEFAULT_NEAR_BOTTOM_THRESHOLD_PX);
-  }
-
-  private clearUnreadMarker() {
-    this.unreadAnchorMessageId = null;
-    this.hasUnseenMessages = false;
-  }
-
-  private handleImagePreview(e: CustomEvent<{ url: string }>) {
-    this._previewImageUrl = e.detail.url;
-  }
-
-  private closePreview() {
-    this._previewImageUrl = null;
-  }
+  private handleScreenShareToggleRequest = () => { void this.handleScreenShareToggle(); };
+  private handleUserTyping = () => { this.controller.sendTyping(); };
 
   private async handleScreenShareToggle() {
     try {
-      if (this.voiceController.isScreenSharing) {
-        await this.voiceController.stopScreenShare();
-        this._isScreenSharing = this.voiceController.isScreenSharing;
-        if (this._screenSharingUser === this.username) {
-          this._screenSharingUser = null;
-        }
-        return;
-      }
-
-      await this.voiceController.startScreenShare();
-      this._isScreenSharing = this.voiceController.isScreenSharing;
-      if (!this._isScreenSharing && this._screenSharingUser === this.username) {
-        this._screenSharingUser = null;
+      if (this._isScreenSharing) {
+        this.webrtc.stopScreenShare();
+      } else {
+        await this.webrtc.startScreenShare();
       }
     } catch (error) {
       console.error("[ChatRoom] screen share toggle failed", error);
@@ -512,138 +254,138 @@ export class ChatRoom extends LitElement {
     }
   }
 
+  // Scroll helpers
+  private handleMessagesUpdated() {
+    this.applyPendingScrollEffect();
+    this.applyUnreadFallbackFromSnapshot();
+  }
+
+  private applyPendingScrollEffect() {
+    const messagesEl = getMessagesContainer(this);
+    if (messagesEl && this.pendingAutoScroll && !this.pendingScrollToAnchor) {
+      this.runBottomScroll(messagesEl);
+      this.pendingAutoScroll = false;
+      return;
+    }
+    if (this.pendingScrollToAnchor) {
+      this.pendingScrollToAnchor = false;
+      scrollToUnreadBoundary(this, "instant");
+    }
+  }
+
+  private applyUnreadFallbackFromSnapshot() {
+    if (this.isLoadingHistory || this.unreadAnchorMessageId ||
+        this.pendingUnreadCount === null || this.pendingUnreadCount <= 0) return;
+    const anchorId = getUnreadAnchorFromSnapshot(this.messages, this.username, this.pendingUnreadCount);
+    if (anchorId) { this.markUnreadFromMessage(anchorId); this.pendingScrollToAnchor = true; }
+    this.pendingUnreadCount = null;
+  }
+
+  private runBottomScroll(messagesEl: HTMLElement) {
+    this.isAutoScrolling = true;
+    scrollMessagesToBottom(messagesEl, () => { this.isAutoScrolling = false; });
+  }
+
+  private markUnreadFromMessage(messageId: string) {
+    this.unreadAnchorMessageId = messageId;
+    this.hasUnseenMessages = true;
+  }
+
+  private scheduleAutoScroll() { this.pendingAutoScroll = true; }
+  private scheduleScrollToUnreadBoundary() { this.pendingScrollToAnchor = true; }
+  private isPageActive(): boolean { return document.visibilityState === "visible" && document.hasFocus(); }
+  private isMessagesNearBottom(): boolean { return isMessagesNearBottom(this, DEFAULT_NEAR_BOTTOM_THRESHOLD_PX); }
+
+  private clearUnreadMarker() {
+    this.unreadAnchorMessageId = null;
+    this.hasUnseenMessages = false;
+  }
+
+  private handleImagePreview(e: CustomEvent<{ url: string }>) { this._previewImageUrl = e.detail.url; }
+  private closePreview() { this._previewImageUrl = null; }
+
   private handleMessagesScroll() {
     if (this.isAutoScrolling) return;
-    if (this.isMessagesNearBottom() && this.hasUnseenMessages) {
-      this.clearUnreadMarker();
-    }
+    if (this.isMessagesNearBottom() && this.hasUnseenMessages) this.clearUnreadMarker();
   }
 
   private addMessage(msg: UiMessage) {
     const isNearBottom = this.isMessagesNearBottom();
-
     if (msg.kind === "user") {
-      if (!this.trackIncomingUserMessage(msg, isNearBottom)) {
-        return;
-      }
-    } else if (
-      shouldAutoScrollForNonUserMessage({
-        isLoadingHistory: this.isLoadingHistory,
-        isPageActive: this.isPageActive(),
-        isNearBottom,
-        hasUnseenMessages: this.hasUnseenMessages,
-      })
-    ) {
+      if (!this.trackIncomingUserMessage(msg, isNearBottom)) return;
+    } else if (shouldAutoScrollForNonUserMessage({
+      isLoadingHistory: this.isLoadingHistory,
+      isPageActive: this.isPageActive(),
+      isNearBottom,
+      hasUnseenMessages: this.hasUnseenMessages,
+    })) {
       this.scheduleAutoScroll();
     }
-
     this.messages = [...this.messages, msg];
   }
 
   private trackIncomingUserMessage(message: UiMessage, isNearBottom: boolean): boolean {
-    if (this.seenMessageIds.has(message.id)) {
-      return false;
-    }
+    if (this.seenMessageIds.has(message.id)) return false;
     this.seenMessageIds.add(message.id);
-
     const isOwnMessage = message.username === this.username;
-
-    if (
-      shouldAnchorFirstReplayMessage({
-        waitingForFirstReplayMessage: this.awaitingFirstReplayMessage,
-        unreadAnchorMessageId: this.unreadAnchorMessageId,
-        isOwnMessage,
-      })
-    ) {
+    if (shouldAnchorFirstReplayMessage({
+      waitingForFirstReplayMessage: this.awaitingFirstReplayMessage,
+      unreadAnchorMessageId: this.unreadAnchorMessageId,
+      isOwnMessage,
+    })) {
       this.markUnreadFromMessage(message.id);
       this.scheduleScrollToUnreadBoundary();
     }
-
     this.awaitingFirstReplayMessage = false;
-
-    if (
-      shouldAutoScrollForUserMessage({
-        isOwnMessage,
-        isLoadingHistory: this.isLoadingHistory,
-        isPageActive: this.isPageActive(),
-        isNearBottom,
-        hasUnseenMessages: this.hasUnseenMessages,
-      })
-    ) {
+    if (shouldAutoScrollForUserMessage({
+      isOwnMessage,
+      isLoadingHistory: this.isLoadingHistory,
+      isPageActive: this.isPageActive(),
+      isNearBottom,
+      hasUnseenMessages: this.hasUnseenMessages,
+    })) {
       this.scheduleAutoScroll();
       return true;
     }
-
     if (!isNearBottom) {
-      if (!this.unreadAnchorMessageId) {
-        this.markUnreadFromMessage(message.id);
-      } else {
-        this.hasUnseenMessages = true;
-      }
+      if (!this.unreadAnchorMessageId) this.markUnreadFromMessage(message.id);
+      else this.hasUnseenMessages = true;
     }
-
     return true;
   }
 
-  private scrollToLastSeen() {
-    scrollToUnreadBoundary(this, "smooth");
-  }
-
-  private getUnreadCount(): number {
-    return getUnreadCount(this.messages, this.unreadAnchorMessageId, this.username);
-  }
+  private scrollToLastSeen() { scrollToUnreadBoundary(this, "smooth"); }
+  private getUnreadCount(): number { return getUnreadCount(this.messages, this.unreadAnchorMessageId, this.username); }
 
   private addSystemNotice(text: string) {
     this.addMessage({
       id: `sys-${Date.now()}-${Math.random()}`,
-      kind: "system",
-      username: "",
-      text,
-      createdAt: new Date().toISOString(),
-      reactions: {},
+      kind: "system", username: "", text,
+      createdAt: new Date().toISOString(), reactions: {},
     });
   }
 
   private applyReactionUpdate(update: ReactionUpdate) {
-    if (update.room && update.room !== this.roomId) {
-      return;
-    }
-
+    if (update.room && update.room !== this.roomId) return;
     this.messages = this.messages.map((message) => {
-      if (message.id !== update.messageId || message.kind !== "user") {
-        return message;
-      }
-
-      return {
-        ...message,
-        reactions: update.reactions,
-      };
+      if (message.id !== update.messageId || message.kind !== "user") return message;
+      return { ...message, reactions: update.reactions };
     });
   }
 
   private async handleMessageReactionToggle(e: CustomEvent<{ messageId: string; emoji: string }>) {
     const { messageId, emoji } = e.detail;
     if (!messageId || !emoji) return;
-
     const username = this.username.trim();
     if (!username) return;
-
     const message = this.messages.find((item) => item.id === messageId && item.kind === "user");
     if (!message) return;
-
     const alreadyReacted = (message.reactions[emoji] ?? []).includes(username);
-
     try {
       const response = alreadyReacted
         ? await removeMessageReaction(this.roomId, messageId, username, emoji)
         : await addMessageReaction(this.roomId, messageId, username, emoji);
-
-      this.applyReactionUpdate({
-        kind: "updated",
-        room: this.roomId,
-        messageId: response.message_id,
-        reactions: response.reactions,
-      });
+      this.applyReactionUpdate({ kind: "updated", room: this.roomId, messageId: response.message_id, reactions: response.reactions });
     } catch {
       this.addSystemNotice("Could not update reaction. Please try again.");
     }
@@ -653,7 +395,6 @@ export class ChatRoom extends LitElement {
     const text = e.detail.text.trim();
     const imageFile = e.detail.imageFile;
     if (!text && !imageFile) return;
-
     let imageUrl: string | undefined;
     if (imageFile) {
       this.isUploadingImage = true;
@@ -661,40 +402,27 @@ export class ChatRoom extends LitElement {
         const uploaded = await uploadChatImage(imageFile);
         imageUrl = uploaded.url;
       } catch (error) {
-        const message = error instanceof Error
-          ? error.message
-          : "Image upload failed. Please try again.";
+        const message = error instanceof Error ? error.message : "Image upload failed. Please try again.";
         this.addSystemNotice(message);
         return;
       } finally {
         this.isUploadingImage = false;
       }
     }
-
     const sent = this.controller.send({ text, imageUrl });
-    if (!sent) {
-      this.addSystemNotice("Message could not be sent because the connection is not ready.");
-    }
+    if (!sent) this.addSystemNotice("Message could not be sent because the connection is not ready.");
   }
 
   private shouldShowMetaForMessage(index: number): boolean {
     const current = this.messages[index];
     const next = this.messages[index + 1];
-
-    if (!current || current.kind !== "user") {
-      return true;
-    }
-
-    if (!next || next.kind !== "user") {
-      return true;
-    }
-
+    if (!current || current.kind !== "user") return true;
+    if (!next || next.kind !== "user") return true;
     return current.username !== next.username;
   }
 
   render() {
     const unreadCount = this.getUnreadCount();
-
     return html`
       <section class="chat-room ${this.themeCtrl.theme === 'dark' ? 'chat-room--dark' : 'chat-room--light'}">
         <chat-room-header
@@ -741,7 +469,7 @@ export class ChatRoom extends LitElement {
           `
         ) : nothing}
 
-        <div class="chat-room__messages" 
+        <div class="chat-room__messages"
              @scroll=${this.handleMessagesScroll}
              @image-preview=${this.handleImagePreview}
              style="${this.showCallView ? 'display: none;' : ''}">
@@ -752,20 +480,18 @@ export class ChatRoom extends LitElement {
               : repeat(
                   this.messages,
                   (m) => m.id,
-                  (m, index) =>
-                    html`
-                      ${this.unreadAnchorMessageId === m.id
-                        ? html`<unread-divider data-unread-anchor></unread-divider>`
-                        : nothing}
-                      <chat-message-item
-                        .message=${m}
-                        .username=${this.username}
-                        .showMeta=${this.shouldShowMetaForMessage(index)}
-                        @message-reaction-toggle=${this.handleMessageReactionToggle}
-                      ></chat-message-item>
-                    `,
+                  (m, index) => html`
+                    ${this.unreadAnchorMessageId === m.id
+                      ? html`<unread-divider data-unread-anchor></unread-divider>`
+                      : nothing}
+                    <chat-message-item
+                      .message=${m}
+                      .username=${this.username}
+                      .showMeta=${this.shouldShowMetaForMessage(index)}
+                      @message-reaction-toggle=${this.handleMessageReactionToggle}
+                    ></chat-message-item>
+                  `,
                 )}
-
           ${this.hasUnseenMessages && unreadCount > 0
             ? html`
                 <button
@@ -795,4 +521,8 @@ export class ChatRoom extends LitElement {
       </section>
     `;
   }
+}
+
+declare global {
+  interface HTMLElementTagNameMap { "chat-room": ChatRoom; }
 }

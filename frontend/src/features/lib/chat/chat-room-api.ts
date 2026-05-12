@@ -26,13 +26,10 @@ export type ConnectedUsersSnapshot = {
   total: number;
 };
 
+/** Kept as the canonical participant shape; re-used by chat-active-call and chat-voice-bar. */
 export type VoiceParticipant = {
   peer_id: string;
   username: string;
-};
-
-export type VoiceParticipantsSnapshot = {
-  participants: VoiceParticipant[];
 };
 
 export type UploadedImage = {
@@ -59,9 +56,7 @@ export async function createRoom(input: string | CreateRoomInput): Promise<Room>
 
   const res = await fetchWithAuth(`${getBase()}/rooms`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -132,13 +127,8 @@ export async function updateConversationLastSeen(
     `${getBase()}/conversations/${encodeURIComponent(room)}/last-seen`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        last_seen: lastSeen,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, last_seen: lastSeen }),
     },
   );
 
@@ -225,13 +215,8 @@ export async function addMessageReaction(
     `${getBase()}/conversations/${encodeURIComponent(room)}/messages/${encodeURIComponent(messageId)}/reactions`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        emoji,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, emoji }),
     },
   );
 
@@ -252,13 +237,8 @@ export async function removeMessageReaction(
     `${getBase()}/conversations/${encodeURIComponent(room)}/messages/${encodeURIComponent(messageId)}/reactions`,
     {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        emoji,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, emoji }),
     },
   );
 
@@ -267,20 +247,4 @@ export async function removeMessageReaction(
   }
 
   return res.json();
-}
-
-export async function fetchVoiceParticipants(room: string): Promise<VoiceParticipant[]> {
-  const url = `${getBase()}/voice/rooms/${encodeURIComponent(room)}`;
-  try {
-    const res = await fetchWithAuth(url);
-    if (!res.ok) {
-      return [];
-    }
-    const data = await res.json();
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.participants)) return data.participants;
-    return [];
-  } catch {
-    return [];
-  }
 }
