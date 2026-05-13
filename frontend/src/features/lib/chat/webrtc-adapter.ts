@@ -206,15 +206,14 @@ export class WebRTCAdapter {
 
   setMonitorEnabled(enabled: boolean): void {
     this.isMonitorEnabled = enabled;
-    if (!this.pc) return;
 
     if (enabled) {
-      if (!this.monitor) {
+      if (this.pc && !this.monitor) {
         this.monitor = new ConnectionMonitor(this.pc);
+        this.monitor.startMonitoring((metrics) => {
+          this.events.onConnectionMetrics?.(metrics);
+        });
       }
-      this.monitor.startMonitoring((metrics) => {
-        this.events.onConnectionMetrics?.(metrics);
-      });
     } else {
       this.monitor?.stopMonitoring();
       this.monitor = null;

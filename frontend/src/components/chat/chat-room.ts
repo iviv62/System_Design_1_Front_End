@@ -143,6 +143,7 @@ export class ChatRoom extends LitElement {
   private readonly boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
 
   connectedCallback(): void {
+    this.webrtc.setMonitorEnabled(settingsStore.getState().isConnectionMonitorEnabled);
     super.connectedCallback();
     window.addEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.addEventListener("focus", this.boundHandleVisibilityChange);
