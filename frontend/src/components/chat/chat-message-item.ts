@@ -40,6 +40,13 @@ export class ChatMessageItem extends LitElement {
     }));
   }
 
+  private handleImageKeydown(e: KeyboardEvent, url: string) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      this.handleImageClick(url);
+    }
+  }
+
   private getReactionEntries() {
     return Object.entries(this.message.reactions)
       .map(([emoji, users]) => ({ emoji, users, count: users.length }))
@@ -105,10 +112,13 @@ export class ChatMessageItem extends LitElement {
                 <img
                   class="message__image"
                   src=${this.message.imageUrl}
-                  alt="Image from ${this.message.username}"
+                  alt="Image from ${this.message.username}, click to expand"
                   loading="lazy"
                   style="cursor: pointer;"
+                  role="button"
+                  tabindex="0"
                   @click=${() => this.handleImageClick(this.message.imageUrl!)}
+                  @keydown=${(e: KeyboardEvent) => this.handleImageKeydown(e, this.message.imageUrl!)}
                 />
               `
             : ""}
