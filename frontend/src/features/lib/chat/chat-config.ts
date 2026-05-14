@@ -4,6 +4,7 @@ type SocketUrlParams = {
   username: string;
   lastSeen?: string | null;
   pageProtocol: string;
+  token?: string | null;
 };
 
 export function getApiBaseUrl(
@@ -32,6 +33,7 @@ export function getSocketUrl({
   username,
   lastSeen,
   pageProtocol,
+  token,
 }: SocketUrlParams): string {
   const host = window.location.hostname || "localhost";
   const base =
@@ -43,6 +45,10 @@ export function getSocketUrl({
 
   if (lastSeen) {
     url.searchParams.set("last_seen", lastSeen);
+  }
+
+  if (token) {
+    url.searchParams.set("token", token);
   }
 
   return url.toString();

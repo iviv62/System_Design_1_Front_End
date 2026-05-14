@@ -21,6 +21,7 @@ export type ChatRoomControllerOptions = {
   apiBase: string | undefined;
   wsBase: string | undefined;
   pageProtocol: string;
+  getToken?: () => string | null;
   onMessage: (message: UiMessage) => void;
   onConnected?: () => void;
   onPresenceChange?: (users: string[]) => void;
@@ -142,6 +143,7 @@ export class ChatRoomController {
       username: this.username,
       lastSeen: this.lastSeen,
       pageProtocol: this.options.pageProtocol,
+      token: this.options.getToken?.(),
     });
   }
 

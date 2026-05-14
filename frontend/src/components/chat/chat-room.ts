@@ -31,6 +31,7 @@ import {
 import { ThemeController } from "../../utils/theme-controller";
 import { WebRTCAdapter, type Participant } from "../../features/lib/chat/webrtc-adapter";
 import type { ConnectionMetrics } from "../../features/lib/chat/connection-monitor";
+import { authStore } from "../../store/auth-store";
 import { settingsStore } from "../../store/settings-store";
 import type { SettingsState } from "../../store/settings-store";
 import { watch } from "zustand-lit";
@@ -129,6 +130,7 @@ export class ChatRoom extends LitElement {
       apiBase: import.meta.env.VITE_API_BASE_URL,
       wsBase: import.meta.env.VITE_WS_BASE_URL,
       pageProtocol: window.location.protocol,
+      getToken: () => authStore.getState().accessToken,
       onMessage: (message) => this.addMessage(message),
       onConnected: () => this.emitRoomConnected(),
       onPresenceChange: (users) => this.emitActiveUsers(users),
