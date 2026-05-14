@@ -1,5 +1,6 @@
 import type { ChatMessage, UiMessage } from "../../../types/message";
 import {
+  extractAckEvent,
   extractChatMessage,
   extractPresenceUpdate,
   extractReactionUpdate,
@@ -32,7 +33,25 @@ export type ChatRoomControllerOptions = {
   onTypingEvent?: (event: TypingEvent) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onReconnectChange: (isReconnecting: boolean) => void;
+  /**
+   * Called when an ack arrives for a pending message.
+   * The host component should flip the message status to 'sent'
+   * and replace the temporary clientId-based id with the real server id.
+   */
+  onMessageAck?: (clientMsgId: string, serverMsgId: string) => void;
+  /**
+   * Called when a message has not been acked within ACK_TIMEOUT_MS.
+   * The host component should mark the message as 'failed'.
+   */
+  onMessageFailed?: (clientMsgId: string) => void;
 };
+
+const ACK_TIMEOUT_MS = 5_000;
+
+/** Generate a lightweight unique id without depending on the `uuid` package. */
+function generateClientId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 export class ChatRoomController {
   private socket: WebSocket | null = null;
@@ -48,6 +67,8 @@ export class ChatRoomController {
   private lastSyncedSeen: string | null = null;
   private readonly activeUsers = new Set<string>();
   private readonly options: ChatRoomControllerOptions;
+  /** clientMsgId → failure timer handle */
+  private readonly pendingAcks = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(options: ChatRoomControllerOptions) {
     this.options = options;
@@ -72,6 +93,7 @@ export class ChatRoomController {
     this.started = false;
     this.intentionalClose = true;
     this.flushSeenToServer();
+    this.clearAllPendingAcks();
     if (this.seenSyncTimer !== null) { clearTimeout(this.seenSyncTimer); this.seenSyncTimer = null; }
     if (this.reconnectTimer !== null) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
     if (this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.close();
@@ -80,21 +102,40 @@ export class ChatRoomController {
     this.setReconnectState(false);
   }
 
-  send(payload: string | OutgoingChatPayload): boolean {
+  /**
+   * Send a chat message.
+   * Returns the clientMsgId so the caller can create an optimistic UiMessage
+   * with status='pending' before the ack arrives.
+   */
+  send(payload: string | OutgoingChatPayload): string | false {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return false;
+
+    const clientMsgId = generateClientId();
+
     if (typeof payload === "string") {
       const text = payload.trim();
       if (!text) return false;
-      this.socket.send(JSON.stringify({ text }));
-      return true;
+      this.socket.send(JSON.stringify({ text, client_msg_id: clientMsgId }));
+    } else {
+      const text = payload.text.trim();
+      const imageUrl = payload.imageUrl?.trim();
+      if (!text && !imageUrl) return false;
+      const outgoing: { text: string; image_url?: string; client_msg_id: string } = {
+        text,
+        client_msg_id: clientMsgId,
+      };
+      if (imageUrl) outgoing.image_url = imageUrl;
+      this.socket.send(JSON.stringify(outgoing));
     }
-    const text = payload.text.trim();
-    const imageUrl = payload.imageUrl?.trim();
-    if (!text && !imageUrl) return false;
-    const outgoing: { text: string; image_url?: string } = { text };
-    if (imageUrl) outgoing.image_url = imageUrl;
-    this.socket.send(JSON.stringify(outgoing));
-    return true;
+
+    // Arm failure timer — cleared when ack arrives
+    const timer = setTimeout(() => {
+      this.pendingAcks.delete(clientMsgId);
+      this.options.onMessageFailed?.(clientMsgId);
+    }, ACK_TIMEOUT_MS);
+    this.pendingAcks.set(clientMsgId, timer);
+
+    return clientMsgId;
   }
 
   /** Send any voice/screen WS signal. Called by WebRTCAdapter via onVoiceSignal. */
@@ -110,6 +151,20 @@ export class ChatRoomController {
         type: "typing", event: "started", room: this.room, username: this.username,
       }));
     }
+  }
+
+  private clearAllPendingAcks(): void {
+    for (const timer of this.pendingAcks.values()) clearTimeout(timer);
+    this.pendingAcks.clear();
+  }
+
+  private handleAck(clientMsgId: string, serverMsgId: string): void {
+    const timer = this.pendingAcks.get(clientMsgId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.pendingAcks.delete(clientMsgId);
+    }
+    this.options.onMessageAck?.(clientMsgId, serverMsgId);
   }
 
   private setReconnectState(isReconnecting: boolean): void {
@@ -183,6 +238,13 @@ export class ChatRoomController {
       try { payload = JSON.parse(String(event.data)); }
       catch { this.options.onMessage(toSystemMessage(String(event.data))); return; }
 
+      // ─ ack: server confirmed our message was saved ────────────────────────────────
+      const ack = extractAckEvent(payload);
+      if (ack) {
+        this.handleAck(ack.clientMsgId, ack.serverMsgId);
+        return;
+      }
+
       const presenceUpdate = extractPresenceUpdate(payload);
       if (presenceUpdate) { this.applyPresenceUpdate(presenceUpdate); }
 
@@ -216,12 +278,18 @@ export class ChatRoomController {
       const uiMessage = toUiMessage(chatMessage);
       if (uiMessage.username.trim()) { this.activeUsers.add(uiMessage.username.trim()); this.emitPresence(); }
       this.lastSeen = uiMessage.createdAt;
+
+      // ─ deduplication: if the broadcast is our own message that is already
+      //   showing as 'pending', the ack handler already updated it — skip append.
+      //   The broadcast from other users (or history replay) goes through normally.
       this.options.onMessage(uiMessage);
       this.scheduleSeenSync();
     };
 
     this.socket.onclose = (event: CloseEvent) => {
       if (this.intentionalClose) return;
+      // Mark all in-flight messages as failed on disconnect
+      this.clearAllPendingAcks();
       if (!this.isReconnecting) {
         const details = event.reason ? `code=${event.code}, reason=${event.reason}` : `code=${event.code}`;
         this.options.onMessage(toSystemMessage(`Disconnected (${details})`));

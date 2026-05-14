@@ -26,6 +26,12 @@ export type ReactionUpdate = {
   reactions: Record<string, string[]>;
 };
 
+/** Payload sent by the server to confirm a message was saved. */
+export type AckEvent = {
+  clientMsgId: string;
+  serverMsgId: string;
+};
+
 function normalizeReactions(value: unknown): Record<string, string[]> {
   if (typeof value !== "object" || value === null) {
     return {};
@@ -198,5 +204,16 @@ export function extractReactionUpdate(payload: any): ReactionUpdate | null {
     room: typeof payload.room === "string" ? payload.room : "",
     messageId: payload.message_id,
     reactions: normalizeReactions(payload.reactions),
+  };
+}
+
+export function extractAckEvent(payload: any): AckEvent | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  if (payload.type !== "ack") return null;
+  if (typeof payload.client_msg_id !== "string" || !payload.client_msg_id) return null;
+  if (typeof payload.server_msg_id !== "string" || !payload.server_msg_id) return null;
+  return {
+    clientMsgId: payload.client_msg_id,
+    serverMsgId: payload.server_msg_id,
   };
 }
