@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { shouldAutoScrollForUserMessage } from "./chat-room-unread.ts";
+import { shouldAutoScrollForUserMessage } from "../src/features/lib/chat/chat-room-unread.ts";
 
 test("shouldAutoScrollForUserMessage", async (t) => {
   await t.test("should return true if it is own message", () => {
