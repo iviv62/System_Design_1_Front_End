@@ -2,6 +2,7 @@ import { LitElement, html, nothing, unsafeCSS } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import chatActiveCallStylesRaw from "../../styles/chat-active-call.styles.scss?inline";
 import type { VoiceParticipant } from "../../features/lib/chat/chat-room-api";
+import type { ConnectionMetrics } from "../../features/lib/chat/connection-monitor";
 
 @customElement("chat-active-call")
 export class ChatActiveCall extends LitElement {
@@ -15,6 +16,7 @@ export class ChatActiveCall extends LitElement {
   @property({ type: Boolean }) isScreenSharing = false;
   @property() screenSharingUser: string | null = null;
   @property({ attribute: false }) screenShareStream: MediaStream | null = null;
+  @property({ type: Object }) connectionMetrics: ConnectionMetrics | null = null;
 
   @state() private timer = "00:00";
   @state() private showVolumeSlider = false;
@@ -161,6 +163,16 @@ export class ChatActiveCall extends LitElement {
           </div>
         </div>
 
+        ${this.connectionMetrics ? html`
+          <div class="active-call__metrics">
+            <div class="active-call__metrics-title">Connection</div>
+            <div>Ping: ${this.connectionMetrics.latencyMs} ms</div>
+            <div>Loss: ${this.connectionMetrics.packetLossPct}%</div>
+            <div>BW: ${this.connectionMetrics.bandwidthMbps} Mbps</div>
+            <div>FPS: ${this.connectionMetrics.fps}</div>
+          </div>
+        ` : nothing}
+
         <!-- Grid -->
         <div class="active-call__grid">
           ${Array.from(uniqueParticipants.values()).map(p => {
@@ -275,6 +287,9 @@ export class ChatActiveCall extends LitElement {
                 `}
               </button>
             </div>
+            <button class="active-call__icon-btn" title="Settings" @click=${() => this.dispatchEvent(new CustomEvent("open-settings", { bubbles: true, composed: true }))}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
             <button class="active-call__icon-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="15" y1="3" x2="21" y2="3"></line><line x1="21" y1="3" x2="21" y2="9"></line><line x1="9" y1="21" x2="3" y2="21"></line><line x1="3" y1="21" x2="3" y2="15"></line><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
             </button>

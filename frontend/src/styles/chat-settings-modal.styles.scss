@@ -102,6 +102,49 @@
   opacity: 0.8;
 }
 
+.diagnostics-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.diagnostics-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.diagnostics-result-box {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.diagnostics-success-title {
+  color: #10b981;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.diagnostics-error-title {
+  color: #ef4444;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.diagnostics-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.diagnostics-error-message {
+  margin: 0;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

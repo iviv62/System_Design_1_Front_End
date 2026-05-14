@@ -154,6 +154,7 @@ export class PageChat extends LitElement {
           @room-connected=${this.handleRoomConnected}
           @active-users-change=${this.handleActiveUsersChange}
           @typing-users-change=${this.handleTypingUsersChange}
+          @open-settings=${() => { this.isSettingsOpen = true; }}
         ></chat-room>
 
         <chat-room-users

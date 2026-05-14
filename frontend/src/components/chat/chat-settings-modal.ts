@@ -1,12 +1,22 @@
-import { LitElement, html, unsafeCSS } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { LitElement, html, unsafeCSS, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import { ThemeController } from "../../utils/theme-controller";
 import chatSettingsModalStylesRaw from "../../styles/chat-settings-modal.styles.scss?inline";
+import { settingsStore } from "../../store/settings-store";
+import type { SettingsState } from "../../store/settings-store";
+import { watch } from "zustand-lit";
+import { troubleshootMediaDevices, type MediaTroubleshootResult } from "../../features/lib/chat/media-device-diagnostics";
 
 @customElement("chat-settings-modal")
 export class ChatSettingsModal extends LitElement {
   @property({ type: Boolean })
   open = false;
+
+  @state() private diagnosticsResult: MediaTroubleshootResult | null = null;
+  @state() private isRunningDiagnostics = false;
+
+  @watch(settingsStore)
+  private settingsState?: SettingsState;
 
   private themeCtrl = new ThemeController(this);
 
@@ -20,6 +30,25 @@ export class ChatSettingsModal extends LitElement {
   private toggleTheme() {
     const newTheme = this.themeCtrl.theme === 'light' ? 'dark' : 'light';
     ThemeController.set(newTheme);
+  }
+
+  private toggleConnectionMonitor() {
+    const current = settingsStore.getState().isConnectionMonitorEnabled;
+    settingsStore.getState().setConnectionMonitorEnabled(!current);
+  }
+
+  private async runDiagnostics() {
+    this.isRunningDiagnostics = true;
+    this.diagnosticsResult = null;
+
+    this.diagnosticsResult = await troubleshootMediaDevices();
+
+    // Stop tracks immediately after diagnostic test to release camera/mic
+    if (this.diagnosticsResult && this.diagnosticsResult.success) {
+      this.diagnosticsResult.stream.getTracks().forEach(t => t.stop());
+    }
+
+    this.isRunningDiagnostics = false;
   }
 
   render() {
@@ -44,7 +73,42 @@ export class ChatSettingsModal extends LitElement {
                 </button>
               </div>
             </div>
-            <!-- Add more settings here in the future -->
+
+            <div class="setting-row">
+              <span class="setting-label">Connection Monitor</span>
+              <div class="setting-control">
+                <button @click=${this.toggleConnectionMonitor}>
+                  ${this.settingsState?.isConnectionMonitorEnabled ? "Disable" : "Enable"}
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-row diagnostics-row">
+              <div class="diagnostics-header">
+                <span class="setting-label">Media Diagnostics</span>
+                <div class="setting-control">
+                  <button @click=${this.runDiagnostics} ?disabled=${this.isRunningDiagnostics}>
+                    ${this.isRunningDiagnostics ? "Running..." : "Run Diagnostics"}
+                  </button>
+                </div>
+              </div>
+
+              ${this.diagnosticsResult ? html`
+                <div class="diagnostics-result-box">
+                  ${this.diagnosticsResult.success ? html`
+                    <div class="diagnostics-success-title">✅ Devices Working Properly</div>
+                    <ul class="diagnostics-list">
+                      ${this.diagnosticsResult.devices.map(d => html`
+                        <li>${d.label || d.kind} (${d.kind})</li>
+                      `)}
+                    </ul>
+                  ` : html`
+                    <div class="diagnostics-error-title">❌ Diagnostics Failed</div>
+                    <p class="diagnostics-error-message">${this.diagnosticsResult.error}</p>
+                  `}
+                </div>
+              ` : nothing}
+            </div>
           </div>
         </div>
       </div>

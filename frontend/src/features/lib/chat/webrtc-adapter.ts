@@ -1,3 +1,5 @@
+import { ConnectionMonitor, type ConnectionMetrics } from './connection-monitor';
+
 // ── Shared types ─────────────────────────────────────────────────────────────
 export interface Participant {
   peer_id: string;
@@ -22,6 +24,7 @@ export type WebRTCAdapterEvents = {
   onScreenShareStopped?: () => void;
   onSystemNotice?: (text: string) => void;
   onVoiceSignal?: (payload: Record<string, unknown>) => void;
+  onConnectionMetrics?: (metrics: ConnectionMetrics) => void;
 };
 
 const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
@@ -41,6 +44,8 @@ export class WebRTCAdapter {
   // ── Main audio PC ───────────────────────────────────────────────────────────
   private pc: RTCPeerConnection | null = null;
   private micStream: MediaStream | null = null;
+  private monitor: ConnectionMonitor | null = null;
+  private isMonitorEnabled = false;
 
   // ── Identity ────────────────────────────────────────────────────────────────
   private myPeerId: string | null = null;
@@ -199,6 +204,23 @@ export class WebRTCAdapter {
     });
   }
 
+  setMonitorEnabled(enabled: boolean): void {
+    this.isMonitorEnabled = enabled;
+    if (!this.pc) return;
+
+    if (enabled) {
+      if (!this.monitor) {
+        this.monitor = new ConnectionMonitor(this.pc);
+      }
+      this.monitor.startMonitoring((metrics) => {
+        this.events.onConnectionMetrics?.(metrics);
+      });
+    } else {
+      this.monitor?.stopMonitoring();
+      this.monitor = null;
+    }
+  }
+
   // ── Main entry point: route parsed WS voice events ─────────────────────────
   handleVoiceEvent(msg: Record<string, unknown>): void {
     const event = String(msg['event'] ?? '');
@@ -325,6 +347,8 @@ export class WebRTCAdapter {
     this.currentSharerName = null;
 
     // Main audio PC
+    this.monitor?.stopMonitoring();
+    this.monitor = null;
     this.micStream?.getTracks().forEach(t => t.stop());
     this.micStream = null;
     this.pc?.close();
@@ -341,6 +365,13 @@ export class WebRTCAdapter {
 
   private createMainPc(): RTCPeerConnection {
     const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+    if (this.isMonitorEnabled) {
+      this.monitor = new ConnectionMonitor(peer);
+      this.monitor.startMonitoring((metrics) => {
+        this.events.onConnectionMetrics?.(metrics);
+      });
+    }
 
     peer.ontrack = ({ track, streams }) => {
       if (track.kind !== 'audio') return;

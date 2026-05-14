@@ -30,6 +30,10 @@ import {
 } from "../../features/lib/chat/chat-room-unread";
 import { ThemeController } from "../../utils/theme-controller";
 import { WebRTCAdapter, type Participant } from "../../features/lib/chat/webrtc-adapter";
+import type { ConnectionMetrics } from "../../features/lib/chat/connection-monitor";
+import { settingsStore } from "../../store/settings-store";
+import type { SettingsState } from "../../store/settings-store";
+import { watch } from "zustand-lit";
 import "./unread-divider";
 import "./chat-room-header";
 import "./chat-message-item";
@@ -75,6 +79,10 @@ export class ChatRoom extends LitElement {
   @state() private _isScreenSharing = false;
   @state() private _screenSharingUser: string | null = null;
   @state() private _screenShareStream: MediaStream | null = null;
+  @state() private _connectionMetrics: ConnectionMetrics | null = null;
+
+  @watch(settingsStore)
+  private settingsState?: SettingsState;
 
   private readonly webrtc: WebRTCAdapter;
   private readonly controller: ChatRoomController;
@@ -111,6 +119,9 @@ export class ChatRoom extends LitElement {
         },
         onSystemNotice: (text) => this.addSystemNotice(text),
         onVoiceSignal: (payload) => this.controller.sendRawSignal(payload),
+        onConnectionMetrics: (metrics) => {
+          this._connectionMetrics = metrics;
+        },
       },
     );
 
@@ -155,6 +166,13 @@ export class ChatRoom extends LitElement {
       this.updateAdapterIdentity();
     }
     if (changedProperties.has("messages")) this.handleMessagesUpdated();
+
+    if (changedProperties.has("settingsState") && this.settingsState) {
+      this.webrtc.setMonitorEnabled(this.settingsState.isConnectionMonitorEnabled);
+      if (!this.settingsState.isConnectionMonitorEnabled) {
+        this._connectionMetrics = null;
+      }
+    }
   }
 
   @state() private _activeUsersCount = 0;
@@ -480,6 +498,7 @@ export class ChatRoom extends LitElement {
               .isScreenSharing=${this._isScreenSharing}
               .screenSharingUser=${this._screenSharingUser}
               .screenShareStream=${this._screenShareStream}
+                  .connectionMetrics=${this._connectionMetrics}
               @voice-stop=${this.handleActiveCallVoiceStop}
               @return-to-chat=${this.handleReturnToChat}
               @voice-mute-toggle=${this.handleMuteToggle}
