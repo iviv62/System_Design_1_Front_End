@@ -13,6 +13,7 @@ import {
 } from "./chat-message-adapter";
 import { getApiBaseUrl, getSocketUrl } from "./chat-config";
 import { updateConversationLastSeen } from "./chat-room-api";
+import { fetchWithAuth } from "../http/fetch-interceptor";
 
 export type Identity = { room: string; username: string; };
 export type OutgoingChatPayload = { text: string; imageUrl?: string; };
@@ -151,7 +152,7 @@ export class ChatRoomController {
     this.options.onLoadingChange(true);
     try {
       const base = this.getResolvedApiBaseUrl();
-      const res = await fetch(`${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`);
+      const res = await fetchWithAuth(`${base}/conversations/${encodeURIComponent(this.room)}/messages?limit=50`);
       if (res.ok) {
         const data: ChatMessage[] = await res.json();
         for (const msg of data) this.options.onMessage(toUiMessage(msg));

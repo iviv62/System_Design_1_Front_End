@@ -1,4 +1,5 @@
 import { ConnectionMonitor, type ConnectionMetrics } from './connection-monitor';
+import { fetchWithAuth } from '../http/fetch-interceptor';
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 export interface Participant {
@@ -110,7 +111,7 @@ export class WebRTCAdapter {
 
     try {
       // Server-offer flow: POST /voice/join → server returns offer + peer_id
-      const joinRes = await fetch(`${this.config.baseUrl}/voice/join`, {
+      const joinRes = await fetchWithAuth(`${this.config.baseUrl}/voice/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room: this._room, username: this._username }),
@@ -124,7 +125,7 @@ export class WebRTCAdapter {
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
 
-      const answerRes = await fetch(`${this.config.baseUrl}/voice/answer`, {
+      const answerRes = await fetchWithAuth(`${this.config.baseUrl}/voice/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ peer_id: this.myPeerId, sdp: answer.sdp, type: answer.type }),
@@ -197,7 +198,7 @@ export class WebRTCAdapter {
     await this.pc.setRemoteDescription({ type: sdpType, sdp });
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
-    await fetch(`${this.config.baseUrl}/voice/answer`, {
+    await fetchWithAuth(`${this.config.baseUrl}/voice/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ peer_id: this.myPeerId, sdp: answer.sdp, type: answer.type }),
