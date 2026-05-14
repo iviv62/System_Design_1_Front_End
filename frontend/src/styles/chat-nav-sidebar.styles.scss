@@ -1,3 +1,8 @@
+/* ============================================================
+   NAV SIDEBAR — consumes --gl-* tokens from chat-app (host)
+   Dark:  Glassmorphism Dark  ·  Light: Luminous Glass
+   ============================================================ */
+
 :host {
   display: block;
   height: 100%;
@@ -11,8 +16,10 @@
   height: 100%;
   padding: 0.75rem 0;
   box-sizing: border-box;
-  background: #070e1f;
-  border-right: 1px solid rgba(71, 85, 105, 0.35);
+  background: var(--gl-panel);
+  backdrop-filter: var(--gl-blur-1);
+  -webkit-backdrop-filter: var(--gl-blur-1);
+  border-right: 1px solid var(--gl-border);
 }
 
 /* ── Top: active room icon ── */
@@ -22,7 +29,7 @@
   align-items: center;
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(71, 85, 105, 0.35);
+  border-bottom: 1px solid var(--gl-border);
   width: 100%;
 }
 
@@ -36,14 +43,14 @@
   border-radius: 14px;
   cursor: pointer;
   transition: opacity 0.15s;
-  color: #0f172a;
+  color: var(--gl-text-faint);
   background: transparent;
 }
 
 .nav-sidebar__room-icon--active {
-  background: #f7a600;
-  color: #0f172a;
-  box-shadow: 0 4px 14px rgba(247, 166, 0, 0.45);
+  background: var(--gl-accent);
+  color: var(--gl-on-accent);
+  box-shadow: 0 4px 14px var(--gl-accent-glow);
 }
 
 .nav-sidebar__room-icon--active:hover {
@@ -69,14 +76,14 @@
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: #4b5f7e;
+  color: var(--gl-text-faint);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-}
 
-.nav-sidebar__icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #94a3b8;
+  &:hover {
+    background: var(--gl-panel-hover);
+    color: var(--gl-text-muted);
+  }
 }
 
 /* ── Bottom: user avatar ── */
@@ -85,7 +92,7 @@
   align-items: center;
   justify-content: center;
   padding-top: 0.65rem;
-  border-top: 1px solid rgba(71, 85, 105, 0.35);
+  border-top: 1px solid var(--gl-border);
   width: 100%;
   margin-top: 0.5rem;
 }
@@ -98,44 +105,15 @@
   height: 38px;
   border-radius: 50%;
   border: none;
-  background: #334155;
-  color: #e2e8f0;
+  background: var(--gl-panel-high);
+  color: var(--gl-text);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   cursor: pointer;
   transition: background 0.15s;
-}
 
-.nav-sidebar__avatar:hover {
-  background: #475569;
-}
-
-/* Light theme overrides */
-:host([data-theme="light"]) .nav-sidebar {
-  background: #f1f5f9;
-  border-right-color: rgba(148, 163, 184, 0.45);
-}
-
-:host([data-theme="light"]) .nav-sidebar__top,
-:host([data-theme="light"]) .nav-sidebar__bottom {
-  border-color: rgba(148, 163, 184, 0.45);
-}
-
-:host([data-theme="light"]) .nav-sidebar__icon-btn {
-  color: #94a3b8;
-}
-
-:host([data-theme="light"]) .nav-sidebar__icon-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #475569;
-}
-
-:host([data-theme="light"]) .nav-sidebar__avatar {
-  background: #cbd5e1;
-  color: #1e293b;
-}
-
-:host([data-theme="light"]) .nav-sidebar__avatar:hover {
-  background: #94a3b8;
+  &:hover {
+    background: var(--gl-panel-hover);
+  }
 }

@@ -1,40 +1,22 @@
+/* ============================================================
+   CHAT ROOM USERS — consumes --gl-* tokens from chat-app
+   Dark:  Glassmorphism Dark  ·  Light: Luminous Glass
+   ============================================================ */
+
 :host {
   display: block;
   height: 100%;
   min-height: 0;
   font-family: inherit;
-
-  --cru-bg: #0b1736;
-  --cru-header-bg: rgba(13, 25, 53, 0.92);
-  --cru-border: rgba(71, 85, 105, 0.55);
-  --cru-title: #f3f4f6;
-  --cru-meta: #9ca3af;
-  --cru-scrollbar: #4b5563;
-  --cru-item-bg: rgba(255, 255, 255, 0.03);
-}
-
-:host([data-theme="light"]) {
-  --cru-bg: #f8fbff;
-  --cru-header-bg: #ffffff;
-  --cru-border: rgba(148, 163, 184, 0.45);
-  --cru-title: #1e293b;
-  --cru-meta: #64748b;
-  --cru-scrollbar: #cbd5e1;
-  --cru-item-bg: rgba(255, 255, 255, 0.92);
-  --cru-status: #3b82f6;
-  --cru-count-bg: #eef4ff;
-}
-
-:host:not(:host([data-theme="light"])) {
-  --cru-status: #8fb3e4;
-  --cru-count-bg: rgba(255, 255, 255, 0.04);
 }
 
 .chat-room__users {
   height: 100%;
   border: none;
-  border-left: 1px solid var(--cru-border);
-  background: var(--cru-header-bg);
+  border-left: 1px solid var(--gl-border);
+  background: var(--gl-panel);
+  backdrop-filter: var(--gl-blur-1);
+  -webkit-backdrop-filter: var(--gl-blur-1);
   border-radius: 0;
   display: flex;
   flex-direction: column;
@@ -44,7 +26,7 @@
 
 .chat-room__users-header {
   padding: 1rem 1.08rem 0.9rem;
-  border-bottom: 1px solid var(--cru-border);
+  border-bottom: 1px solid var(--gl-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -56,7 +38,7 @@
   font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
-  color: var(--cru-meta);
+  color: var(--gl-text-muted);
   letter-spacing: 0.1em;
 }
 
@@ -64,14 +46,14 @@
   min-width: 1.6rem;
   height: 1.6rem;
   border-radius: 8px;
-  border: 1px solid var(--cru-border);
+  border: 1px solid var(--gl-border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 0.76rem;
   font-weight: 700;
-  color: var(--cru-meta);
-  background: var(--cru-count-bg);
+  color: var(--gl-text-muted);
+  background: var(--gl-panel-high);
 }
 
 .chat-room__users-list {
@@ -82,15 +64,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.62rem;
-}
 
-.chat-room__users-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chat-room__users-list::-webkit-scrollbar-thumb {
-  background-color: var(--cru-scrollbar);
-  border-radius: 999px;
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--gl-outline-var);
+    border-radius: 999px;
+  }
 }
 
 .chat-room__user-item {
@@ -104,7 +83,7 @@
   cursor: default;
 
   &:hover {
-    background-color: rgba(30, 41, 59, 0.4); // Tailwind slate-800 equivalent
+    background-color: var(--gl-panel-hover);
 
     .chat-room__user-avatar {
       transform: scale(1.05);
@@ -132,21 +111,11 @@
   transition: transform 0.2s ease-out;
 }
 
-.chat-room__user-avatar--tone-0 {
-  background: linear-gradient(135deg, #facc15, #f59e0b);
-}
-
-.chat-room__user-avatar--tone-1 {
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-}
-
-.chat-room__user-avatar--tone-2 {
-  background: linear-gradient(135deg, #c084fc, #9333ea);
-}
-
-.chat-room__user-avatar--tone-3 {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
-}
+/* Avatar colour tones — kept as vivid gradients intentionally */
+.chat-room__user-avatar--tone-0 { background: linear-gradient(135deg, #facc15, #f59e0b); }
+.chat-room__user-avatar--tone-1 { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.chat-room__user-avatar--tone-2 { background: linear-gradient(135deg, #c084fc, #9333ea); }
+.chat-room__user-avatar--tone-3 { background: linear-gradient(135deg, #94a3b8, #64748b); }
 
 .chat-room__user-presence-dot {
   position: absolute;
@@ -155,21 +124,19 @@
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  border: 3px solid var(--cru-header-bg); // The thick avatar ring
+  /* Use canvas color so the ring always matches the panel bg */
+  border: 3px solid var(--gl-canvas);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .chat-room__user-presence-dot--online {
-  background: #10b981; // Emerald-500
+  background: #10b981;
 }
 
 @keyframes ping {
-  75%, 100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
+  75%, 100% { transform: scale(2.5); opacity: 0; }
 }
 
 .chat-room__user-presence-dot--typing-ping {
@@ -177,12 +144,12 @@
   width: 100%;
   height: 100%;
   border-radius: 999px;
-  background-color: #10b981; // Emerald-500
+  background-color: #10b981;
   animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 .chat-room__user-presence-dot--typing {
-  background: #10b981; // Emerald-500
+  background: #10b981;
 }
 
 .chat-room__user-main {
@@ -196,7 +163,7 @@
   font-size: 1rem;
   line-height: 1.2;
   font-weight: 700;
-  color: var(--cru-title);
+  color: var(--gl-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -205,21 +172,17 @@
 .chat-room__user-status {
   font-size: 0.78rem;
   line-height: 1.15;
-  color: var(--cru-status);
-  font-weight: 400; // Softer status indicator
+  color: var(--gl-primary);
+  font-weight: 400;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
 }
 
 .chat-room__user-status--typing {
-  color: var(--vcl-primary, #3b82f6);
+  color: var(--gl-primary-cta);
   font-style: italic;
   font-weight: 500;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -231,14 +194,14 @@
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   border: none;
-  color: #fbbf24; // Amber-400
-  background: rgba(245, 158, 11, 0.15); // amber-500 equivalent with low opacity
+  color: var(--gl-accent);
+  background: var(--gl-accent-subtle);
 }
 
 .chat-room__users-empty {
   margin: 0;
   padding: 0.6rem;
-  color: var(--cru-meta);
+  color: var(--gl-text-muted);
   font-size: 0.8rem;
   text-align: center;
 }
