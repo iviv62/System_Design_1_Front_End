@@ -139,6 +139,22 @@ export class ChatRoom extends LitElement {
       onTypingEvent: (event: TypingEvent) => this.handleTypingEvent(event),
       onLoadingChange: (isLoading) => this.handleLoadingChange(isLoading),
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
+      onMessageAck: (clientId, serverId) => {
+        // Replace the temp clientId-based message with the confirmed server id
+        // and flip status to 'sent'. The subsequent broadcast from the server
+        // will be deduplicated by seenMessageIds using the real serverId.
+        this.seenMessageIds.add(serverId);
+        this.messages = this.messages.map((m) =>
+          m.clientId === clientId
+            ? { ...m, id: serverId, clientId: undefined, status: "sent" as const }
+            : m,
+        );
+      },
+      onMessageFailed: (clientId) => {
+        this.messages = this.messages.map((m) =>
+          m.clientId === clientId ? { ...m, status: "failed" as const } : m,
+        );
+      },
     });
   }
 
@@ -531,6 +547,7 @@ export class ChatRoom extends LitElement {
     const text = e.detail.text.trim();
     const imageFile = e.detail.imageFile;
     if (!text && !imageFile) return;
+
     let imageUrl: string | undefined;
     if (imageFile) {
       this.isUploadingImage = true;
@@ -546,9 +563,28 @@ export class ChatRoom extends LitElement {
         this.isUploadingImage = false;
       }
     }
-    const sent = this.controller.send({ text, imageUrl });
-    if (!sent)
+
+    const clientMsgId = this.controller.send({ text, imageUrl });
+    if (!clientMsgId) {
       this.addSystemNotice("Message could not be sent because the connection is not ready.");
+      return;
+    }
+
+    // Append optimistic message immediately — visible before server round-trip
+    const optimisticMsg: UiMessage = {
+      id: clientMsgId,
+      clientId: clientMsgId,
+      kind: "user",
+      username: this.username,
+      text,
+      imageUrl,
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      status: "pending",
+    };
+    // Register the temp id so dedup logic doesn't block it
+    this.seenMessageIds.add(clientMsgId);
+    this.addMessage(optimisticMsg);
   }
 
   private shouldShowMetaForMessage(index: number): boolean {

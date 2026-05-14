@@ -90,6 +90,21 @@ export class ChatMessageItem extends LitElement {
     return fragments;
   }
 
+  private renderStatusIndicator() {
+    const { status } = this.message;
+    if (!status) return null;
+    if (status === "pending") {
+      return html`<span class="message__status message__status--pending" title="Sending…">⧖</span>`;
+    }
+    if (status === "sent") {
+      return html`<span class="message__status message__status--sent" title="Delivered">✓</span>`;
+    }
+    if (status === "failed") {
+      return html`<span class="message__status message__status--failed" title="Failed to send">⚠️</span>`;
+    }
+    return null;
+  }
+
   render() {
     if (this.message.kind === "system") {
       return html`<div class="message message--system" data-message-id=${this.message.id}>${this.message.text}</div>`;
@@ -97,10 +112,16 @@ export class ChatMessageItem extends LitElement {
 
     const isOwnMessage = this.message.username === this.username;
     const reactions = this.getReactionEntries();
+    const isPending = this.message.status === "pending";
+    const isFailed = this.message.status === "failed";
 
     return html`
       <article
-        class="message message--user ${isOwnMessage ? "message--self" : ""} ${this.showMeta ? "" : "message--compact"}"
+        class="message message--user
+          ${isOwnMessage ? "message--self" : ""}
+          ${this.showMeta ? "" : "message--compact"}
+          ${isPending ? "message--pending" : ""}
+          ${isFailed ? "message--failed" : ""}"
         data-message-id=${this.message.id}
       >
         ${!isOwnMessage && this.showMeta
@@ -126,8 +147,15 @@ export class ChatMessageItem extends LitElement {
             ? html`<div class="message__text">${this.renderTextWithLinks(this.message.text)}</div>`
             : ""}
           ${this.showMeta
-            ? html`<div class="message__time">${formatTime(this.message.createdAt)}</div>`
-            : ""}
+            ? html`
+                <div class="message__meta">
+                  <span class="message__time">${formatTime(this.message.createdAt)}</span>
+                  ${isOwnMessage ? this.renderStatusIndicator() : null}
+                </div>
+              `
+            : html`
+                ${isOwnMessage ? this.renderStatusIndicator() : null}
+              `}
         </div>
         <div class="message__reactions ${isOwnMessage ? "message__reactions--self" : ""}" aria-label="Message reactions">
           <message-reaction-picker
