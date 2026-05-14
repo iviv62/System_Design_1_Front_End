@@ -68,6 +68,12 @@ export class ChatRoomController {
   private readonly options: ChatRoomControllerOptions;
   /** clientMsgId → failure timer handle */
   private readonly pendingAcks = new Map<string, ReturnType<typeof setTimeout>>();
+  /**
+   * Server ids we have already delivered to the UI via onMessageAck.
+   * When the server broadcast of our own message arrives, we suppress it here
+   * so the optimistic entry is not duplicated.
+   */
+  private readonly ackedServerIds = new Set<string>();
 
   constructor(options: ChatRoomControllerOptions) {
     this.options = options;
@@ -93,6 +99,7 @@ export class ChatRoomController {
     this.intentionalClose = true;
     this.flushSeenToServer();
     this.clearAllPendingAcks();
+    this.ackedServerIds.clear();
     if (this.seenSyncTimer !== null) { clearTimeout(this.seenSyncTimer); this.seenSyncTimer = null; }
     if (this.reconnectTimer !== null) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
     if (this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.close();
@@ -163,6 +170,8 @@ export class ChatRoomController {
       clearTimeout(timer);
       this.pendingAcks.delete(clientMsgId);
     }
+    // Register the real server id so we can drop the subsequent broadcast
+    this.ackedServerIds.add(serverMsgId);
     this.options.onMessageAck?.(clientMsgId, serverMsgId);
   }
 
@@ -275,12 +284,19 @@ export class ChatRoomController {
       const chatMessage = extractChatMessage(payload);
       if (!chatMessage) return;
       const uiMessage = toUiMessage(chatMessage);
+
+      // ─ deduplication: drop the server broadcast of our own optimistic message.
+      //   handleAck() registered the serverId synchronously before this frame can
+      //   arrive, so this check is always reliable regardless of Lit render timing.
+      if (this.ackedServerIds.has(uiMessage.id)) {
+        this.ackedServerIds.delete(uiMessage.id);
+        this.lastSeen = uiMessage.createdAt;
+        this.scheduleSeenSync();
+        return;
+      }
+
       if (uiMessage.username.trim()) { this.activeUsers.add(uiMessage.username.trim()); this.emitPresence(); }
       this.lastSeen = uiMessage.createdAt;
-
-      // ─ deduplication: if the broadcast is our own message that is already
-      //   showing as 'pending', the ack handler already updated it — skip append.
-      //   The broadcast from other users (or history replay) goes through normally.
       this.options.onMessage(uiMessage);
       this.scheduleSeenSync();
     };
@@ -289,6 +305,7 @@ export class ChatRoomController {
       if (this.intentionalClose) return;
       // Mark all in-flight messages as failed on disconnect
       this.clearAllPendingAcks();
+      this.ackedServerIds.clear();
       if (!this.isReconnecting) {
         const details = event.reason ? `code=${event.code}, reason=${event.reason}` : `code=${event.code}`;
         this.options.onMessage(toSystemMessage(`Disconnected (${details})`));
