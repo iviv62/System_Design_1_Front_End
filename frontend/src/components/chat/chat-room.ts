@@ -140,9 +140,6 @@ export class ChatRoom extends LitElement {
       onLoadingChange: (isLoading) => this.handleLoadingChange(isLoading),
       onReconnectChange: (isReconnecting) => (this.isReconnecting = isReconnecting),
       onMessageAck: (clientId, serverId) => {
-        // Replace the temp clientId-based message with the confirmed server id
-        // and flip status to 'sent'. The broadcast dedup is handled by
-        // ackedServerIds in the controller — no need to touch seenMessageIds here.
         console.log(`[ChatRoom] onMessageAck — clientId=${clientId} serverId=${serverId}`);
         this.messages = this.messages.map((m) =>
           m.clientId === clientId
@@ -168,6 +165,12 @@ export class ChatRoom extends LitElement {
     this.controller.start();
     void this.loadUnreadCountSnapshot();
     ThemeController.set(this.themeCtrl.theme);
+    // Sync the monitor with whatever the store already holds so we don't
+    // depend solely on the `updated()` change-detection path, which can
+    // miss the very first population of settingsState when it races with
+    // joinCall() creating the RTCPeerConnection.
+    const currentSettings = settingsStore.getState();
+    this.webrtc.setMonitorEnabled(currentSettings.isConnectionMonitorEnabled);
   }
 
   disconnectedCallback(): void {
@@ -187,9 +190,10 @@ export class ChatRoom extends LitElement {
 
     if (changedProperties.has("settingsState") && this.settingsState) {
       this.webrtc.setMonitorEnabled(this.settingsState.isConnectionMonitorEnabled);
-      if (!this.settingsState.isConnectionMonitorEnabled) {
-        this._connectionMetrics = null;
-      }
+      // Do NOT null out _connectionMetrics here — clearing it causes the
+      // panel to stay blank until the next 1 s tick after re-enabling.
+      // Visibility is now controlled by passing isConnectionMonitorEnabled
+      // as a separate prop to <chat-active-call>.
     }
   }
 
@@ -572,9 +576,6 @@ export class ChatRoom extends LitElement {
       return;
     }
 
-    // Append optimistic message immediately — visible before server round-trip.
-    // Do NOT pre-register clientMsgId in seenMessageIds here; trackIncomingUserMessage
-    // handles that on the first call. Broadcast dedup is owned by the controller.
     const optimisticMsg: UiMessage = {
       id: clientMsgId,
       clientId: clientMsgId,
@@ -600,6 +601,7 @@ export class ChatRoom extends LitElement {
 
   render() {
     const unreadCount = this.getUnreadCount();
+    const monitorEnabled = this.settingsState?.isConnectionMonitorEnabled ?? false;
     return html`
       <section
         class="chat-room ${this.themeCtrl.theme === "dark"
@@ -631,7 +633,9 @@ export class ChatRoom extends LitElement {
                   .isScreenSharing=${this._isScreenSharing}
                   .screenSharingUser=${this._screenSharingUser}
                   .screenShareStream=${this._screenShareStream}
-                  .connectionMetrics=${this._connectionMetrics}
+                  .connectionMetrics=${
+                    monitorEnabled ? this._connectionMetrics : null
+                  }
                   @voice-stop=${this.handleActiveCallVoiceStop}
                   @return-to-chat=${this.handleReturnToChat}
                   @voice-mute-toggle=${this.handleMuteToggle}
