@@ -168,7 +168,7 @@ export class ChatActiveCall extends LitElement {
           </div>
           <div class="active-call__header-right">
             <span class="active-call__timer">${this.timer}</span>
-            <button class="active-call__icon-btn" title="View Chat" @click=${() => this.dispatchEvent(new CustomEvent("return-to-chat", { bubbles: true, composed: true }))}>
+            <button class="active-call__icon-btn" title="View Chat" aria-label="View Chat" @click=${() => this.dispatchEvent(new CustomEvent("return-to-chat", { bubbles: true, composed: true }))}>
               ${iconChat}
             </button>
           </div>
@@ -240,7 +240,7 @@ export class ChatActiveCall extends LitElement {
         <!-- Toolbar -->
         <div class="active-call__toolbar">
           <div class="active-call__toolbar-center">
-            <button class="active-call__toolbar-btn">
+            <button class="active-call__toolbar-btn" title="Toggle video" aria-label="Toggle video">
               ${iconVideoCameraOff}
             </button>
             <button
@@ -255,11 +255,13 @@ export class ChatActiveCall extends LitElement {
             <button
               class="active-call__toolbar-btn"
               style="${this.isMuted ? 'background-color: #ef4444; color: white; border-color: #ef4444;' : ''}"
+              title=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
+              aria-label=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
               @click=${() => this.dispatchEvent(new CustomEvent("voice-mute-toggle", { detail: { muted: !this.isMuted }, bubbles: true, composed: true }))}
             >
               ${this.isMuted ? iconMicOff : iconMic}
             </button>
-            <button class="active-call__toolbar-btn active-call__toolbar-btn--end" @click=${this.handleEndCall}>
+            <button class="active-call__toolbar-btn active-call__toolbar-btn--end" title="End call" aria-label="End call" @click=${this.handleEndCall}>
               ${iconPhoneOff}
             </button>
           </div>
@@ -297,14 +299,14 @@ export class ChatActiveCall extends LitElement {
                   />
                 </div>
               ` : nothing}
-              <button class="active-call__icon-btn" @click=${() => this.showVolumeSlider = !this.showVolumeSlider}>
+              <button class="active-call__icon-btn" title=${this.volume === 0 ? "Unmute volume" : "Mute volume"} aria-label=${this.volume === 0 ? "Unmute volume" : "Mute volume"} @click=${() => this.showVolumeSlider = !this.showVolumeSlider}>
                 ${this.volume === 0 ? iconVolumeOff : iconVolume}
               </button>
             </div>
-            <button class="active-call__icon-btn" title="Settings" @click=${() => this.dispatchEvent(new CustomEvent("open-settings", { bubbles: true, composed: true }))}>
+            <button class="active-call__icon-btn" title="Settings" aria-label="Settings" @click=${() => this.dispatchEvent(new CustomEvent("open-settings", { bubbles: true, composed: true }))}>
               ${iconSettings}
             </button>
-            <button class="active-call__icon-btn">
+            <button class="active-call__icon-btn" title="Expand view" aria-label="Expand view">
               ${iconExpand}
             </button>
           </div>

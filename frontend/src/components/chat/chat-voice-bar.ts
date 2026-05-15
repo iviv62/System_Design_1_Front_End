@@ -112,7 +112,8 @@ export class ChatVoiceBar extends LitElement {
             ${this.state === "active" ? html`
               <button
                 style="background: ${this.isMuted ? '#ef4444' : 'transparent'}; border: none; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 2px;"
-                title=${this.isMuted ? "Unmute" : "Mute"}
+                title=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
+                aria-label=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
                 @click=${() => this.dispatchEvent(new CustomEvent("voice-mute-toggle", { detail: { muted: !this.isMuted }, bubbles: true, composed: true }))}
               >
                 ${this.isMuted ? iconMicOffSm : iconMicSm}
