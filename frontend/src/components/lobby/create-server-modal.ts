@@ -16,6 +16,7 @@ export class CreateServerModal extends LitElement {
   @state() private newRoomName = "";
   @state() private selectedCategory = "Gaming";
   @state() private selectedPrivacy: Privacy = "public";
+  @state() private avatarDataUrl: string | null = null;
 
   private _triggerEl: HTMLElement | null = null;
   private _onKeyDown = (e: KeyboardEvent) => {
@@ -41,6 +42,7 @@ export class CreateServerModal extends LitElement {
           name: this.newRoomName.trim(),
           status: this.selectedPrivacy,
           category: this.selectedCategory,
+          avatar: this.avatarDataUrl,
         },
         bubbles: true,
         composed: true,
@@ -48,6 +50,7 @@ export class CreateServerModal extends LitElement {
     );
     this.newRoomName = "";
     this.error = "";
+    this.avatarDataUrl = null;
     this.isModalOpen = false;
     this._triggerEl?.focus();
   }
@@ -56,9 +59,9 @@ export class CreateServerModal extends LitElement {
     this._triggerEl = this.renderRoot.querySelector(".lobby__btn--dark");
     this.isModalOpen = true;
     this.newRoomName = "";
-    this.error = "";
     this.selectedCategory = "Gaming";
     this.selectedPrivacy = "public";
+    this.avatarDataUrl = null;
     this.updateComplete.then(() => {
       (this.renderRoot.querySelector("input[type='text']") as HTMLElement)?.focus();
     });
@@ -66,7 +69,23 @@ export class CreateServerModal extends LitElement {
 
   private closeModal() {
     this.isModalOpen = false;
+    this.avatarDataUrl = null;
     this._triggerEl?.focus();
+  }
+
+  private triggerAvatarUpload() {
+    const input = this.renderRoot.querySelector<HTMLInputElement>("#avatar-file-input");
+    input?.click();
+  }
+
+  private handleAvatarFileChange(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.avatarDataUrl = reader.result as string;
+    };
+    reader.readAsDataURL(file);
   }
 
   render() {
@@ -105,35 +124,47 @@ export class CreateServerModal extends LitElement {
                   <div class="modal-section">
                     <div class="modal-section-title">1. IDENTITY</div>
                     <div class="identity-content">
-                      <div
-                        class="upload-avatar"
-                        role="button"
-                        tabindex="0"
+                      <!-- Hidden file input -->
+                      <input
+                        id="avatar-file-input"
+                        type="file"
+                        accept="image/*"
+                        style="display:none"
+                        @change=${this.handleAvatarFileChange}
+                      />
+
+                      <button
+                        class="upload-avatar ${this.avatarDataUrl ? "upload-avatar--has-image" : ""}"
+                        @click=${this.triggerAvatarUpload}
                         aria-label="Upload server avatar"
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            (e.target as HTMLElement).click();
-                          }
-                        }}
+                        type="button"
                       >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          aria-hidden="true"
-                        >
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                          <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        <span>UPLOAD</span>
-                      </div>
+                        ${this.avatarDataUrl
+                          ? html`<img
+                              src=${this.avatarDataUrl}
+                              alt="Server avatar preview"
+                              class="upload-avatar__preview"
+                            />`
+                          : html`
+                              <svg
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                              >
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                              </svg>
+                              <span>UPLOAD</span>
+                            `}
+                      </button>
+
                       <div class="server-name-input">
                         <label for="server-name-input">Server Name</label>
                         <input
