@@ -92,6 +92,7 @@ export class LobbyCreateRoom extends LitElement {
                           .value=${this.newRoomName}
                           @input=${(e: Event) =>
                             (this.newRoomName = (e.target as HTMLInputElement).value)}
+                          @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleSubmit(e)}
                         />
                       </div>
                     </div>
