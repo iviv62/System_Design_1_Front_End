@@ -107,7 +107,7 @@ input:focus {
 
 :host-context(body[data-theme="dark"]) input:focus {
   border-color: #3B82F6;
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 input::placeholder {
