@@ -7,8 +7,8 @@ chat-app {
   --border-color: #e2e8f0;
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
-  --btn-primary-bg: #60a5fa;
-  --btn-primary-hover: #3b82f6;
+  --btn-primary-bg: #3B82F6;
+  --btn-primary-hover: #2563eb;
   --btn-primary-text: #ffffff;
   --btn-dark-bg: #1e3a8a;
   --btn-dark-hover: #172554;
@@ -16,12 +16,15 @@ chat-app {
   --item-bg: #ffffff;
   --item-hover: #f8fafc;
   --item-selected-bg: #eff6ff;
-  --item-selected-border: #3b82f6;
+  --item-selected-border: #3B82F6;
   --table-header-bg: #f8fafc;
   --table-row-1: #ffffff;
   --table-row-2: #f8fafc;
   --table-row-hover: #f1f5f9;
   --shadow-color: rgba(0, 0, 0, 0.1);
+  --card-backdrop: none;
+  --card-border-radius: 16px;
+  --input-border-radius: 8px;
 
   display: flex;
   justify-content: center;
@@ -29,36 +32,36 @@ chat-app {
   min-height: 100vh;
   width: 100%;
   background-color: var(--bg-color);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: var(--text-primary);
   padding: 2rem;
   box-sizing: border-box;
 }
 
-
 @mixin dark-theme-vars {
-  --bg-color: #0f172a;
-  --card-bg: #1e293b;
-  --text-primary: #f8fafc;
+  --bg-color: #11131b;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --text-primary: #F8FAFC;
   --text-secondary: #94a3b8;
-  --border-color: #334155;
-  --input-bg: #0f172a;
-  --input-border: #475569;
-  --btn-primary-bg: #3b82f6;
-  --btn-primary-hover: #2563eb;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(0, 0, 0, 0.2);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --btn-primary-bg: #3B82F6;
+  --btn-primary-hover: #60A5FA;
   --btn-primary-text: #ffffff;
-  --btn-dark-bg: #1e40af;
-  --btn-dark-hover: #1e3a8a;
+  --btn-dark-bg: rgba(255, 255, 255, 0.05);
+  --btn-dark-hover: rgba(255, 255, 255, 0.1);
   --btn-dark-text: #ffffff;
-  --item-bg: #1e293b;
-  --item-hover: #334155;
-  --item-selected-bg: #172554;
-  --item-selected-border: #60a5fa;
-  --table-header-bg: #0f172a;
-  --table-row-1: #1e293b;
-  --table-row-2: #0f172a;
-  --table-row-hover: #1e293b;
-  --shadow-color: rgba(0, 0, 0, 0.5);
+  --item-bg: rgba(255, 255, 255, 0.02);
+  --item-hover: rgba(255, 255, 255, 0.05);
+  --item-selected-bg: rgba(59, 130, 246, 0.15);
+  --item-selected-border: #3B82F6;
+  --table-header-bg: rgba(255, 255, 255, 0.03);
+  --table-row-1: rgba(255, 255, 255, 0.01);
+  --table-row-2: transparent;
+  --table-row-hover: rgba(255, 255, 255, 0.04);
+  --shadow-color: transparent;
+  --card-backdrop: blur(16px);
 }
 
 [data-theme="dark"] chat-app {
@@ -86,19 +89,24 @@ chat-app {
 
   &__title {
     font-size: 1.75rem;
+    font-weight: 600;
     margin: 0;
     color: var(--text-primary);
+    letter-spacing: -0.01em;
   }
 
   &__theme-btn {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 0.4rem 0.9rem;
+    border-radius: var(--input-border-radius);
+    padding: 8px 16px;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 14px;
+    font-weight: 500;
     transition: all 0.2s;
+    backdrop-filter: var(--card-backdrop);
+    -webkit-backdrop-filter: var(--card-backdrop);
     &:hover { background: var(--item-hover); }
   }
 
@@ -106,50 +114,56 @@ chat-app {
   &__layout {
     display: grid;
     grid-template-columns: 300px 1fr 40px;
-    gap: 1.25rem;
+    gap: 24px;
     align-items: start;
   }
 
   &__col {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 24px;
   }
 
   /* Individual cards */
   &__card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1.25rem;
+    border-radius: var(--card-border-radius);
+    padding: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 16px;
     box-shadow: 0 1px 4px var(--shadow-color);
+    backdrop-filter: var(--card-backdrop);
+    -webkit-backdrop-filter: var(--card-backdrop);
   }
 
   &__card-title {
-    font-size: 1rem;
+    font-size: 20px;
     font-weight: 600;
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 8px 0;
     color: var(--text-primary);
+    letter-spacing: -0.01em;
   }
 
   &__label {
-    font-size: 0.875rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: var(--text-secondary);
-    margin-bottom: 0.2rem;
+    margin-bottom: 4px;
     display: block;
   }
 
   &__input {
     width: 100%;
-    padding: 0.65rem 0.9rem;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: var(--input-border-radius);
     border: 1px solid var(--input-border);
     background: var(--input-bg);
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 16px;
     box-sizing: border-box;
     transition: border-color 0.2s;
 
@@ -160,14 +174,14 @@ chat-app {
   }
 
   &__search-input {
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
   }
 
   /* Room cards in left column */
   &__room-cards {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 8px;
     overflow-y: auto;
     max-height: 260px;
 
@@ -179,17 +193,20 @@ chat-app {
   }
 
   &__room-card {
-    padding: 0.65rem 1rem;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: var(--input-border-radius);
     border: 1px solid var(--border-color);
     background: var(--item-bg);
     cursor: pointer;
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 16px;
     font-weight: 500;
     transition: all 0.15s;
 
-    &:hover { background: var(--item-hover); }
+    &:hover {
+      background: var(--item-hover);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
 
     &--selected {
       background: var(--item-selected-bg);
@@ -199,23 +216,23 @@ chat-app {
   }
 
   &__room-card-name {
-    font-size: 0.9rem;
+    font-size: 16px;
     font-weight: 600;
     line-height: 1.2;
-    margin-bottom: 0.2rem;
+    margin-bottom: 4px;
   }
 
   &__room-card-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.45rem;
+    gap: 8px;
   }
 
   &__room-card-preview {
-    font-size: 0.76rem;
+    font-size: 14px;
     color: var(--text-secondary);
-    line-height: 1.2;
+    line-height: 1.5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -223,16 +240,16 @@ chat-app {
 
   &__room-card-creator,
   &__room-creator {
-    font-size: 0.7rem;
+    font-size: 12px;
     color: var(--text-secondary);
-    margin-top: 0.15rem;
+    margin-top: 4px;
     font-style: italic;
   }
 
   &__empty {
     color: var(--text-secondary);
     text-align: center;
-    font-size: 0.875rem;
+    font-size: 14px;
     margin: 0;
   }
 
@@ -241,15 +258,16 @@ chat-app {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
   }
 
   &__refresh-btn {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 5px;
-    padding: 0.25rem 0.65rem;
-    font-size: 0.8rem;
+    border-radius: var(--input-border-radius);
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s;
@@ -259,19 +277,20 @@ chat-app {
 
   &__table-wrapper {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--card-border-radius);
     overflow: hidden;
     overflow-y: auto;
     max-height: 380px;
+    background: var(--item-bg);
   }
 
   &__table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    font-size: 14px;
 
     th, td {
-      padding: 0.65rem 1rem;
+      padding: 12px 16px;
       text-align: left;
     }
 
@@ -282,6 +301,8 @@ chat-app {
       border-bottom: 1px solid var(--border-color);
       position: sticky;
       top: 0;
+      backdrop-filter: var(--card-backdrop);
+      -webkit-backdrop-filter: var(--card-backdrop);
     }
 
     tr {
@@ -298,42 +319,43 @@ chat-app {
 
   &__table-empty {
     text-align: center;
-    padding: 2rem !important;
+    padding: 32px !important;
     color: var(--text-secondary);
   }
 
   &__room-main {
     font-weight: 600;
     line-height: 1.2;
+    font-size: 16px;
   }
 
   &__room-main-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.45rem;
+    gap: 8px;
   }
 
   &__unread-badge {
-    min-width: 1.25rem;
-    height: 1.25rem;
-    border-radius: 999px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 9999px;
     background: #ef4444;
     color: #fff;
-    font-size: 0.7rem;
-    line-height: 1.25rem;
+    font-size: 12px;
+    line-height: 20px;
     text-align: center;
     font-weight: 700;
-    padding: 0 0.35rem;
+    padding: 0 6px;
     box-sizing: border-box;
     flex-shrink: 0;
   }
 
   &__room-preview {
-    font-size: 0.76rem;
+    font-size: 14px;
     color: var(--text-secondary);
-    margin-top: 0.15rem;
-    line-height: 1.2;
+    margin-top: 4px;
+    line-height: 1.5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -342,49 +364,51 @@ chat-app {
 
   /* Buttons */
   &__btn {
-    padding: 0.65rem 1.25rem;
-    border-radius: 6px;
-    border: none;
-    font-weight: 500;
+    padding: 12px 24px;
+    border-radius: var(--input-border-radius);
+    border: 1px solid transparent;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
-    font-size: 0.9rem;
+    transition: all 0.2s;
+    font-size: 16px;
 
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 
     &--dark {
       background: var(--btn-dark-bg);
       color: var(--btn-dark-text);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       &:hover:not(:disabled) { background: var(--btn-dark-hover); }
     }
 
     &--full {
       width: 100%;
-      margin-top: 0.25rem;
+      margin-top: 8px;
     }
 
     &--join {
       background: var(--btn-primary-bg);
       color: var(--btn-primary-text);
-      padding: 0.35rem 0.9rem;
-      font-size: 0.8rem;
-      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
       &:hover:not(:disabled) { background: var(--btn-primary-hover); }
     }
 
     &--delete {
       background: transparent;
       color: #ef4444;
-      border: 1px solid #ef4444;
-      padding: 0.35rem 0.9rem;
-      font-size: 0.8rem;
-      border-radius: 4px;
-      margin-left: 0.35rem;
-      &:hover { background: #fee2e2; }
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      padding: 8px 16px;
+      font-size: 14px;
+      margin-left: 8px;
+      &:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+      }
 
       &-sm {
-        padding: 0.2rem 0.6rem;
-        font-size: 0.72rem;
+        padding: 4px 12px;
+        font-size: 12px;
         margin-left: 0;
       }
     }
@@ -393,13 +417,13 @@ chat-app {
   &__room-card-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: 0.35rem;
+    margin-top: 8px;
   }
 
   &__error {
-    color: #ef4444;
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
+    color: #ffb4ab;
+    font-size: 14px;
+    margin-top: 4px;
   }
 }
 
@@ -409,4 +433,3 @@ chat-app {
   }
   .lobby__col--aside { display: none; }
 }
-

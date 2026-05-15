@@ -4,13 +4,14 @@
   min-height: 0;
   font-family: inherit;
 
-  --cru-bg: #0b1736;
-  --cru-header-bg: rgba(13, 25, 53, 0.92);
-  --cru-border: rgba(71, 85, 105, 0.55);
-  --cru-title: #f3f4f6;
-  --cru-meta: #9ca3af;
-  --cru-scrollbar: #4b5563;
+  --cru-bg: transparent;
+  --cru-header-bg: rgba(255, 255, 255, 0.04);
+  --cru-border: rgba(255, 255, 255, 0.1);
+  --cru-title: #F8FAFC;
+  --cru-meta: #94a3b8;
+  --cru-scrollbar: #475569;
   --cru-item-bg: rgba(255, 255, 255, 0.03);
+  --cru-backdrop-filter: blur(16px);
 }
 
 :host([data-theme="light"]) {
@@ -26,7 +27,7 @@
 }
 
 :host:not(:host([data-theme="light"])) {
-  --cru-status: #8fb3e4;
+  --cru-status: #94a3b8;
   --cru-count-bg: rgba(255, 255, 255, 0.04);
 }
 
@@ -35,6 +36,8 @@
   border: none;
   border-left: 1px solid var(--cru-border);
   background: var(--cru-header-bg);
+  -webkit-backdrop-filter: var(--cru-backdrop-filter);
+  backdrop-filter: var(--cru-backdrop-filter);
   border-radius: 0;
   display: flex;
   flex-direction: column;
@@ -63,7 +66,7 @@
 .chat-room__users-count {
   min-width: 1.6rem;
   height: 1.6rem;
-  border-radius: 8px;
+  border-radius: 16px;
   border: 1px solid var(--cru-border);
   display: inline-flex;
   align-items: center;
@@ -104,7 +107,7 @@
   cursor: default;
 
   &:hover {
-    background-color: rgba(30, 41, 59, 0.4); // Tailwind slate-800 equivalent
+    background-color: rgba(255, 255, 255, 0.06);
 
     .chat-room__user-avatar {
       transform: scale(1.05);

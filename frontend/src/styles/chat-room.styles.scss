@@ -37,41 +37,42 @@
 }
 
 @mixin dark-tokens {
-  --cr-bg: #0a1120;
-  --cr-header-bg: rgba(13, 25, 53, 0.92);
-  --cr-border: rgba(71, 85, 105, 0.55);
-  --cr-msg-area-bg: #0b1736;
-  --cr-composer-bg: #111827;
-  --cr-title-color: #f3f4f6;
-  --cr-meta-color: #9ca3af;
-  --cr-scrollbar: #4b5563;
-  --cr-call-group-bg: rgba(33, 47, 76, 0.4);
-  --cr-call-group-border: rgba(93, 112, 150, 0.28);
-  --cr-input-bg: rgba(51, 65, 85, 0.72);
-  --cr-input-border: #4b5563;
-  --cr-input-color: #f3f4f6;
-  --cr-input-placeholder: #7f8eab;
-  --cr-msg-other-bg: rgba(255, 255, 255, 0.08);
-  --cr-msg-other-color: #f3f4f6;
-  --cr-msg-self-bg: #f7a600;
-  --cr-msg-self-color: #0f172a;
-  --cr-msg-system-bg: rgba(148, 163, 184, 0.16);
-  --cr-msg-system-color: #9ca3af;
-  --cr-author-color: #9ca3af;
-  --cr-time-color: #ffffff;
-  --cr-banner-bg: #fbbf24;
-  --cr-banner-color: #92400e;
-  --cr-icon-btn-color: #9ca3af;
-  --cr-composer-shell-bg: rgba(33, 47, 76, 0.88);
-  --cr-composer-shell-border: rgba(93, 112, 150, 0.28);
-  --cr-tool-icon-color: #93a6c7;
-  --cr-tool-icon-hover-bg: rgba(148, 163, 184, 0.15);
-  --cr-send-icon-bg: rgba(16, 29, 55, 0.65);
-  --cr-send-icon-border: rgba(75, 95, 130, 0.3);
-  --cr-send-icon-color: #7086ab;
-  --cr-send-icon-hover-bg: rgba(20, 37, 70, 0.9);
-  --cr-send-icon-hover-color: #d7e4ff;
-  --cr-placeholder-color: #6e81a6;
+  --cr-bg: transparent;
+  --cr-header-bg: rgba(255, 255, 255, 0.04);
+  --cr-border: rgba(255, 255, 255, 0.1);
+  --cr-msg-area-bg: transparent;
+  --cr-composer-bg: transparent;
+  --cr-title-color: #F8FAFC;
+  --cr-meta-color: #94a3b8;
+  --cr-scrollbar: #475569;
+  --cr-call-group-bg: rgba(255, 255, 255, 0.04);
+  --cr-call-group-border: rgba(255, 255, 255, 0.1);
+  --cr-input-bg: rgba(0, 0, 0, 0.2);
+  --cr-input-border: rgba(255, 255, 255, 0.1);
+  --cr-input-color: #F8FAFC;
+  --cr-input-placeholder: #64748b;
+  --cr-msg-other-bg: rgba(255, 255, 255, 0.04);
+  --cr-msg-other-color: #F8FAFC;
+  --cr-msg-self-bg: #3B82F6;
+  --cr-msg-self-color: #ffffff;
+  --cr-msg-system-bg: rgba(255, 255, 255, 0.05);
+  --cr-msg-system-color: #94a3b8;
+  --cr-author-color: #94a3b8;
+  --cr-time-color: #cbd5e1;
+  --cr-banner-bg: rgba(251, 191, 36, 0.2);
+  --cr-banner-color: #fbbf24;
+  --cr-icon-btn-color: #94a3b8;
+  --cr-composer-shell-bg: rgba(255, 255, 255, 0.04);
+  --cr-composer-shell-border: rgba(255, 255, 255, 0.1);
+  --cr-tool-icon-color: #94a3b8;
+  --cr-tool-icon-hover-bg: rgba(255, 255, 255, 0.1);
+  --cr-send-icon-bg: #3B82F6;
+  --cr-send-icon-border: transparent;
+  --cr-send-icon-color: #ffffff;
+  --cr-send-icon-hover-bg: #2563eb;
+  --cr-send-icon-hover-color: #ffffff;
+  --cr-placeholder-color: #64748b;
+  --cr-backdrop-filter: blur(16px);
 }
 
 :host {
@@ -100,7 +101,8 @@
 
   &__header {
     background: var(--cr-header-bg);
-    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: var(--cr-backdrop-filter, blur(16px));
+    backdrop-filter: var(--cr-backdrop-filter, blur(16px));
     padding: 1rem 1.35rem;
     border-bottom: 1px solid var(--cr-border);
     display: flex;
@@ -360,10 +362,12 @@
     width: min(100%, 980px);
     background: var(--cr-composer-shell-bg);
     border: 1px solid var(--cr-composer-shell-border);
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 0.62rem 0.85rem;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     box-sizing: border-box;
+    -webkit-backdrop-filter: var(--cr-backdrop-filter, blur(16px));
+    backdrop-filter: var(--cr-backdrop-filter, blur(16px));
   }
   &__composer-tools {
     position: relative;
@@ -418,10 +422,12 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.5rem;
-    border-radius: 10px;
+    border-radius: 16px;
     border: 1px solid var(--cr-border);
     background: var(--cr-header-bg);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    -webkit-backdrop-filter: var(--cr-backdrop-filter, blur(16px));
+    backdrop-filter: var(--cr-backdrop-filter, blur(16px));
     z-index: 5;
 
     &::-webkit-scrollbar { width: 6px; }
@@ -542,7 +548,7 @@
     background: var(--cr-msg-other-bg);
     color: var(--cr-msg-other-color);
     padding: 0.86rem 1.1rem;
-    border-radius: 15px;
+    border-radius:  16px ;
     font-size: 0.9375rem;
     line-height: 1.45;
     word-break: break-word;
