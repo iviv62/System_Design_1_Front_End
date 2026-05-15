@@ -49,7 +49,9 @@ export class PageLogin extends LitElement {
 
           <form @submit=${this.handleSubmit}>
             <div class="form-group">
+              <label for="identifier">Email or Username</label>
               <input
+                id="identifier"
                 type="text"
                 name="identifier"
                 placeholder="Email or Username"
@@ -58,7 +60,9 @@ export class PageLogin extends LitElement {
               />
             </div>
             <div class="form-group">
+              <label for="password">Password</label>
               <input
+                id="password"
                 type="password"
                 name="password"
                 placeholder="Password"
