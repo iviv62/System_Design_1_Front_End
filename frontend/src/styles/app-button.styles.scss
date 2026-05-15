@@ -5,7 +5,7 @@
 button {
   padding: 0.5em 1.5em;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -19,9 +19,9 @@ button.light {
 }
 
 button.dark {
-  background: var(--ab-dark-bg, #222);
-  color: var(--ab-dark-color, #fff);
-  border: 1px solid var(--ab-dark-border, #444);
+  background: var(--ab-dark-bg, #3B82F6);
+  color: var(--ab-dark-color, #ffffff);
+  border: 1px solid var(--ab-dark-border, transparent);
 }
 
 button:disabled {
