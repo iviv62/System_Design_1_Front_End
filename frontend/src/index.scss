@@ -13,12 +13,12 @@ html, body {
 }
 
 body[data-theme="dark"] {
-  background-color: #0A0C14;
+  background-color: #11131b;
 }
 
 @media (prefers-color-scheme: dark) {
   body:not([data-theme="light"]) {
-    background-color: #0A0C14;
+    background-color: #11131b;
   }
 }
 

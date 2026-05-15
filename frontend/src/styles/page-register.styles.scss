@@ -23,9 +23,9 @@
   max-width: 400px;
 }
 
-:host-context(body[data-theme="dark"]) .auth-card {
+:host-context([data-theme="dark"]) .auth-card {
   background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 4px 6px -1px transparent;
+  box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.1);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
@@ -40,7 +40,7 @@ h2 {
   letter-spacing: -0.01em;
 }
 
-:host-context(body[data-theme="dark"]) h2 {
+:host-context([data-theme="dark"]) h2 {
   color: #F8FAFC;
 }
 
@@ -51,7 +51,7 @@ h2 {
   text-align: center;
 }
 
-:host-context(body[data-theme="dark"]) .subtitle {
+:host-context([data-theme="dark"]) .subtitle {
   color: #94a3b8;
 }
 
@@ -66,7 +66,7 @@ h2 {
   text-align: center;
 }
 
-:host-context(body[data-theme="dark"]) .error {
+:host-context([data-theme="dark"]) .error {
   color: #ffb4ab;
   background: rgba(220, 38, 38, 0.1);
   border-color: rgba(220, 38, 38, 0.3);
@@ -94,7 +94,7 @@ input {
   outline: none;
 }
 
-:host-context(body[data-theme="dark"]) input {
+:host-context([data-theme="dark"]) input {
   background: rgba(0, 0, 0, 0.2);
   border-color: rgba(255, 255, 255, 0.1);
   color: #F8FAFC;
@@ -105,16 +105,16 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-:host-context(body[data-theme="dark"]) input:focus {
+:host-context([data-theme="dark"]) input:focus {
   border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: none;
 }
 
 input::placeholder {
   color: #9ca3af;
 }
 
-:host-context(body[data-theme="dark"]) input::placeholder {
+:host-context([data-theme="dark"]) input::placeholder {
   color: #64748b;
 }
 
@@ -141,15 +141,15 @@ button:disabled {
   cursor: not-allowed;
 }
 
-:host-context(body[data-theme="dark"]) button {
+:host-context([data-theme="dark"]) button {
   background: #3B82F6;
 }
 
-:host-context(body[data-theme="dark"]) button:hover:not(:disabled) {
+:host-context([data-theme="dark"]) button:hover:not(:disabled) {
   background: #60A5FA;
 }
 
-:host-context(body[data-theme="dark"]) button:disabled {
+:host-context([data-theme="dark"]) button:disabled {
   background: rgba(59, 130, 246, 0.3);
   color: #94a3b8;
 }
@@ -161,7 +161,7 @@ button:disabled {
   color: #4b5563;
 }
 
-:host-context(body[data-theme="dark"]) .links {
+:host-context([data-theme="dark"]) .links {
   color: #94a3b8;
 }
 
@@ -175,6 +175,6 @@ button:disabled {
   text-decoration: underline;
 }
 
-:host-context(body[data-theme="dark"]) .links a {
+:host-context([data-theme="dark"]) .links a {
   color: #3B82F6;
 }

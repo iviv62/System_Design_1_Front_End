@@ -34,12 +34,12 @@ chat-app {
   background-color: var(--bg-color);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: var(--text-primary);
-  padding: 24px;
+  padding: 2rem;
   box-sizing: border-box;
 }
 
 @mixin dark-theme-vars {
-  --bg-color: #0A0C14;
+  --bg-color: #11131b;
   --card-bg: rgba(255, 255, 255, 0.04);
   --text-primary: #F8FAFC;
   --text-secondary: #94a3b8;
@@ -76,7 +76,7 @@ chat-app {
 
 .lobby {
   width: 100%;
-  padding: 24px;
+  padding: 2rem;
   box-sizing: border-box;
   background: transparent;
 
@@ -84,11 +84,11 @@ chat-app {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 1.5rem;
   }
 
   &__title {
-    font-size: 32px;
+    font-size: 1.75rem;
     font-weight: 600;
     margin: 0;
     color: var(--text-primary);
@@ -129,7 +129,7 @@ chat-app {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--card-border-radius);
-    padding: 24px;
+    padding: 2rem;
     display: flex;
     flex-direction: column;
     gap: 16px;

@@ -37,7 +37,7 @@
 }
 
 @mixin dark-tokens {
-  --cr-bg: #0A0C14;
+  --cr-bg: transparent;
   --cr-header-bg: rgba(255, 255, 255, 0.04);
   --cr-border: rgba(255, 255, 255, 0.1);
   --cr-msg-area-bg: transparent;
