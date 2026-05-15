@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import "../styles/chat-app.styles.scss"; // Standard Vite import (compiles to global CSS)
 import "./lobby/lobby-header";
-import "./lobby/lobby-create-room";
+import "./lobby/create-server-modal";
 import {
   fetchRooms,
   createRoom,
@@ -35,7 +35,7 @@ export class ChatApp extends LitElement {
   @state() private rooms: Room[] = [];
   @state() private conversationByRoom: Record<string, ConversationSummary> = {};
   @state() private unreadByRoom: Record<string, number> = {};
-  // newRoomName state moved to <lobby-create-room>
+  // newRoomName state moved to <create-server-modal>
   @state() private searchQuery = "";
   @state() private isLoadingRooms = true;
   @state() private error = "";
@@ -340,11 +340,11 @@ export class ChatApp extends LitElement {
 
           <!-- Column 2: Create Room + Room Finder -->
           <div class="lobby__col">
-            <lobby-create-room
+            <create-server-modal
               .error=${this.error}
               @create-room=${(e: CustomEvent) => this.handleCreateRoomFromChild(e.detail)}
             >
-            </lobby-create-room>
+            </create-server-modal>
 
             <div class="lobby__card">
               <div class="lobby__finder-header">
