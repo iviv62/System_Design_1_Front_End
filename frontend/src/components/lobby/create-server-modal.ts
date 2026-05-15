@@ -105,7 +105,18 @@ export class CreateServerModal extends LitElement {
                   <div class="modal-section">
                     <div class="modal-section-title">1. IDENTITY</div>
                     <div class="identity-content">
-                      <div class="upload-avatar" role="button" tabindex="0" aria-label="Upload server avatar">
+                      <div
+                        class="upload-avatar"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Upload server avatar"
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            (e.target as HTMLElement).click();
+                          }
+                        }}
+                      >
                         <svg
                           width="24"
                           height="24"
