@@ -11,9 +11,7 @@ export type MediaTroubleshootFailure = {
   errorName?: string;
 };
 
-export type MediaTroubleshootResult =
-  | MediaTroubleshootSuccess
-  | MediaTroubleshootFailure;
+export type MediaTroubleshootResult = MediaTroubleshootSuccess | MediaTroubleshootFailure;
 
 type TroubleshootOptions = {
   requestAudio?: boolean;
@@ -67,8 +65,7 @@ export async function troubleshootMediaDevices(
       case "NotAllowedError":
         return {
           success: false,
-          error:
-            "Permission denied. Please allow microphone/camera access for this site.",
+          error: "Permission denied. Please allow microphone/camera access for this site.",
           errorName: e.name,
         };
       case "NotFoundError":

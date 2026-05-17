@@ -43,7 +43,9 @@ function isLikelyValidVapidPublicKey(key: string): boolean {
 }
 
 function hasRequiredFirebaseConfig() {
-  return Object.values(config).every((value) => value.trim().length > 0) && vapidKey.trim().length > 0;
+  return (
+    Object.values(config).every((value) => value.trim().length > 0) && vapidKey.trim().length > 0
+  );
 }
 
 function registerFirebaseMessagingServiceWorker() {
@@ -121,9 +123,7 @@ export function getCurrentPushToken(): string | null {
   return currentPushToken;
 }
 
-export async function initFirebasePushAndRegister(
-  username: string,
-) {
+export async function initFirebasePushAndRegister(username: string) {
   const trimmed = username.trim();
   if (!trimmed) return null;
 

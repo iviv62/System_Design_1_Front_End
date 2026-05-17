@@ -9,9 +9,7 @@ type RoomSubscriptionInput = {
   provider?: "fcm";
 };
 
-export async function subscribeToRoomNotifications(
-  input: RoomSubscriptionInput,
-): Promise<void> {
+export async function subscribeToRoomNotifications(input: RoomSubscriptionInput): Promise<void> {
   const res = await fetchWithAuth(`${getBase()}/notifications/subscriptions`, {
     method: "POST",
     headers: {
@@ -26,10 +24,7 @@ export async function subscribeToRoomNotifications(
   });
 
   if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      `Failed to subscribe to room notifications: ${res.statusText}`,
-    );
+    throw new ApiError(res.status, `Failed to subscribe to room notifications: ${res.statusText}`);
   }
 }
 

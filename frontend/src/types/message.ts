@@ -11,7 +11,7 @@ export interface ChatMessage {
 export type MessageReactions = Record<string, string[]>;
 
 /** Status of a message sent by the local user. */
-export type MessageStatus = 'pending' | 'sent' | 'failed';
+export type MessageStatus = "pending" | "sent" | "failed";
 
 export type UiMessage = {
   id: string;

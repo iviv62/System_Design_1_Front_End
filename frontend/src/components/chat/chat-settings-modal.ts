@@ -5,7 +5,10 @@ import chatSettingsModalStylesRaw from "../../styles/chat-settings-modal.styles.
 import { settingsStore } from "../../store/settings-store";
 import type { SettingsState } from "../../store/settings-store";
 import { watch } from "zustand-lit";
-import { troubleshootMediaDevices, type MediaTroubleshootResult } from "../../features/lib/chat/media-device-diagnostics";
+import {
+  troubleshootMediaDevices,
+  type MediaTroubleshootResult,
+} from "../../features/lib/chat/media-device-diagnostics";
 
 @customElement("chat-settings-modal")
 export class ChatSettingsModal extends LitElement {
@@ -28,7 +31,7 @@ export class ChatSettingsModal extends LitElement {
   }
 
   private toggleTheme() {
-    const newTheme = this.themeCtrl.theme === 'light' ? 'dark' : 'light';
+    const newTheme = this.themeCtrl.theme === "light" ? "dark" : "light";
     ThemeController.set(newTheme);
   }
 
@@ -45,7 +48,7 @@ export class ChatSettingsModal extends LitElement {
 
     // Stop tracks immediately after diagnostic test to release camera/mic
     if (this.diagnosticsResult && this.diagnosticsResult.success) {
-      this.diagnosticsResult.stream.getTracks().forEach(t => t.stop());
+      this.diagnosticsResult.stream.getTracks().forEach((t) => t.stop());
     }
 
     this.isRunningDiagnostics = false;
@@ -55,14 +58,16 @@ export class ChatSettingsModal extends LitElement {
     if (!this.open) return null;
 
     // Apply the theme class to a wrapper so styles can define variables using it
-    const themeClass = this.themeCtrl.theme === 'dark' ? 'modal-theme--dark' : 'modal-theme--light';
+    const themeClass = this.themeCtrl.theme === "dark" ? "modal-theme--dark" : "modal-theme--light";
 
     return html`
       <div class="overlay ${themeClass}" @click=${this.close}>
         <div class="modal" @click=${(e: Event) => e.stopPropagation()}>
           <div class="header">
             <h2>Settings</h2>
-            <button class="close-btn" @click=${this.close} aria-label="Close settings">&times;</button>
+            <button class="close-btn" @click=${this.close} aria-label="Close settings">
+              &times;
+            </button>
           </div>
           <div class="body">
             <div class="setting-row">
@@ -93,21 +98,25 @@ export class ChatSettingsModal extends LitElement {
                 </div>
               </div>
 
-              ${this.diagnosticsResult ? html`
-                <div class="diagnostics-result-box">
-                  ${this.diagnosticsResult.success ? html`
-                    <div class="diagnostics-success-title">✅ Devices Working Properly</div>
-                    <ul class="diagnostics-list">
-                      ${this.diagnosticsResult.devices.map(d => html`
-                        <li>${d.label || d.kind} (${d.kind})</li>
-                      `)}
-                    </ul>
-                  ` : html`
-                    <div class="diagnostics-error-title">❌ Diagnostics Failed</div>
-                    <p class="diagnostics-error-message">${this.diagnosticsResult.error}</p>
-                  `}
-                </div>
-              ` : nothing}
+              ${this.diagnosticsResult
+                ? html`
+                    <div class="diagnostics-result-box">
+                      ${this.diagnosticsResult.success
+                        ? html`
+                            <div class="diagnostics-success-title">✅ Devices Working Properly</div>
+                            <ul class="diagnostics-list">
+                              ${this.diagnosticsResult.devices.map(
+                                (d) => html` <li>${d.label || d.kind} (${d.kind})</li> `,
+                              )}
+                            </ul>
+                          `
+                        : html`
+                            <div class="diagnostics-error-title">❌ Diagnostics Failed</div>
+                            <p class="diagnostics-error-message">${this.diagnosticsResult.error}</p>
+                          `}
+                    </div>
+                  `
+                : nothing}
             </div>
           </div>
         </div>

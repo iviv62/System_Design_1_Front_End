@@ -18,10 +18,7 @@ export function isMessagesNearBottom(
   return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight <= threshold;
 }
 
-export function scrollMessagesToBottom(
-  messagesEl: HTMLElement,
-  onComplete?: () => void,
-): void {
+export function scrollMessagesToBottom(messagesEl: HTMLElement, onComplete?: () => void): void {
   const applyBottomScroll = () => {
     messagesEl.scrollTop = Math.max(messagesEl.scrollHeight - messagesEl.clientHeight, 0);
   };

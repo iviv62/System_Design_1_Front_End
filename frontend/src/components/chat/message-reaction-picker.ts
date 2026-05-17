@@ -60,7 +60,11 @@ export class MessageReactionPicker extends LitElement {
 
         ${this.isOpen
           ? html`
-              <div class="message-reaction-picker__panel" role="menu" aria-label="Choose reaction emoji">
+              <div
+                class="message-reaction-picker__panel"
+                role="menu"
+                aria-label="Choose reaction emoji"
+              >
                 ${DEFAULT_REACTIONS.map(
                   (emoji) => html`
                     <button

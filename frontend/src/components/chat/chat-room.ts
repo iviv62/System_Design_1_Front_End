@@ -444,7 +444,9 @@ export class ChatRoom extends LitElement {
   }
 
   private addMessage(msg: UiMessage) {
-    console.log(`[ChatRoom] addMessage — id=${msg.id} kind=${msg.kind} from=${msg.username} status=${(msg as { status?: string }).status ?? 'n/a'}`);
+    console.log(
+      `[ChatRoom] addMessage — id=${msg.id} kind=${msg.kind} from=${msg.username} status=${(msg as { status?: string }).status ?? "n/a"}`,
+    );
     const isNearBottom = this.isMessagesNearBottom();
     if (msg.kind === "user") {
       if (!this.trackIncomingUserMessage(msg, isNearBottom)) return;
@@ -462,7 +464,9 @@ export class ChatRoom extends LitElement {
   }
 
   private trackIncomingUserMessage(message: UiMessage, isNearBottom: boolean): boolean {
-    console.log(`[ChatRoom] trackIncomingUserMessage — id=${message.id} seenAlready=${this.seenMessageIds.has(message.id)}`);
+    console.log(
+      `[ChatRoom] trackIncomingUserMessage — id=${message.id} seenAlready=${this.seenMessageIds.has(message.id)}`,
+    );
     if (this.seenMessageIds.has(message.id)) return false;
     this.seenMessageIds.add(message.id);
     const isOwnMessage = message.username === this.username;

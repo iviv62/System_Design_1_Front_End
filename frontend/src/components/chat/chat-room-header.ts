@@ -31,11 +31,9 @@ export class ChatRoomHeader extends LitElement {
   }
 
   private handleVoiceClick() {
-    const event = this.voiceState === "active" || this.voiceState === "calling"
-      ? "voice-stop" : "voice-start";
-    this.dispatchEvent(
-      new CustomEvent(event, { bubbles: true, composed: true })
-    );
+    const event =
+      this.voiceState === "active" || this.voiceState === "calling" ? "voice-stop" : "voice-start";
+    this.dispatchEvent(new CustomEvent(event, { bubbles: true, composed: true }));
   }
 
   render() {
@@ -43,12 +41,16 @@ export class ChatRoomHeader extends LitElement {
       <header class="chat-room__header">
         <div class="chat-room__header-left">
           <h2 class="chat-room__title">${this.roomName || this.roomId}</h2>
-          <p class="chat-room__meta"><span class="chat-room__online">${this.onlineCount} members online</span></p>
+          <p class="chat-room__meta">
+            <span class="chat-room__online">${this.onlineCount} members online</span>
+          </p>
         </div>
         <div class="chat-room__header-right">
           <div class="chat-room__header-call-group">
             <button
-              class="chat-room__header-action ${this.voiceState === 'active' ? 'chat-room__header-action--active' : ''}"
+              class="chat-room__header-action ${this.voiceState === "active"
+                ? "chat-room__header-action--active"
+                : ""}"
               type="button"
               title=${this.voiceState === "active" ? "End call" : "Start voice call"}
               aria-label=${this.voiceState === "active" ? "End call" : "Start voice call"}
@@ -56,16 +58,19 @@ export class ChatRoomHeader extends LitElement {
             >
               ${iconPhone}
             </button>
-            <button class="chat-room__header-action" type="button" title="Video call" aria-label="Video call">
+            <button
+              class="chat-room__header-action"
+              type="button"
+              title="Video call"
+              aria-label="Video call"
+            >
               ${iconVideo}
             </button>
           </div>
         </div>
       </header>
 
-      ${this.isReconnecting
-        ? html`<div class="chat-room__banner">Reconnecting…</div>`
-        : nothing}
+      ${this.isReconnecting ? html`<div class="chat-room__banner">Reconnecting…</div>` : nothing}
     `;
   }
 }

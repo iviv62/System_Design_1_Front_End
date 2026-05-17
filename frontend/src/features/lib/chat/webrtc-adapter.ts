@@ -1,5 +1,5 @@
-import { ConnectionMonitor, type ConnectionMetrics } from './connection-monitor';
-import { fetchWithAuth } from '../http/fetch-interceptor';
+import { ConnectionMonitor, type ConnectionMetrics } from "./connection-monitor";
+import { fetchWithAuth } from "../http/fetch-interceptor";
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 export interface Participant {
@@ -14,11 +14,11 @@ export interface WebRTCAdapterConfig {
   username: string;
 }
 
-export type VoiceCallState = 'idle' | 'calling' | 'active' | 'error';
+export type VoiceCallState = "idle" | "calling" | "active" | "error";
 
 export type WebRTCAdapterEvents = {
-  onStatusChange?: (status: 'disconnected' | 'connected' | 'error', message?: string) => void;
-  onCallStateChange?: (state: 'idle' | 'calling' | 'active' | 'error') => void;
+  onStatusChange?: (status: "disconnected" | "connected" | "error", message?: string) => void;
+  onCallStateChange?: (state: "idle" | "calling" | "active" | "error") => void;
   onParticipantsChange?: (participants: Participant[]) => void;
   onAudioTrack?: (track: MediaStreamTrack, streams: readonly MediaStream[]) => void;
   onScreenShareStarted?: (stream: MediaStream, sharerName: string, isLocal: boolean) => void;
@@ -28,7 +28,7 @@ export type WebRTCAdapterEvents = {
   onConnectionMetrics?: (metrics: ConnectionMetrics) => void;
 };
 
-const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
+const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 /**
  * Unified WebRTC adapter — owns:
@@ -66,16 +66,13 @@ export class WebRTCAdapter {
   private currentSharerName: string | null = null;
 
   // ── State ───────────────────────────────────────────────────────────────────
-  private callState: VoiceCallState = 'idle';
+  private callState: VoiceCallState = "idle";
   private _isMuted = false;
 
   private config: WebRTCAdapterConfig;
   private events: WebRTCAdapterEvents;
 
-  constructor(
-    config: WebRTCAdapterConfig,
-    events: WebRTCAdapterEvents = {},
-  ) {
+  constructor(config: WebRTCAdapterConfig, events: WebRTCAdapterEvents = {}) {
     this.config = config;
     this.events = events;
     this._room = config.room;
@@ -83,10 +80,12 @@ export class WebRTCAdapter {
   }
 
   get isScreenSharing(): boolean {
-    return this.screenTrack !== null && this.screenTrack.readyState !== 'ended';
+    return this.screenTrack !== null && this.screenTrack.readyState !== "ended";
   }
 
-  get peerId(): string | null { return this.myPeerId; }
+  get peerId(): string | null {
+    return this.myPeerId;
+  }
 
   updateIdentity(room: string, username: string): void {
     this._room = room;
@@ -95,29 +94,36 @@ export class WebRTCAdapter {
 
   // ── Call: join ──────────────────────────────────────────────────────────────
   async joinCall(): Promise<void> {
-    if (this.pc || this.callState === 'calling' || this.callState === 'active') return;
-    this.setCallState('calling');
+    if (this.pc || this.callState === "calling" || this.callState === "active") return;
+    this.setCallState("calling");
 
     try {
       this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.micStream.getAudioTracks().forEach(t => { t.enabled = !this._isMuted; });
+      this.micStream.getAudioTracks().forEach((t) => {
+        t.enabled = !this._isMuted;
+      });
     } catch {
-      this.setCallState('error');
-      throw new Error('Microphone access denied or unavailable.');
+      this.setCallState("error");
+      throw new Error("Microphone access denied or unavailable.");
     }
 
     this.pc = this.createMainPc();
-    this.micStream.getTracks().forEach(t => this.pc!.addTrack(t, this.micStream!));
+    this.micStream.getTracks().forEach((t) => this.pc!.addTrack(t, this.micStream!));
 
     try {
       // Server-offer flow: POST /voice/join → server returns offer + peer_id
       const joinRes = await fetchWithAuth(`${this.config.baseUrl}/voice/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ room: this._room, username: this._username }),
       });
       if (!joinRes.ok) throw new Error(`Join rejected: ${joinRes.status}`);
-      const joinData = await joinRes.json() as { peer_id: string; sdp: string; type: RTCSdpType; participants?: Participant[] };
+      const joinData = (await joinRes.json()) as {
+        peer_id: string;
+        sdp: string;
+        type: RTCSdpType;
+        participants?: Participant[];
+      };
 
       this.myPeerId = joinData.peer_id;
 
@@ -126,29 +132,39 @@ export class WebRTCAdapter {
       await this.pc.setLocalDescription(answer);
 
       const answerRes = await fetchWithAuth(`${this.config.baseUrl}/voice/answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ peer_id: this.myPeerId, sdp: answer.sdp, type: answer.type }),
       });
       if (!answerRes.ok) throw new Error(`Answer rejected: ${answerRes.status}`);
 
       // Notify WS that this peer is now registered
-      this.sendSignal({ type: 'voice', event: 'peer_registered', peer_id: this.myPeerId, room: this._room });
+      this.sendSignal({
+        type: "voice",
+        event: "peer_registered",
+        peer_id: this.myPeerId,
+        room: this._room,
+      });
 
       const participants = joinData.participants ?? [];
       this.setParticipants(participants);
-      this.setCallState('active');
+      this.setCallState("active");
     } catch (err) {
-      console.error('[WebRTCAdapter] joinCall failed', err);
+      console.error("[WebRTCAdapter] joinCall failed", err);
       this.teardown();
-      this.setCallState('error');
+      this.setCallState("error");
     }
   }
 
   // ── Call: leave ─────────────────────────────────────────────────────────────
   leaveCall(): void {
     if (this.myPeerId) {
-      this.sendSignal({ type: 'voice', event: 'leave_call', peer_id: this.myPeerId, room: this._room });
+      this.sendSignal({
+        type: "voice",
+        event: "leave_call",
+        peer_id: this.myPeerId,
+        room: this._room,
+      });
     }
     this.teardown();
   }
@@ -162,7 +178,7 @@ export class WebRTCAdapter {
         video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
       } as DisplayMediaStreamOptions);
     } catch (err) {
-      if (err instanceof Error && err.name === 'NotAllowedError') return;
+      if (err instanceof Error && err.name === "NotAllowedError") return;
       throw err;
     }
 
@@ -171,10 +187,15 @@ export class WebRTCAdapter {
     this.screenTrack = track;
     track.onended = () => this.stopScreenShare();
 
-    const observerIds = this.currentParticipants.map(p => p.peer_id).filter(Boolean);
+    const observerIds = this.currentParticipants.map((p) => p.peer_id).filter(Boolean);
     for (const id of observerIds) await this.openSharePcTo(id);
 
-    this.sendSignal({ type: 'voice', event: 'screen_share_start', peer_id: this.myPeerId, room: this._room });
+    this.sendSignal({
+      type: "voice",
+      event: "screen_share_start",
+      peer_id: this.myPeerId,
+      room: this._room,
+    });
     this.events.onScreenShareStarted?.(this.screenStream, `${this._username} (you)`, true);
   }
 
@@ -187,7 +208,12 @@ export class WebRTCAdapter {
     for (const spc of this.sharePcs.values()) spc.close();
     this.sharePcs.clear();
     if (this.myPeerId) {
-      this.sendSignal({ type: 'voice', event: 'screen_share_stop', peer_id: this.myPeerId, room: this._room });
+      this.sendSignal({
+        type: "voice",
+        event: "screen_share_stop",
+        peer_id: this.myPeerId,
+        room: this._room,
+      });
     }
     this.events.onScreenShareStopped?.();
   }
@@ -199,8 +225,8 @@ export class WebRTCAdapter {
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
     await fetchWithAuth(`${this.config.baseUrl}/voice/answer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ peer_id: this.myPeerId, sdp: answer.sdp, type: answer.type }),
     });
   }
@@ -224,79 +250,87 @@ export class WebRTCAdapter {
 
   // ── Main entry point: route parsed WS voice events ─────────────────────────
   handleVoiceEvent(msg: Record<string, unknown>): void {
-    const event = String(msg['event'] ?? '');
+    const event = String(msg["event"] ?? "");
 
     switch (event) {
-      case 'call_started': {
-        const participants = (msg['participants'] as Participant[] | undefined) ?? [];
+      case "call_started": {
+        const participants = (msg["participants"] as Participant[] | undefined) ?? [];
         this.setParticipants(participants);
-        this.events.onSystemNotice?.(`${msg['username']} started a voice call`);
+        this.events.onSystemNotice?.(`${msg["username"]} started a voice call`);
         break;
       }
-      case 'peer_joined': {
-        const participants = (msg['participants'] as Participant[] | undefined) ?? [];
+      case "peer_joined": {
+        const participants = (msg["participants"] as Participant[] | undefined) ?? [];
         this.setParticipants(participants);
-        this.events.onSystemNotice?.(`${msg['username']} joined the voice call`);
+        this.events.onSystemNotice?.(`${msg["username"]} joined the voice call`);
         // Late-joiner mesh: open a share PC to them if we are already sharing
-        const newPeerId = String(msg['peer_id'] ?? '');
+        const newPeerId = String(msg["peer_id"] ?? "");
         if (this.isScreenSharing && newPeerId && newPeerId !== this.myPeerId) {
-          this.openSharePcTo(newPeerId).catch(err =>
-            console.error('[WebRTCAdapter] late joiner screen share failed', err));
+          this.openSharePcTo(newPeerId).catch((err) =>
+            console.error("[WebRTCAdapter] late joiner screen share failed", err),
+          );
         }
         break;
       }
-      case 'peer_left': {
-        const participants = (msg['participants'] as Participant[] | undefined) ?? [];
+      case "peer_left": {
+        const participants = (msg["participants"] as Participant[] | undefined) ?? [];
         this.setParticipants(participants);
-        this.events.onSystemNotice?.(`${msg['username']} left the voice call`);
+        this.events.onSystemNotice?.(`${msg["username"]} left the voice call`);
         // Clean up any outgoing share PC to that peer
-        const leftPeerId = String(msg['peer_id'] ?? '');
+        const leftPeerId = String(msg["peer_id"] ?? "");
         const spc = this.sharePcs.get(leftPeerId);
-        if (spc) { spc.close(); this.sharePcs.delete(leftPeerId); }
+        if (spc) {
+          spc.close();
+          this.sharePcs.delete(leftPeerId);
+        }
         break;
       }
-      case 'call_ended': {
-        this.events.onSystemNotice?.(`${msg['username']} ended the call`);
+      case "call_ended": {
+        this.events.onSystemNotice?.(`${msg["username"]} ended the call`);
         this.teardown();
         break;
       }
-      case 'server_offer': {
-        const sdp = String(msg['sdp'] ?? '');
-        const sdpType = (msg['sdp_type'] as RTCSdpType) ?? 'offer';
-        this.handleServerOffer(sdp, sdpType).catch(err =>
-          console.error('[WebRTCAdapter] server_offer failed', err));
+      case "server_offer": {
+        const sdp = String(msg["sdp"] ?? "");
+        const sdpType = (msg["sdp_type"] as RTCSdpType) ?? "offer";
+        this.handleServerOffer(sdp, sdpType).catch((err) =>
+          console.error("[WebRTCAdapter] server_offer failed", err),
+        );
         break;
       }
-      case 'screen_share_started': {
-        const sharerPeerId = String(msg['peer_id'] ?? '');
+      case "screen_share_started": {
+        const sharerPeerId = String(msg["peer_id"] ?? "");
         if (sharerPeerId !== this.myPeerId) {
           this.currentSharerPeerId = sharerPeerId;
-          this.currentSharerName = String(msg['username'] ?? '');
-          this.events.onSystemNotice?.(`${msg['username']} started sharing their screen`);
+          this.currentSharerName = String(msg["username"] ?? "");
+          this.events.onSystemNotice?.(`${msg["username"]} started sharing their screen`);
         }
         break;
       }
-      case 'screen_share_stopped': {
-        const sharerPeerId = String(msg['peer_id'] ?? '');
+      case "screen_share_stopped": {
+        const sharerPeerId = String(msg["peer_id"] ?? "");
         if (this.currentSharerPeerId === sharerPeerId) {
           this.currentSharerPeerId = null;
           this.currentSharerName = null;
           this.events.onScreenShareStopped?.();
         }
-        this.events.onSystemNotice?.(`${msg['username']} stopped sharing their screen`);
+        this.events.onSystemNotice?.(`${msg["username"]} stopped sharing their screen`);
         break;
       }
-      case 'screen_offer':
-        this.handleScreenOffer(msg).catch(err =>
-          console.error('[WebRTCAdapter] screen_offer error', err));
+      case "screen_offer":
+        this.handleScreenOffer(msg).catch((err) =>
+          console.error("[WebRTCAdapter] screen_offer error", err),
+        );
         break;
-      case 'screen_answer':
-        this.handleScreenAnswer(msg).catch(err =>
-          console.error('[WebRTCAdapter] screen_answer error', err));
+      case "screen_answer":
+        this.handleScreenAnswer(msg).catch((err) =>
+          console.error("[WebRTCAdapter] screen_answer error", err),
+        );
         break;
-      case 'screen_ice':
-        this.handleScreenIce(msg).catch(err =>
-          console.error('[WebRTCAdapter] screen_ice error', err));
+      case "screen_ice":
+        this.handleScreenIce(msg).catch((err) =>
+          console.error("[WebRTCAdapter] screen_ice error", err),
+        );
         break;
     }
   }
@@ -304,11 +338,13 @@ export class WebRTCAdapter {
   // ── Mute / volume ───────────────────────────────────────────────────────────
   setMuted(muted: boolean): void {
     this._isMuted = muted;
-    this.micStream?.getAudioTracks().forEach(t => { t.enabled = !muted; });
+    this.micStream?.getAudioTracks().forEach((t) => {
+      t.enabled = !muted;
+    });
   }
 
   setVolume(volume: number): void {
-    document.querySelectorAll<HTMLAudioElement>('audio[data-webrtc-stream]').forEach(el => {
+    document.querySelectorAll<HTMLAudioElement>("audio[data-webrtc-stream]").forEach((el) => {
       el.volume = Math.max(0, Math.min(1, volume / 100));
     });
   }
@@ -350,17 +386,17 @@ export class WebRTCAdapter {
     // Main audio PC
     this.monitor?.stopMonitoring();
     this.monitor = null;
-    this.micStream?.getTracks().forEach(t => t.stop());
+    this.micStream?.getTracks().forEach((t) => t.stop());
     this.micStream = null;
     this.pc?.close();
     this.pc = null;
 
     // Remote audio elements
-    document.querySelectorAll('audio[data-webrtc-stream]').forEach(el => el.remove());
+    document.querySelectorAll("audio[data-webrtc-stream]").forEach((el) => el.remove());
 
     this.myPeerId = null;
     this.setParticipants([]);
-    this.setCallState('idle');
+    this.setCallState("idle");
     this.events.onScreenShareStopped?.();
   }
 
@@ -375,7 +411,7 @@ export class WebRTCAdapter {
     }
 
     peer.ontrack = ({ track, streams }) => {
-      if (track.kind !== 'audio') return;
+      if (track.kind !== "audio") return;
 
       // Emit for components that want to handle audio manually
       this.events.onAudioTrack?.(track, streams);
@@ -385,11 +421,11 @@ export class WebRTCAdapter {
       const singleTrackStream = new MediaStream([track]);
       if (document.querySelector(`audio[data-webrtc-stream="${track.id}"]`)) return;
 
-      const audio = document.createElement('audio');
+      const audio = document.createElement("audio");
       audio.autoplay = true;
-      audio.dataset['webrtcStream'] = track.id;
+      audio.dataset["webrtcStream"] = track.id;
       audio.srcObject = singleTrackStream;
-      audio.style.display = 'none';
+      audio.style.display = "none";
       document.body.appendChild(audio);
 
       // Remove when the track ends
@@ -397,7 +433,7 @@ export class WebRTCAdapter {
     };
 
     peer.oniceconnectionstatechange = () => {
-      if (peer.iceConnectionState === 'failed' || peer.iceConnectionState === 'closed') {
+      if (peer.iceConnectionState === "failed" || peer.iceConnectionState === "closed") {
         this.teardown();
       }
     };
@@ -416,8 +452,10 @@ export class WebRTCAdapter {
     spc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         this.sendSignal({
-          type: 'voice', event: 'screen_ice',
-          peer_id: this.myPeerId, to: observerPeerId,
+          type: "voice",
+          event: "screen_ice",
+          peer_id: this.myPeerId,
+          to: observerPeerId,
           candidate: candidate.toJSON(),
         });
       }
@@ -426,18 +464,20 @@ export class WebRTCAdapter {
     const offer = await spc.createOffer();
     await spc.setLocalDescription(offer);
     this.sendSignal({
-      type: 'voice', event: 'screen_offer',
-      peer_id: this.myPeerId, to: observerPeerId,
+      type: "voice",
+      event: "screen_offer",
+      peer_id: this.myPeerId,
+      to: observerPeerId,
       sdp: offer.sdp,
     });
   }
 
   // ── P2P screen share: observer side ────────────────────────────────────────
   private async handleScreenOffer(msg: Record<string, unknown>): Promise<void> {
-    const from = String(msg['from'] ?? msg['peer_id'] ?? '');
-    const sdp = String(msg['sdp'] ?? '');
+    const from = String(msg["from"] ?? msg["peer_id"] ?? "");
+    const sdp = String(msg["sdp"] ?? "");
     this.currentSharerPeerId = from;
-    this.currentSharerName = String(msg['username'] ?? this.currentSharerName ?? '');
+    this.currentSharerName = String(msg["username"] ?? this.currentSharerName ?? "");
 
     this.pendingIceCandidates = [];
     this.incomingSharePc?.close();
@@ -445,21 +485,23 @@ export class WebRTCAdapter {
 
     this.incomingSharePc.ontrack = ({ track, streams }) => {
       const stream = streams[0] ?? new MediaStream([track]);
-      this.events.onScreenShareStarted?.(stream, this.currentSharerName ?? 'remote', false);
+      this.events.onScreenShareStarted?.(stream, this.currentSharerName ?? "remote", false);
       track.onended = () => this.events.onScreenShareStopped?.();
     };
 
     this.incomingSharePc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         this.sendSignal({
-          type: 'voice', event: 'screen_ice',
-          peer_id: this.myPeerId, to: from,
+          type: "voice",
+          event: "screen_ice",
+          peer_id: this.myPeerId,
+          to: from,
           candidate: candidate.toJSON(),
         });
       }
     };
 
-    await this.incomingSharePc.setRemoteDescription({ type: 'offer', sdp });
+    await this.incomingSharePc.setRemoteDescription({ type: "offer", sdp });
 
     for (const c of this.pendingIceCandidates) {
       await this.incomingSharePc.addIceCandidate(c).catch(() => {});
@@ -469,22 +511,24 @@ export class WebRTCAdapter {
     const answer = await this.incomingSharePc.createAnswer();
     await this.incomingSharePc.setLocalDescription(answer);
     this.sendSignal({
-      type: 'voice', event: 'screen_answer',
-      peer_id: this.myPeerId, to: from,
+      type: "voice",
+      event: "screen_answer",
+      peer_id: this.myPeerId,
+      to: from,
       sdp: answer.sdp,
     });
   }
 
   private async handleScreenAnswer(msg: Record<string, unknown>): Promise<void> {
-    const from = String(msg['from'] ?? msg['peer_id'] ?? '');
-    const sdp = String(msg['sdp'] ?? '');
+    const from = String(msg["from"] ?? msg["peer_id"] ?? "");
+    const sdp = String(msg["sdp"] ?? "");
     const spc = this.sharePcs.get(from);
-    if (spc) await spc.setRemoteDescription({ type: 'answer', sdp });
+    if (spc) await spc.setRemoteDescription({ type: "answer", sdp });
   }
 
   private async handleScreenIce(msg: Record<string, unknown>): Promise<void> {
-    const from = String(msg['from'] ?? msg['peer_id'] ?? '');
-    const candidate = msg['candidate'] as RTCIceCandidateInit | undefined;
+    const from = String(msg["from"] ?? msg["peer_id"] ?? "");
+    const candidate = msg["candidate"] as RTCIceCandidateInit | undefined;
     if (!candidate) return;
 
     const outgoing = this.sharePcs.get(from);

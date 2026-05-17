@@ -55,7 +55,7 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  
+
   &:hover {
     color: #e5e7eb;
   }
@@ -150,7 +150,9 @@
 }
 
 @keyframes active-call-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .active-call__card {

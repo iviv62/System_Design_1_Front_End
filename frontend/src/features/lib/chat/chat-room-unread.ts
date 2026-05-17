@@ -21,10 +21,7 @@ type FirstReplayAnchorArgs = {
   isOwnMessage: boolean;
 };
 
-export function getOtherUserMessages(
-  messages: UiMessage[],
-  username: string,
-): UiMessage[] {
+export function getOtherUserMessages(messages: UiMessage[], username: string): UiMessage[] {
   return messages.filter((message) => {
     return message.kind === "user" && message.username !== username;
   });
@@ -59,11 +56,7 @@ export function shouldAutoScrollForUserMessage({
   isNearBottom,
   hasUnseenMessages,
 }: UserAutoScrollArgs): boolean {
-  return (
-    isOwnMessage ||
-    isLoadingHistory ||
-    (isPageActive && isNearBottom && !hasUnseenMessages)
-  );
+  return isOwnMessage || isLoadingHistory || (isPageActive && isNearBottom && !hasUnseenMessages);
 }
 
 export function shouldAutoScrollForNonUserMessage({

@@ -51,8 +51,12 @@ export class ChatImagePreview extends LitElement {
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
     }
   `;
 
@@ -64,7 +68,7 @@ export class ChatImagePreview extends LitElement {
     if (e.key === "Escape") {
       this.closePreview();
     }
-  }
+  };
 
   connectedCallback() {
     super.connectedCallback();

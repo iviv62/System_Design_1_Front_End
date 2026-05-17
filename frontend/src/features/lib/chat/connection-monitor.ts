@@ -90,8 +90,7 @@ export class ConnectionMonitor {
         // Prefer nominated pair when available.
         if ((r.nominated ?? false) || currentRoundTripTimeSec === 0) {
           currentRoundTripTimeSec = r.currentRoundTripTime ?? currentRoundTripTimeSec;
-          availableOutgoingBitrateBps =
-            r.availableOutgoingBitrate ?? availableOutgoingBitrateBps;
+          availableOutgoingBitrateBps = r.availableOutgoingBitrate ?? availableOutgoingBitrateBps;
         }
       }
     });
@@ -127,8 +126,7 @@ export class ConnectionMonitor {
     }
 
     const totalPackets = current.packetsReceived + current.packetsLost;
-    const packetLossPct =
-      totalPackets > 0 ? (current.packetsLost / totalPackets) * 100 : 0;
+    const packetLossPct = totalPackets > 0 ? (current.packetsLost / totalPackets) * 100 : 0;
 
     return {
       latencyMs: Number((current.currentRoundTripTimeSec * 1000).toFixed(2)),

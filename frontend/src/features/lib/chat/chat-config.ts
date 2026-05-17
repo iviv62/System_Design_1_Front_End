@@ -7,20 +7,13 @@ type SocketUrlParams = {
   token?: string | null;
 };
 
-export function getApiBaseUrl(
-  apiBase?: string,
-  wsBase?: string,
-): string {
+export function getApiBaseUrl(apiBase?: string, wsBase?: string): string {
   if (apiBase?.trim()) {
     return apiBase.trim().replace(/\/$/, "");
   }
 
   if (wsBase?.trim()) {
-    return wsBase
-      .trim()
-      .replace(/\/$/, "")
-      .replace(/^wss:/, "https:")
-      .replace(/^ws:/, "http:");
+    return wsBase.trim().replace(/\/$/, "").replace(/^wss:/, "https:").replace(/^ws:/, "http:");
   }
 
   const host = window.location.hostname || "localhost";

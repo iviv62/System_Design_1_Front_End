@@ -142,7 +142,9 @@ export class PageChat extends LitElement {
       <div class="room-page">
         <chat-nav-sidebar
           .theme=${this.themeCtrl.theme}
-          @open-settings=${() => { this.isSettingsOpen = true; }}
+          @open-settings=${() => {
+            this.isSettingsOpen = true;
+          }}
           .currentUsername=${this.username}
           .roomName=${currentRoomId}
         ></chat-nav-sidebar>
@@ -154,7 +156,9 @@ export class PageChat extends LitElement {
           @room-connected=${this.handleRoomConnected}
           @active-users-change=${this.handleActiveUsersChange}
           @typing-users-change=${this.handleTypingUsersChange}
-          @open-settings=${() => { this.isSettingsOpen = true; }}
+          @open-settings=${() => {
+            this.isSettingsOpen = true;
+          }}
         ></chat-room>
 
         <chat-room-users
@@ -167,7 +171,9 @@ export class PageChat extends LitElement {
 
       <chat-settings-modal
         .open=${this.isSettingsOpen}
-        @closed=${() => { this.isSettingsOpen = false; }}
+        @closed=${() => {
+          this.isSettingsOpen = false;
+        }}
       ></chat-settings-modal>
     `;
   }

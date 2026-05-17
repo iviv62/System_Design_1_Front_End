@@ -75,30 +75,18 @@ export async function deleteRoom(roomId: string, username: string): Promise<void
   }
 }
 
-export async function fetchConversationSummary(
-  room: string,
-): Promise<ConversationSummary> {
-  const res = await fetchWithAuth(
-    `${getBase()}/conversations/${encodeURIComponent(room)}`,
-  );
+export async function fetchConversationSummary(room: string): Promise<ConversationSummary> {
+  const res = await fetchWithAuth(`${getBase()}/conversations/${encodeURIComponent(room)}`);
   if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      `Failed to fetch conversation summary: ${res.statusText}`,
-    );
+    throw new ApiError(res.status, `Failed to fetch conversation summary: ${res.statusText}`);
   }
   return res.json();
 }
 
 export async function fetchConnectedUsers(room: string): Promise<ConnectedUsersSnapshot> {
-  const res = await fetchWithAuth(
-    `${getBase()}/rooms/${encodeURIComponent(room)}/connected-users`,
-  );
+  const res = await fetchWithAuth(`${getBase()}/rooms/${encodeURIComponent(room)}/connected-users`);
   if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      `Failed to fetch connected users: ${res.statusText}`,
-    );
+    throw new ApiError(res.status, `Failed to fetch connected users: ${res.statusText}`);
   }
 
   const data = (await res.json()) as {
@@ -137,13 +125,8 @@ export async function updateConversationLastSeen(
   }
 }
 
-export async function fetchUnreadCount(
-  room: string,
-  username: string,
-): Promise<number> {
-  const url = new URL(
-    `${getBase()}/conversations/${encodeURIComponent(room)}/unread-count`,
-  );
+export async function fetchUnreadCount(room: string, username: string): Promise<number> {
+  const url = new URL(`${getBase()}/conversations/${encodeURIComponent(room)}/unread-count`);
   url.searchParams.set("username", username);
 
   const res = await fetchWithAuth(url.toString());

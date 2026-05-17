@@ -3,7 +3,15 @@
   min-height: 100vh;
   background-color: var(--bg-default, #f0f4f8);
   color: var(--text-color, #111827);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   --primary-color: #3b82f6;
   --primary-bg: #3b82f6;
   --primary-bg-hover: #2563eb;
@@ -14,7 +22,9 @@
   --text-muted: #6b7280;
   --text-active: #111827;
   --glass-bg: rgba(255, 255, 255, 0.7);
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 :host-context(body[data-theme="dark"]) {
@@ -72,7 +82,8 @@
     font-weight: 500;
     transition: color 0.2s;
 
-    &:hover, &.active {
+    &:hover,
+    &.active {
       color: var(--text-active);
     }
 
@@ -94,7 +105,9 @@
     font-size: 0.95rem;
     font-weight: 500;
     border: 1px solid var(--border-color);
-    transition: background-color 0.2s, border-color 0.2s;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s;
 
     &:hover {
       background-color: var(--secondary-bg-hover);
@@ -282,7 +295,7 @@
     }
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: 0;
@@ -413,12 +426,12 @@
   overflow: hidden;
   backdrop-filter: blur(8px);
   z-index: 1;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 
   :host-context(body[data-theme="dark"]) & {
     background: rgba(15, 17, 24, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   }
 }
 

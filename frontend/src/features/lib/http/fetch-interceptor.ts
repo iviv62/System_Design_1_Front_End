@@ -17,7 +17,7 @@ let refreshInFlight: Promise<string | null> | null = null;
 function applyAuthHeader(headersInit: HeadersInit | undefined): Headers {
   const headers = new Headers(headersInit);
   const token = authStore.getState().accessToken; // Pull token directly from Zustand
-  
+
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -28,7 +28,7 @@ function applyAuthHeader(headersInit: HeadersInit | undefined): Headers {
  * Attempts to get a new Access Token using the HttpOnly Refresh Token cookie.
  */
 export async function refreshAccessToken(): Promise<string | null> {
-  // 1. "Thundering Herd" Protection: If a refresh is already happening, 
+  // 1. "Thundering Herd" Protection: If a refresh is already happening,
   // just wait for that one to finish instead of firing a second request.
   if (refreshInFlight) {
     return refreshInFlight;
@@ -39,7 +39,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     const res = await fetch(`${getBase()}/auth/refresh`, {
       method: "POST",
       // 'include' is required so the browser automatically sends the HttpOnly refresh cookie
-      credentials: "include", 
+      credentials: "include",
     });
 
     // If the refresh endpoint fails (e.g., refresh token expired or tampered with),
@@ -53,7 +53,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     const data = (await res.json()) as { access_token?: string };
     const token = data.access_token ?? null;
     authStore.getState().setAccessToken(token);
-    
+
     return token;
   })().finally(() => {
     // 3. Cleanup: Once the request resolves or fails, release the lock.
@@ -64,7 +64,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 }
 
 /**
- * Hits the backend to invalidate/delete the HttpOnly refresh cookie, 
+ * Hits the backend to invalidate/delete the HttpOnly refresh cookie,
  * then wipes the local Zustand state.
  */
 export async function logoutWithServer(): Promise<void> {
@@ -80,7 +80,7 @@ export async function logoutWithServer(): Promise<void> {
 }
 
 /**
- * A wrapper around the native browser fetch(). 
+ * A wrapper around the native browser fetch().
  * Automatically attaches the Bearer token and handles transparent retries on 401 Expirations.
  */
 export async function fetchWithAuth(
@@ -89,7 +89,7 @@ export async function fetchWithAuth(
   options: FetchWithAuthOptions = {},
 ): Promise<Response> {
   const { skipAuth = false, retryOn401 = true } = options;
-  
+
   // Attach the current access token to the headers
   const headers = skipAuth ? new Headers(init.headers) : applyAuthHeader(init.headers);
 
@@ -110,7 +110,7 @@ export async function fetchWithAuth(
   // 3. We hit a 401 Unauthorized. The access token is likely expired.
   // Pause the current flow to fetch a new token in the background.
   const refreshedToken = await refreshAccessToken();
-  
+
   // If the refresh failed, we can't retry. Return the original 401 response.
   if (!refreshedToken) {
     return res;

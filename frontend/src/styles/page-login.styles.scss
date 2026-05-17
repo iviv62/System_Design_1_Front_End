@@ -17,7 +17,9 @@
 .auth-card {
   background: var(--bg-card, #ffffff);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 2.5rem 2rem;
   width: 100%;
   max-width: 400px;
@@ -25,7 +27,9 @@
 
 :host-context(body[data-theme="dark"]) .auth-card {
   background: #1e293b;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.18);
 }
 
 h2 {
@@ -86,7 +90,9 @@ input {
   border-radius: 6px;
   background: #ffffff;
   color: #111827;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   outline: none;
 }
 

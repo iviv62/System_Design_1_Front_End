@@ -71,7 +71,9 @@
   background: transparent;
   color: #4b5f7e;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .nav-sidebar__icon-btn:hover {

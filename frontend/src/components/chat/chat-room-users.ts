@@ -35,7 +35,9 @@ export class ChatRoomUsers extends LitElement {
       return deduped;
     }
 
-    const others = deduped.filter((u) => u !== normalizedCurrent).sort((a, b) => a.localeCompare(b));
+    const others = deduped
+      .filter((u) => u !== normalizedCurrent)
+      .sort((a, b) => a.localeCompare(b));
     return [normalizedCurrent, ...others];
   }
 
@@ -66,15 +68,30 @@ export class ChatRoomUsers extends LitElement {
                   (user) => html`
                     <div class="chat-room__user-item">
                       <div class="chat-room__user-avatar-wrap">
-                        <span class="chat-room__user-avatar ${this.getAvatarToneClass(user)}" aria-hidden="true">${this.getInitials(user)}</span>
-                        <span class="chat-room__user-presence-dot ${this.typingUsers.includes(user) ? 'chat-room__user-presence-dot--typing' : 'chat-room__user-presence-dot--online'}" aria-hidden="true">
-                          ${this.typingUsers.includes(user) ? html`<span class="chat-room__user-presence-dot--typing-ping"></span>` : ''}
+                        <span
+                          class="chat-room__user-avatar ${this.getAvatarToneClass(user)}"
+                          aria-hidden="true"
+                          >${this.getInitials(user)}</span
+                        >
+                        <span
+                          class="chat-room__user-presence-dot ${this.typingUsers.includes(user)
+                            ? "chat-room__user-presence-dot--typing"
+                            : "chat-room__user-presence-dot--online"}"
+                          aria-hidden="true"
+                        >
+                          ${this.typingUsers.includes(user)
+                            ? html`<span class="chat-room__user-presence-dot--typing-ping"></span>`
+                            : ""}
                         </span>
                       </div>
 
                       <div class="chat-room__user-main">
                         <div class="chat-room__user-name">${user}</div>
-                        <div class="chat-room__user-status ${this.typingUsers.includes(user) ? 'chat-room__user-status--typing' : ''}">
+                        <div
+                          class="chat-room__user-status ${this.typingUsers.includes(user)
+                            ? "chat-room__user-status--typing"
+                            : ""}"
+                        >
                           ${this.typingUsers.includes(user) ? "Typing..." : "Online"}
                         </div>
                       </div>

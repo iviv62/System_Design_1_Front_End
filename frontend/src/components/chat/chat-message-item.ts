@@ -33,11 +33,13 @@ export class ChatMessageItem extends LitElement {
   }
 
   private handleImageClick(url: string) {
-    this.dispatchEvent(new CustomEvent<{ url: string }>("image-preview", {
-      detail: { url },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent<{ url: string }>("image-preview", {
+        detail: { url },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private handleImageKeydown(e: KeyboardEvent, url: string) {
@@ -72,12 +74,7 @@ export class ChatMessageItem extends LitElement {
       }
 
       fragments.push(html`
-        <a
-          class="message__link"
-          href=${href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >${url}</a>
+        <a class="message__link" href=${href} target="_blank" rel="noopener noreferrer">${url}</a>
       `);
 
       lastIndex = index + url.length;
@@ -100,14 +97,18 @@ export class ChatMessageItem extends LitElement {
       return html`<span class="message__status message__status--sent" title="Delivered">✓</span>`;
     }
     if (status === "failed") {
-      return html`<span class="message__status message__status--failed" title="Failed to send">⚠️</span>`;
+      return html`<span class="message__status message__status--failed" title="Failed to send"
+        >⚠️</span
+      >`;
     }
     return null;
   }
 
   render() {
     if (this.message.kind === "system") {
-      return html`<div class="message message--system" data-message-id=${this.message.id}>${this.message.text}</div>`;
+      return html`<div class="message message--system" data-message-id=${this.message.id}>
+        ${this.message.text}
+      </div>`;
     }
 
     const isOwnMessage = this.message.username === this.username;
@@ -139,7 +140,8 @@ export class ChatMessageItem extends LitElement {
                   role="button"
                   tabindex="0"
                   @click=${() => this.handleImageClick(this.message.imageUrl!)}
-                  @keydown=${(e: KeyboardEvent) => this.handleImageKeydown(e, this.message.imageUrl!)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this.handleImageKeydown(e, this.message.imageUrl!)}
                 />
               `
             : ""}
@@ -153,14 +155,16 @@ export class ChatMessageItem extends LitElement {
                   ${isOwnMessage ? this.renderStatusIndicator() : null}
                 </div>
               `
-            : html`
-                ${isOwnMessage ? this.renderStatusIndicator() : null}
-              `}
+            : html` ${isOwnMessage ? this.renderStatusIndicator() : null} `}
         </div>
-        <div class="message__reactions ${isOwnMessage ? "message__reactions--self" : ""}" aria-label="Message reactions">
+        <div
+          class="message__reactions ${isOwnMessage ? "message__reactions--self" : ""}"
+          aria-label="Message reactions"
+        >
           <message-reaction-picker
             class="message__reaction-picker"
-            @reaction-selected=${(e: CustomEvent<{ emoji: string }>) => this.emitReaction(e.detail.emoji)}
+            @reaction-selected=${(e: CustomEvent<{ emoji: string }>) =>
+              this.emitReaction(e.detail.emoji)}
           ></message-reaction-picker>
           ${reactions.map(({ emoji, users, count }) => {
             const isSelected = users.includes(this.username);

@@ -69,7 +69,9 @@ export class ChatVoiceBar extends LitElement {
     return colors[Math.abs(hash) % colors.length];
   }
 
-  createRenderRoot() { return this; }
+  createRenderRoot() {
+    return this;
+  }
 
   render() {
     if (this.state === "idle") return nothing;
@@ -91,34 +93,63 @@ export class ChatVoiceBar extends LitElement {
         <div style="display: flex; align-items: center; gap: 16px;">
           <!-- Avatars -->
           <div style="display: flex; align-items: center;">
-            ${partsArray.slice(0, 3).map((p, i) => html`
-              <div
-                style="width: 32px; height: 32px; border-radius: 50%; background-color: ${this.getColorForUser(p.username)}; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; border: 2px solid #10b981; margin-left: ${i > 0 ? '-12px' : '0'}; z-index: ${3 - i};"
-              >
-                ${this.getInitials(p.username).charAt(0)}
-              </div>
-            `)}
-            ${partsArray.length > 3 ? html`
-              <div
-                style="width: 32px; height: 32px; border-radius: 50%; background-color: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid #10b981; margin-left: -12px; z-index: 0;"
-              >
-                +${partsArray.length - 3}
-              </div>
-            ` : nothing}
+            ${partsArray
+              .slice(0, 3)
+              .map(
+                (p, i) => html`
+                  <div
+                    style="width: 32px; height: 32px; border-radius: 50%; background-color: ${this.getColorForUser(
+                      p.username,
+                    )}; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; border: 2px solid #10b981; margin-left: ${i >
+                    0
+                      ? "-12px"
+                      : "0"}; z-index: ${3 - i};"
+                  >
+                    ${this.getInitials(p.username).charAt(0)}
+                  </div>
+                `,
+              )}
+            ${partsArray.length > 3
+              ? html`
+                  <div
+                    style="width: 32px; height: 32px; border-radius: 50%; background-color: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid #10b981; margin-left: -12px; z-index: 0;"
+                  >
+                    +${partsArray.length - 3}
+                  </div>
+                `
+              : nothing}
           </div>
 
-          <span class="voice-bar__label" style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-            ${this.state === "calling" ? "VOICE CONNECTING..." : this.state === "error" ? "⚠ CALL FAILED" : html`VOICE CONNECTED / ${this.timer}`}
-            ${this.state === "active" ? html`
-              <button
-                style="background: ${this.isMuted ? '#ef4444' : 'transparent'}; border: none; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 2px;"
-                title=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
-                aria-label=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
-                @click=${() => this.dispatchEvent(new CustomEvent("voice-mute-toggle", { detail: { muted: !this.isMuted }, bubbles: true, composed: true }))}
-              >
-                ${this.isMuted ? iconMicOffSm : iconMicSm}
-              </button>
-            ` : nothing}
+          <span
+            class="voice-bar__label"
+            style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;"
+          >
+            ${this.state === "calling"
+              ? "VOICE CONNECTING..."
+              : this.state === "error"
+                ? "⚠ CALL FAILED"
+                : html`VOICE CONNECTED / ${this.timer}`}
+            ${this.state === "active"
+              ? html`
+                  <button
+                    style="background: ${this.isMuted
+                      ? "#ef4444"
+                      : "transparent"}; border: none; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 2px;"
+                    title=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
+                    aria-label=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
+                    @click=${() =>
+                      this.dispatchEvent(
+                        new CustomEvent("voice-mute-toggle", {
+                          detail: { muted: !this.isMuted },
+                          bubbles: true,
+                          composed: true,
+                        }),
+                      )}
+                  >
+                    ${this.isMuted ? iconMicOffSm : iconMicSm}
+                  </button>
+                `
+              : nothing}
           </span>
         </div>
 
@@ -128,12 +159,13 @@ export class ChatVoiceBar extends LitElement {
           style="background-color: rgba(0,0,0,0.1); border: none; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background-color 0.2s;"
           onmouseover="this.style.backgroundColor='rgba(0,0,0,0.2)'"
           onmouseout="this.style.backgroundColor='rgba(0,0,0,0.1)'"
-          @click=${() => this.dispatchEvent(
-            new CustomEvent(
-              this.state === "error" ? "voice-dismiss" : "return-to-call",
-              { bubbles: true, composed: true }
-            )
-          )}
+          @click=${() =>
+            this.dispatchEvent(
+              new CustomEvent(this.state === "error" ? "voice-dismiss" : "return-to-call", {
+                bubbles: true,
+                composed: true,
+              }),
+            )}
         >
           ${this.state === "error" ? "DISMISS" : html`RETURN TO CALL ${iconReturnToCall}`}
         </button>
@@ -143,5 +175,7 @@ export class ChatVoiceBar extends LitElement {
 }
 
 declare global {
-  interface HTMLElementTagNameMap { "chat-voice-bar": ChatVoiceBar; }
+  interface HTMLElementTagNameMap {
+    "chat-voice-bar": ChatVoiceBar;
+  }
 }

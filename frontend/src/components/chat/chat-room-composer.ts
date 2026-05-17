@@ -285,8 +285,16 @@ export class ChatRoomComposer extends LitElement {
             type="button"
             ?disabled=${!canSubmit}
             @click=${this.handleSendClick}
-            title=${this.submitting ? "Sending..." : (canSubmit ? "Send" : "Cannot send empty message")}
-            aria-label=${this.submitting ? "Sending..." : (canSubmit ? "Send" : "Cannot send empty message")}
+            title=${this.submitting
+              ? "Sending..."
+              : canSubmit
+                ? "Send"
+                : "Cannot send empty message"}
+            aria-label=${this.submitting
+              ? "Sending..."
+              : canSubmit
+                ? "Send"
+                : "Cannot send empty message"}
           >
             ➤
           </button>

@@ -26,9 +26,6 @@ export async function registerNotificationToken(
   });
 
   if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      `Failed to register notification token: ${res.statusText}`,
-    );
+    throw new ApiError(res.status, `Failed to register notification token: ${res.statusText}`);
   }
 }

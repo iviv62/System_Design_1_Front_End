@@ -1,10 +1,6 @@
 import { getBase } from "../http/api-base";
 import { authStore } from "../../../store/auth-store";
-import {
-  fetchWithAuth,
-  logoutWithServer,
-  refreshAccessToken,
-} from "../http/fetch-interceptor";
+import { fetchWithAuth, logoutWithServer, refreshAccessToken } from "../http/fetch-interceptor";
 
 export type CurrentUser = {
   id?: string;

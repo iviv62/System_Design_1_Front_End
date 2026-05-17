@@ -6,7 +6,9 @@ import "../ui/theme-button";
 
 @customElement("lobby-header")
 export class LobbyHeader extends LitElement {
-  createRenderRoot() { return this; }
+  createRenderRoot() {
+    return this;
+  }
 
   @property() theme: "light" | "dark" = "light";
 

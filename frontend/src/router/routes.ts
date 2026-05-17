@@ -7,6 +7,7 @@ import "../pages/page-register";
 import "../pages/page-dashboard";
 import "../pages/page-chat";
 import "../pages/page-landing";
+import "../pages/page-nebula";
 
 export const routes: RouteConfig[] = [
   {
@@ -28,6 +29,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/chat/*",
     render: () => html`<page-chat></page-chat>`,
+  },
+  {
+    path: "/nebula",
+    render: () => html`<page-nebula></page-nebula>`,
   },
   // Catch-all: redirect unknown paths to /chat
   {

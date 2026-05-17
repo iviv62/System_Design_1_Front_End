@@ -111,11 +111,7 @@ export class CreateServerModal extends LitElement {
                     <h2 id="modal-title">Create a Server</h2>
                     <p>Your new community hub starts here.</p>
                   </div>
-                  <button
-                    class="modal-close"
-                    @click=${this.closeModal}
-                    aria-label="Close dialog"
-                  >
+                  <button class="modal-close" @click=${this.closeModal} aria-label="Close dialog">
                     &times;
                   </button>
                 </div>
@@ -134,7 +130,9 @@ export class CreateServerModal extends LitElement {
                       />
 
                       <button
-                        class="upload-avatar ${this.avatarDataUrl ? "upload-avatar--has-image" : ""}"
+                        class="upload-avatar ${this.avatarDataUrl
+                          ? "upload-avatar--has-image"
+                          : ""}"
                         @click=${this.triggerAvatarUpload}
                         aria-label="Upload server avatar"
                         type="button"
@@ -197,7 +195,9 @@ export class CreateServerModal extends LitElement {
                               }
                             }}
                           >
-                            <div class="category-icon" aria-hidden="true">${this.renderCategoryIcon(cat)}</div>
+                            <div class="category-icon" aria-hidden="true">
+                              ${this.renderCategoryIcon(cat)}
+                            </div>
                             <div class="category-name">${cat}</div>
                             ${this.selectedCategory === cat
                               ? html`
@@ -312,7 +312,9 @@ export class CreateServerModal extends LitElement {
                     </div>
                   </div>
 
-                  ${this.error ? html`<div class="modal-error" role="alert">${this.error}</div>` : ""}
+                  ${this.error
+                    ? html`<div class="modal-error" role="alert">${this.error}</div>`
+                    : ""}
                 </div>
 
                 <div class="modal-footer">

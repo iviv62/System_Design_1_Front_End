@@ -62,11 +62,7 @@ export class ChatNavSidebar extends LitElement {
             ${iconUsers}
           </button>
 
-          <button
-            class="nav-sidebar__icon-btn"
-            title="Search"
-            aria-label="Search"
-          >
+          <button class="nav-sidebar__icon-btn" title="Search" aria-label="Search">
             ${iconSearch}
           </button>
 
@@ -75,14 +71,19 @@ export class ChatNavSidebar extends LitElement {
             title="Settings"
             aria-label="Settings"
             @click=${() => {
-              this.dispatchEvent(new CustomEvent("open-settings", { bubbles: true, composed: true }));
+              this.dispatchEvent(
+                new CustomEvent("open-settings", { bubbles: true, composed: true }),
+              );
             }}
           >
             ${iconSettingsNav}
           </button>
         </div>
 
-        <div class="nav-sidebar__bottom" style="margin-top: auto; display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+        <div
+          class="nav-sidebar__bottom"
+          style="margin-top: auto; display: flex; flex-direction: column; gap: 1rem; align-items: center;"
+        >
           <button
             class="nav-sidebar__icon-btn"
             title="Logout"
@@ -92,7 +93,11 @@ export class ChatNavSidebar extends LitElement {
             ${iconLogout}
           </button>
 
-          <button class="nav-sidebar__avatar" title=${this.currentUsername} aria-label="Your profile">
+          <button
+            class="nav-sidebar__avatar"
+            title=${this.currentUsername}
+            aria-label="Your profile"
+          >
             ${this.getInitials(this.currentUsername)}
           </button>
         </div>
