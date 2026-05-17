@@ -1,9 +1,25 @@
 :host {
   display: block;
   min-height: 100vh;
+  background-color: var(--bg-default, #f0f4f8);
+  color: var(--text-color, #111827);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --primary-color: #3b82f6;
+  --primary-bg: #3b82f6;
+  --primary-bg-hover: #2563eb;
+  --secondary-bg: #e5e7eb;
+  --secondary-bg-hover: #d1d5db;
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --text-muted: #6b7280;
+  --text-active: #111827;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+:host-context(body[data-theme="dark"]) {
   background-color: #12141d;
   color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --primary-color: #a5b4fc;
   --primary-bg: #818cf8;
   --primary-bg-hover: #6366f1;
@@ -82,7 +98,7 @@
 
     &:hover {
       background-color: var(--secondary-bg-hover);
-      border-color: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-color);
     }
   }
 }
@@ -195,6 +211,11 @@
   flex-direction: column;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+  :host-context(body[data-theme="dark"]) & {
+    box-shadow: none;
+  }
 
   h3 {
     font-size: 1.25rem;
@@ -214,7 +235,7 @@
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--border-color);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -247,8 +268,12 @@
     flex: 1;
     min-height: 300px;
     position: relative;
-    background: linear-gradient(135deg, rgba(30, 33, 43, 0.8) 0%, rgba(20, 22, 30, 0.9) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(240, 244, 248, 0.9) 100%);
     overflow: hidden;
+
+    :host-context(body[data-theme="dark"]) & {
+      background: linear-gradient(135deg, rgba(30, 33, 43, 0.8) 0%, rgba(20, 22, 30, 0.9) 100%);
+    }
 
     &::after {
       content: '';
@@ -257,8 +282,12 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: radial-gradient(circle at center, rgba(165, 180, 252, 0.05) 0%, transparent 70%);
+      background: radial-gradient(circle at center, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
       z-index: 0;
+    }
+
+    :host-context(body[data-theme="dark"]) &::after {
+      background: radial-gradient(circle at center, rgba(165, 180, 252, 0.05) 0%, transparent 70%);
     }
   }
 
@@ -278,7 +307,8 @@
     }
 
     .placeholder-text {
-      color: rgba(255,255,255,0.3);
+      color: var(--text-muted);
+      opacity: 0.5;
       font-size: 0.95rem;
     }
   }
@@ -370,20 +400,31 @@
   transform: translate(-50%, -50%);
   width: 80%;
   height: 70%;
-  background: rgba(15, 17, 24, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   display: flex;
   overflow: hidden;
   backdrop-filter: blur(8px);
   z-index: 1;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+
+  :host-context(body[data-theme="dark"]) & {
+    background: rgba(15, 17, 24, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
 }
 
 .mockup-sidebar {
   width: 60px;
-  background: rgba(0, 0, 0, 0.2);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+
+  :host-context(body[data-theme="dark"]) & {
+    background: rgba(0, 0, 0, 0.2);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+  }
 }
 
 .mockup-main {
@@ -397,13 +438,17 @@
 
 .mockup-message {
   height: 24px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 4px;
   width: 60%;
 
   &:nth-child(2) {
     width: 40%;
     opacity: 0.7;
+  }
+
+  :host-context(body[data-theme="dark"]) & {
+    background: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -413,7 +458,11 @@
   bottom: 20px;
   color: var(--primary-color);
   opacity: 0.8;
-  filter: drop-shadow(0 0 10px rgba(165, 180, 252, 0.3));
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
+
+  :host-context(body[data-theme="dark"]) & {
+    filter: drop-shadow(0 0 10px rgba(165, 180, 252, 0.3));
+  }
 }
 
 @media (max-width: 900px) {

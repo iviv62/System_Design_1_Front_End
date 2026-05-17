@@ -253,11 +253,7 @@ export class ChatApp extends LitElement {
         <div class="lobby__layout">
           <!-- Column 1: Signed-In User + Recent Rooms -->
           <div class="lobby__col">
-            <div
-              class="lobby__card"
-              style="cursor: pointer;"
-              @click=${() => navigate("/profile")}
-            >
+            <div class="lobby__card">
               <h3 class="lobby__card-title">Signed In User</h3>
               <div class="lobby__label">Username</div>
               <div class="lobby__room-card-name">${this.username || "-"}</div>
