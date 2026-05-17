@@ -109,7 +109,7 @@ export class ChatActiveCall extends LitElement {
     // all participants — including late joiners — see the same elapsed duration.
     // Falls back to Date.now() when no backend value is present.
     this.callStartTime =
-      this.backendCallStartTime !== null
+      this.backendCallStartTime != null
         ? this.backendCallStartTime * 1000
         : Date.now();
 
