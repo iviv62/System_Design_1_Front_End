@@ -40,6 +40,17 @@
   --lp-github-color:    #ffffff;
   --lp-github-border:   rgba(0, 0, 0, 0.12);
   --lp-star-color:      #d97706;  // amber-600 — visible on dark button
+
+  // ── Orbit section tokens (light) ─────────────────────────────────────
+  --lp-orbit-bg:          rgba(255, 255, 255, 0.55);
+  --lp-orbit-ring:        rgba(99, 102, 241, 0.18);
+  --lp-orbit-center-bg:   #4f46e5;
+  --lp-orbit-center-color:#ffffff;
+  --lp-orbit-avatar-bg:   rgba(255, 255, 255, 0.80);
+  --lp-orbit-avatar-border: rgba(99, 102, 241, 0.22);
+  --lp-orbit-badge-bg:    #4f46e5;
+  --lp-orbit-badge-color: #ffffff;
+  --lp-orbit-label-color: rgba(71, 85, 105, 0.55);
 }
 
 // Dark theme: deep void with rich saturated nebulae
@@ -73,6 +84,17 @@
   --lp-github-color:    #cdd9e5;
   --lp-github-border:   rgba(205, 217, 229, 0.12);
   --lp-star-color:      #e3b341;
+
+  // ── Orbit section tokens (dark) ───────────────────────────────────────
+  --lp-orbit-bg:          rgba(3, 7, 18, 0.70);
+  --lp-orbit-ring:        rgba(255, 255, 255, 0.08);
+  --lp-orbit-center-bg:   #6d28d9;
+  --lp-orbit-center-color:#ffffff;
+  --lp-orbit-avatar-bg:   rgba(15, 20, 40, 0.85);
+  --lp-orbit-avatar-border: rgba(255, 255, 255, 0.12);
+  --lp-orbit-badge-bg:    #7c3aed;
+  --lp-orbit-badge-color: #ffffff;
+  --lp-orbit-label-color: rgba(148, 163, 184, 0.50);
 }
 
 // ─── Space background layers ──────────────────────────────────────────────
@@ -595,6 +617,191 @@
   opacity: 0.75;
 }
 
+// ─── Common Orbits Section ──────────────────────────────────────────────────
+
+.orbits-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 56px;
+  padding: 24px 0;
+}
+
+.orbits-header {
+  text-align: center;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.orbits-title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: var(--lp-text);
+}
+
+.orbits-subtitle {
+  font-size: 0.95rem;
+  color: var(--lp-text-muted);
+  line-height: 1.65;
+  margin: 0;
+}
+
+// ── Orbit stage: the circular diagram ────────────────────────────────────
+
+.orbit-stage {
+  position: relative;
+  width: 480px;
+  height: 480px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+
+// Orbit rings (dashed circles)
+.orbit-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px dashed var(--lp-orbit-ring);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.orbit-ring--far  { width: 90%;  height: 90%; }
+.orbit-ring--mid  { width: 65%;  height: 65%; }
+.orbit-ring--near { width: 38%;  height: 38%; }
+
+// Orbit ring labels
+.orbit-label {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-orbit-label-color);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.orbit-label--near {
+  top: auto;
+  bottom: 12px;
+}
+
+// Centre avatar ("you")
+.orbit-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: var(--lp-orbit-center-bg);
+  color: var(--lp-orbit-center-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.18), 0 4px 20px rgba(79, 70, 229, 0.35);
+  z-index: 2;
+
+  svg { flex-shrink: 0; }
+}
+
+:host([data-theme="dark"]) .orbit-center {
+  box-shadow: 0 0 0 6px rgba(109, 40, 217, 0.25), 0 4px 24px rgba(109, 40, 217, 0.45);
+}
+
+.orbit-center__dot {
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #34d399;
+  border: 2px solid var(--lp-orbit-center-bg);
+}
+
+// Orbit avatar buttons
+.orbit-avatar {
+  position: absolute;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--lp-orbit-avatar-bg);
+  border: 2px solid var(--lp-orbit-avatar-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  padding: 0;
+
+  &:hover {
+    transform: scale(1.12);
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.30);
+    border-color: var(--lp-accent);
+  }
+}
+
+.orbit-avatar__initials {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lp-text);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.orbit-avatar__badge {
+  position: absolute;
+  top: -5px; right: -5px;
+  min-width: 18px; height: 18px;
+  border-radius: 10px;
+  background: var(--lp-orbit-badge-bg);
+  color: var(--lp-orbit-badge-color);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--lp-orbit-avatar-bg);
+  pointer-events: none;
+}
+
+.orbit-avatar__online {
+  position: absolute;
+  bottom: 1px; right: 1px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #34d399;
+  border: 2px solid var(--lp-orbit-avatar-bg);
+  pointer-events: none;
+}
+
+// Avatar position helpers — place avatars around the orbit rings
+// Far ring  (~45% from center)
+.orbit-far.pos-top         { top: 4%;  left: 50%; transform: translate(-50%, 0); }
+.orbit-far.pos-bottom-left { top: 72%; left: 12%; }
+
+// Mid ring (~32.5% from center)
+.orbit-mid.pos-top-left  { top: 18%; left: 20%; }
+.orbit-mid.pos-left      { top: 42%; left: 8%;  transform: translateY(-50%); }
+.orbit-mid.pos-bottom    { top: 78%; left: 50%; transform: translateX(-50%); }
+
+// Near ring (~19% from center)
+.orbit-near.pos-right    { top: 50%; right: 22%; transform: translateY(-50%); }
+
 // ─── Footer ─────────────────────────────────────────────────────────────────
 
 .landing-footer {
@@ -644,6 +851,10 @@
     gap: 20px;
     align-items: flex-start;
   }
+}
+
+@media (max-width: 600px) {
+  .orbit-stage { width: 320px; height: 320px; }
 }
 
 @media (max-width: 480px) {

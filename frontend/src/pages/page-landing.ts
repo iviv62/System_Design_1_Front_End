@@ -140,6 +140,63 @@ export class PageLanding extends LitElement {
   }
 
 
+  /** Renders the orbit visualization with dummy user avatars */
+  private _renderOrbitSection() {
+    // Orbit users: { initials, label (mutual servers), orbitClass, posClass, online? }
+    const orbitUsers = [
+      { initials: "AK", label: "1", orbitClass: "orbit-far",    posClass: "pos-top",         online: false },
+      { initials: "SL", label: "2", orbitClass: "orbit-mid",    posClass: "pos-top-left",    online: false },
+      { initials: "MR", label: "2", orbitClass: "orbit-mid",    posClass: "pos-left",        online: false },
+      { initials: "JT", label: "1", orbitClass: "orbit-far",    posClass: "pos-bottom-left", online: false },
+      { initials: "EV", label: "3", orbitClass: "orbit-near",   posClass: "pos-right",       online: true  },
+      { initials: "NB", label: "2", orbitClass: "orbit-mid",    posClass: "pos-bottom",      online: false },
+    ];
+
+    return html`
+      <section class="orbits-section" aria-labelledby="orbits-title">
+        <div class="orbits-header">
+          <h2 id="orbits-title" class="orbits-title">Discover Your Common Orbits</h2>
+          <p class="orbits-subtitle">
+            See who shares your spaces. The closer the orbit, the more mutual servers you
+            have in common. Click on any profile to connect!
+          </p>
+        </div>
+
+        <div class="orbit-stage" role="img" aria-label="Orbit diagram showing users in shared servers">
+          <!-- Dashed orbit rings -->
+          <div class="orbit-ring orbit-ring--far"  aria-hidden="true"><span class="orbit-label">1 SERVER</span></div>
+          <div class="orbit-ring orbit-ring--mid"  aria-hidden="true"></div>
+          <div class="orbit-ring orbit-ring--near" aria-hidden="true"><span class="orbit-label orbit-label--near">3+ SERVERS</span></div>
+
+          <!-- Centre avatar (you) -->
+          <div class="orbit-center" aria-label="Your profile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="orbit-center__dot"></span>
+          </div>
+
+          <!-- Orbiting users -->
+          ${orbitUsers.map(
+            (u) => html`
+              <button
+                class="orbit-avatar ${u.orbitClass} ${u.posClass}"
+                aria-label="${u.initials} — ${u.label} mutual server${u.label !== '1' ? 's' : ''}"
+              >
+                <span class="orbit-avatar__initials">${u.initials}</span>
+                <span class="orbit-avatar__badge">${u.label}</span>
+                ${u.online ? html`<span class="orbit-avatar__online" aria-hidden="true"></span>` : ""}
+              </button>
+            `
+          )}
+        </div>
+      </section>
+    `;
+  }
+
+
   render() {
     const isDark = this.theme.theme === "dark";
 
@@ -325,6 +382,10 @@ export class PageLanding extends LitElement {
               </div>
             </div>
           </section>
+
+
+          <!-- ── Common Orbits section ── -->
+          ${this._renderOrbitSection()}
         </main>
 
 
