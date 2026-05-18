@@ -90,7 +90,7 @@ export class ChatRoomUsers extends LitElement {
                         <div
                           class="chat-room__user-status ${this.typingUsers.includes(user)
                             ? "chat-room__user-status--typing"
-                            : ""}"
+                            : "chat-room__user-status--online"}"
                         >
                           ${this.typingUsers.includes(user) ? "Typing..." : "Online"}
                         </div>

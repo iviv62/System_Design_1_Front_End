@@ -299,6 +299,21 @@ export const iconHash = html`<svg
   <line x1="16" y1="3" x2="14" y2="21"></line>
 </svg>`;
 
+export const iconHome = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.8"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+</svg>`;
+
 export const iconUsers = html`<svg
   width="20"
   height="20"

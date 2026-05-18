@@ -43,6 +43,7 @@ import "./chat-room-composer";
 import "./chat-voice-bar";
 import "./chat-active-call";
 import "./chat-image-preview";
+import "./chat-room-users";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -68,6 +69,11 @@ export class ChatRoom extends LitElement {
   @state() private pendingUnreadCount: number | null = null;
   @state() private isUploadingImage = false;
   @state() private isScrolledUp = false;
+  @state() private _showMembers = true;
+  @state() private _activeUsers: string[] = [];
+
+  private _starsAnimId: number | null = null;
+  private readonly boundResize = this.handleResize.bind(this);
 
   private awaitingFirstReplayMessage = false;
   private pendingAutoScroll = false;
@@ -162,28 +168,94 @@ export class ChatRoom extends LitElement {
 
   private readonly boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
 
+  firstUpdated() {
+    this._initStarfield();
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.addEventListener("focus", this.boundHandleVisibilityChange);
+    window.addEventListener("resize", this.boundResize);
     this.updateAdapterIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
+    void this.loadActiveUsersSnapshot();
     ThemeController.set(this.themeCtrl.theme);
   }
 
   disconnectedCallback(): void {
     window.removeEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.removeEventListener("focus", this.boundHandleVisibilityChange);
+    window.removeEventListener("resize", this.boundResize);
+    if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
     this.controller.stop();
     this.webrtc.destroy();
     this.resetVoiceUiState();
     super.disconnectedCallback();
   }
 
+  private handleResize() {
+    this._initStarfield();
+  }
+
+  private _initStarfield() {
+    const canvas = this.shadowRoot?.getElementById("starsCanvas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+    if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const isDark = this.themeCtrl.theme === "dark";
+    const COUNT = isDark ? 130 : 60;
+
+    interface Star {
+      x: number; y: number;
+      radius: number;
+      alpha: number;
+      speed: number;
+      color: string;
+    }
+
+    const STAR_COLORS_DARK = ["#ffffff", "#c8d8ff", "#ffd6e0", "#d0f0ff"];
+    const STAR_COLORS_LIGHT = ["#334155", "#475569", "#1e293b"];
+
+    const stars: Star[] = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: 0.4 + Math.random() * (isDark ? 1.3 : 0.8),
+      alpha: Math.random(),
+      speed: 0.004 + Math.random() * 0.012,
+      color: isDark
+        ? STAR_COLORS_DARK[Math.floor(Math.random() * STAR_COLORS_DARK.length)]
+        : STAR_COLORS_LIGHT[Math.floor(Math.random() * STAR_COLORS_LIGHT.length)],
+    }));
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const star of stars) {
+        star.alpha += star.speed;
+        if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+        ctx.globalAlpha = Math.max(0.08, Math.min(1, star.alpha));
+        ctx.fillStyle = star.color;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      this._starsAnimId = requestAnimationFrame(draw);
+    };
+
+    draw();
+  }
+
   updated(changedProperties: PropertyValues) {
     if (changedProperties.has("roomId") || changedProperties.has("username")) {
       this.updateAdapterIdentity();
+      void this.loadActiveUsersSnapshot();
     }
     if (changedProperties.has("messages")) this.handleMessagesUpdated();
 
@@ -202,12 +274,27 @@ export class ChatRoom extends LitElement {
     this.webrtc.updateIdentity(this.roomId, this.username);
   }
 
+  private async loadActiveUsersSnapshot() {
+    if (!this.roomId) return;
+    try {
+      const snapshot = await fetchConnectedUsers(this.roomId);
+      this._activeUsers = snapshot.users;
+      this._activeUsersCount = snapshot.users.length;
+    } catch {
+      // Ignored
+    }
+  }
+
   private async loadUnreadCountSnapshot() {
     try {
       this.pendingUnreadCount = await fetchUnreadCount(this.roomId, this.username);
     } catch {
       this.pendingUnreadCount = null;
     }
+  }
+
+  public toggleMembers() {
+    this._showMembers = !this._showMembers;
   }
 
   private toggleTheme(e?: CustomEvent) {
@@ -217,6 +304,7 @@ export class ChatRoom extends LitElement {
 
   private emitActiveUsers(users: string[]) {
     this._activeUsersCount = users.length;
+    this._activeUsers = users;
     this.dispatchEvent(
       new CustomEvent<{ users: string[] }>("active-users-change", {
         detail: { users },
@@ -237,7 +325,12 @@ export class ChatRoom extends LitElement {
   }
 
   private emitRoomConnected() {
+    void this.loadActiveUsersSnapshot();
     this.dispatchEvent(new CustomEvent("room-connected", { bubbles: true, composed: true }));
+  }
+
+  private handleToggleMembers() {
+    this._showMembers = !this._showMembers;
   }
 
   private resetVoiceUiState() {
@@ -623,6 +716,14 @@ export class ChatRoom extends LitElement {
           ? "chat-room--dark"
           : "chat-room--light"}"
       >
+        <div class="chat-room__background">
+          <canvas id="starsCanvas" class="stars-layer"></canvas>
+          <div class="nebula nebula-1"></div>
+          <div class="nebula nebula-2"></div>
+          <div class="nebula nebula-3"></div>
+          <div class="nebula nebula-4"></div>
+        </div>
+
         <chat-room-header
           .roomName=${this.roomName}
           .roomId=${this.roomId}
@@ -631,101 +732,118 @@ export class ChatRoom extends LitElement {
           .isReconnecting=${this.isReconnecting}
           .onlineCount=${this._activeUsersCount}
           .voiceState=${this._voiceState}
+          .showMembers=${this._showMembers}
           @theme-toggle=${this.toggleTheme}
           @voice-start=${this.handleVoiceStart}
           @voice-stop=${this.handleVoiceStop}
+          @toggle-members=${this.handleToggleMembers}
         ></chat-room-header>
 
-        ${this.inCall
-          ? this.showCallView
-            ? html`
-                <chat-active-call
-                  .callState=${this._voiceState}
-                  .roomName=${this.roomName}
-                  .username=${this.username}
-                  .participants=${this._voiceParticipants}
-                  .isMuted=${this._isMuted}
-                  .isScreenSharing=${this._isScreenSharing}
-                  .screenSharingUser=${this._screenSharingUser}
-                  .screenShareStream=${this._screenShareStream}
-                  .connectionMetrics=${this._connectionMetrics}
-                  .backendCallStartTime=${this._callStartTime}
-                  @voice-stop=${this.handleActiveCallVoiceStop}
-                  @return-to-chat=${this.handleReturnToChat}
-                  @voice-mute-toggle=${this.handleMuteToggle}
-                  @voice-volume-change=${this.handleVolumeChange}
-                  @screen-share-toggle=${this.handleScreenShareToggleRequest}
-                ></chat-active-call>
-              `
-            : html`
-                <chat-voice-bar
-                  .state=${this._voiceState}
-                  .participants=${this._voiceParticipants}
-                  .username=${this.username}
-                  .isMuted=${this._isMuted}
-                  .backendCallStartTime=${this._callStartTime}
-                  @return-to-call=${this.handleReturnToCall}
-                  @voice-stop=${this.handleVoiceStop}
-                  @voice-dismiss=${this.handleVoiceDismiss}
-                  @voice-mute-toggle=${this.handleMuteToggle}
-                ></chat-voice-bar>
-              `
-          : nothing}
-
-        <div
-          class="chat-room__messages"
-          @scroll=${this.handleMessagesScroll}
-          @image-preview=${this.handleImagePreview}
-          style="${this.showCallView ? "display: none;" : ""}"
-        >
-          ${this.isLoadingHistory
-            ? html`<div class="message message--system">Loading history…</div>`
-            : this.messages.length === 0
-              ? html`<div class="message message--system">No messages yet. Say hello!</div>`
-              : repeat(
-                  this.messages,
-                  (m) => m.id,
-                  (m, index) => html`
-                    ${this.unreadAnchorMessageId === m.id
-                      ? html`<unread-divider data-unread-anchor></unread-divider>`
-                      : nothing}
-                    <chat-message-item
-                      .message=${m}
+        <div class="chat-room__container">
+          <div class="chat-room__chat-pane">
+            ${this.inCall
+              ? this.showCallView
+                ? html`
+                    <chat-active-call
+                      .callState=${this._voiceState}
+                      .roomName=${this.roomName}
                       .username=${this.username}
-                      .showMeta=${this.shouldShowMetaForMessage(index)}
-                      @message-reaction-toggle=${this.handleMessageReactionToggle}
-                    ></chat-message-item>
-                  `,
-                )}
-          ${this.hasUnseenMessages && unreadCount > 0
-            ? html`
-                <button
-                  class="chat-room__jump-last-seen"
-                  @click=${this.scrollToLastSeen}
-                  title="Jump to first unread message"
-                >
-                  ${unreadCount} unread • Scroll to last seen
-                </button>
-              `
-            : this.isScrolledUp
-              ? html`
-                  <button
-                    class="chat-room__jump-bottom"
-                    @click=${this.forceScrollToBottom}
-                    title="Jump to bottom"
-                  >
-                    Scroll to bottom ↓
-                  </button>
-                `
+                      .participants=${this._voiceParticipants}
+                      .isMuted=${this._isMuted}
+                      .isScreenSharing=${this._isScreenSharing}
+                      .screenSharingUser=${this._screenSharingUser}
+                      .screenShareStream=${this._screenShareStream}
+                      .connectionMetrics=${this._connectionMetrics}
+                      .backendCallStartTime=${this._callStartTime}
+                      @voice-stop=${this.handleActiveCallVoiceStop}
+                      @return-to-chat=${this.handleReturnToChat}
+                      @voice-mute-toggle=${this.handleMuteToggle}
+                      @voice-volume-change=${this.handleVolumeChange}
+                      @screen-share-toggle=${this.handleScreenShareToggleRequest}
+                    ></chat-active-call>
+                  `
+                : html`
+                    <chat-voice-bar
+                      .state=${this._voiceState}
+                      .participants=${this._voiceParticipants}
+                      .username=${this.username}
+                      .isMuted=${this._isMuted}
+                      .backendCallStartTime=${this._callStartTime}
+                      @return-to-call=${this.handleReturnToCall}
+                      @voice-stop=${this.handleVoiceStop}
+                      @voice-dismiss=${this.handleVoiceDismiss}
+                      @voice-mute-toggle=${this.handleMuteToggle}
+                    ></chat-voice-bar>
+                  `
               : nothing}
-        </div>
 
-        <chat-room-composer
-          .submitting=${this.isUploadingImage}
-          @message-submit=${this.handleMessageSubmit}
-          @user-typing=${this.handleUserTyping}
-          style="${this.showCallView ? "display: none;" : ""}"
-        ></chat-room-composer>
+            <div
+              class="chat-room__messages"
+              @scroll=${this.handleMessagesScroll}
+              @image-preview=${this.handleImagePreview}
+              style="${this.showCallView ? "display: none;" : ""}"
+            >
+              ${this.isLoadingHistory
+                ? html`<div class="message message--system">Loading history…</div>`
+                : this.messages.length === 0
+                  ? html`<div class="message message--system">No messages yet. Say hello!</div>`
+                  : repeat(
+                      this.messages,
+                      (m) => m.id,
+                      (m, index) => html`
+                        ${this.unreadAnchorMessageId === m.id
+                          ? html`<unread-divider data-unread-anchor></unread-divider>`
+                          : nothing}
+                        <chat-message-item
+                          .message=${m}
+                          .username=${this.username}
+                          .showMeta=${this.shouldShowMetaForMessage(index)}
+                          @message-reaction-toggle=${this.handleMessageReactionToggle}
+                        ></chat-message-item>
+                      `,
+                    )}
+              ${this.hasUnseenMessages && unreadCount > 0
+                ? html`
+                    <button
+                      class="chat-room__jump-last-seen"
+                      @click=${this.scrollToLastSeen}
+                      title="Jump to first unread message"
+                    >
+                      ${unreadCount} unread • Scroll to last seen
+                    </button>
+                  `
+                : this.isScrolledUp
+                  ? html`
+                      <button
+                        class="chat-room__jump-bottom"
+                        @click=${this.forceScrollToBottom}
+                        title="Jump to bottom"
+                      >
+                        Scroll to bottom ↓
+                      </button>
+                    `
+                  : nothing}
+            </div>
+
+            <chat-room-composer
+              .submitting=${this.isUploadingImage}
+              @message-submit=${this.handleMessageSubmit}
+              @user-typing=${this.handleUserTyping}
+              style="${this.showCallView ? "display: none;" : ""}"
+            ></chat-room-composer>
+          </div>
+
+          ${this._showMembers
+            ? html`
+                <chat-room-users
+                  .users=${this._activeUsers}
+                  .typingUsers=${Array.from(this._typingUsers)}
+                  .currentUsername=${this.username}
+                  .loading=${this.isLoadingHistory}
+                ></chat-room-users>
+              `
+            : nothing}
+        </div>
 
         ${this._previewImageUrl
           ? html`

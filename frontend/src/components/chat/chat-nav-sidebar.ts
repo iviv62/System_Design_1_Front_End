@@ -4,7 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 import chatNavSidebarStylesRaw from "../../styles/chat-nav-sidebar.styles.scss?inline";
 import { navigate } from "../../utils/navigate";
 import { logout } from "../../features/lib/auth/auth-api";
-import { iconHash, iconUsers, iconSearch, iconSettingsNav, iconLogout } from "./chat-icons";
+import { iconHash, iconUsers, iconSearch, iconSettingsNav, iconLogout, iconHome } from "./chat-icons";
 
 @customElement("chat-nav-sidebar")
 export class ChatNavSidebar extends LitElement {
@@ -58,6 +58,19 @@ export class ChatNavSidebar extends LitElement {
             title="Lobby"
             aria-label="Back to lobby"
             @click=${() => navigate("/chat")}
+          >
+            ${iconHome}
+          </button>
+
+          <button
+            class="nav-sidebar__icon-btn"
+            title="Members"
+            aria-label="Toggle members"
+            @click=${() => {
+              this.dispatchEvent(
+                new CustomEvent("toggle-members", { bubbles: true, composed: true }),
+              );
+            }}
           >
             ${iconUsers}
           </button>

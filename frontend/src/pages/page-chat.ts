@@ -25,9 +25,6 @@ export class PageChat extends LitElement {
   @state() private authChecked = false;
   @state() private isAuthorized = false;
   @state() private username = "";
-  @state() private activeUsers: string[] = [];
-  @state() private activeUsersLoading = false;
-  @state() private typingUsers: string[] = [];
   @state() private currentRoomId = "";
   @state() private isSettingsOpen = false;
 
@@ -55,10 +52,6 @@ export class PageChat extends LitElement {
         throw new Error("Authenticated user is missing a username.");
       }
       this.username = resolvedUsername;
-      this.activeUsers = [resolvedUsername];
-      if (this.currentRoomId) {
-        void this.loadConnectedUsersSnapshot(this.currentRoomId);
-      }
       this.isAuthorized = true;
     } catch {
       authStore.getState().logout();
@@ -93,41 +86,14 @@ export class PageChat extends LitElement {
     return decodeURIComponent(encoded.split("/")[0]);
   }
 
-  private async loadConnectedUsersSnapshot(roomId: string) {
-    if (!roomId) return;
-
-    this.activeUsersLoading = true;
-    try {
-      const snapshot = await fetchConnectedUsers(roomId);
-      this.activeUsers = snapshot.users;
-    } catch {
-      // Websocket snapshot events can still keep this state in sync.
-    } finally {
-      this.activeUsersLoading = false;
-    }
-  }
-
-  private handleActiveUsersChange(e: CustomEvent<{ users: string[] }>) {
-    this.activeUsers = e.detail.users;
-  }
-
-  private handleTypingUsersChange(e: CustomEvent<{ users: string[] }>) {
-    this.typingUsers = e.detail.users;
-  }
-
   private handleRoomConnected() {
-    if (this.currentRoomId) {
-      void this.loadConnectedUsersSnapshot(this.currentRoomId);
-    }
+    // Left for potential extension
   }
 
   render() {
     const currentRoomId = this.extractRoomIdFromUrl();
     if (currentRoomId !== this.currentRoomId) {
       this.currentRoomId = currentRoomId;
-      if (this.isAuthorized && currentRoomId) {
-        void this.loadConnectedUsersSnapshot(currentRoomId);
-      }
     }
 
     if (!this.authChecked) {
@@ -145,6 +111,9 @@ export class PageChat extends LitElement {
           @open-settings=${() => {
             this.isSettingsOpen = true;
           }}
+          @toggle-members=${() => {
+            this.shadowRoot?.querySelector("chat-room")?.toggleMembers();
+          }}
           .currentUsername=${this.username}
           .roomName=${currentRoomId}
         ></chat-nav-sidebar>
@@ -154,19 +123,10 @@ export class PageChat extends LitElement {
           .roomId=${currentRoomId}
           .roomName=${currentRoomId}
           @room-connected=${this.handleRoomConnected}
-          @active-users-change=${this.handleActiveUsersChange}
-          @typing-users-change=${this.handleTypingUsersChange}
           @open-settings=${() => {
             this.isSettingsOpen = true;
           }}
         ></chat-room>
-
-        <chat-room-users
-          .users=${this.activeUsers}
-          .typingUsers=${this.typingUsers}
-          .currentUsername=${this.username}
-          .loading=${this.activeUsersLoading}
-        ></chat-room-users>
       </div>
 
       <chat-settings-modal
