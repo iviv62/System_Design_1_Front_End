@@ -1,77 +1,112 @@
 import { LitElement, html, unsafeCSS } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { handleLink } from "../utils/navigate";
 import pageLandingStylesRaw from "../styles/page-landing.styles.scss?inline";
 import "../components/ui/app-button";
 import { ThemeController } from "../utils/theme-controller";
 
 
+interface OrbitUser {
+  initials: string;
+  label: string;
+  online: boolean;
+  /** 0 = near (~19%), 1 = mid (~32.5%), 2 = far (~45%) of stage radius */
+  ring: 0 | 1 | 2;
+  /** Starting angle in radians */
+  startAngle: number;
+  /** Angular velocity in rad/s (positive = counter-clockwise) */
+  speed: number;
+  /** randomuser.me photo seed */
+  seed: string;
+  /** current live angle — updated by animation loop */
+  angle: number;
+}
+
+
 @customElement("page-landing")
 export class PageLanding extends LitElement {
   static styles = unsafeCSS(pageLandingStylesRaw);
 
-
   private theme = new ThemeController(this);
   private _starsAnimId: number | null = null;
+  private _orbitAnimId: number | null = null;
+  private _lastTs: number | null = null;
 
+  /** Trigger re-render so SVG lines update each frame */
+  @state() private _orbitTick = 0;
+
+  private readonly _orbitUsers: OrbitUser[] = [
+    { initials: "AK", label: "1", online: false, ring: 2, startAngle: -Math.PI / 2,       speed:  0.22, seed: "alice",   angle: -Math.PI / 2 },
+    { initials: "SL", label: "2", online: false, ring: 1, startAngle: -Math.PI * 0.85,    speed:  0.30, seed: "sara",    angle: -Math.PI * 0.85 },
+    { initials: "MR", label: "2", online: false, ring: 1, startAngle:  Math.PI,            speed: -0.28, seed: "mike",    angle:  Math.PI },
+    { initials: "JT", label: "1", online: false, ring: 2, startAngle:  Math.PI * 0.75,     speed:  0.18, seed: "jessica", angle:  Math.PI * 0.75 },
+    { initials: "EV", label: "3", online: true,  ring: 0, startAngle:  0,                  speed: -0.40, seed: "eva",     angle:  0 },
+    { initials: "NB", label: "2", online: false, ring: 1, startAngle:  Math.PI / 2,        speed:  0.26, seed: "noah",    angle:  Math.PI / 2 },
+  ];
+
+  /** Radii as fraction of half the stage size (240px for 480px stage) */
+  private readonly _ringRadii = [0.20, 0.345, 0.465];
 
   constructor() {
     super();
     this.setAttribute("data-theme", ThemeController.get());
   }
 
-
-  private _toggleTheme() {
-    const next = this.theme.theme === "dark" ? "light" : "dark";
-    ThemeController.set(next);
-  }
-
-
   override firstUpdated() {
     this._initStarfield();
+    this._startOrbitAnimation();
     window.addEventListener("resize", this._onResize);
   }
-
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
+    if (this._orbitAnimId !== null) cancelAnimationFrame(this._orbitAnimId);
     window.removeEventListener("resize", this._onResize);
   }
 
-
   private _onResize = () => this._initStarfield();
 
+  // ── Orbit animation loop ──────────────────────────────────────────────────
+
+  private _startOrbitAnimation() {
+    const step = (ts: number) => {
+      const dt = this._lastTs === null ? 0 : (ts - this._lastTs) / 1000;
+      this._lastTs = ts;
+      for (const u of this._orbitUsers) {
+        u.angle = (u.angle + u.speed * dt) % (Math.PI * 2);
+      }
+      this._orbitTick++;
+      this._orbitAnimId = requestAnimationFrame(step);
+    };
+    this._orbitAnimId = requestAnimationFrame(step);
+  }
+
+  /** Convert a user's polar coords to px relative to stage top-left */
+  private _userXY(u: OrbitUser, stageSize: number): { x: number; y: number } {
+    const cx = stageSize / 2;
+    const r = this._ringRadii[u.ring] * stageSize;
+    return {
+      x: cx + r * Math.cos(u.angle),
+      y: cx + r * Math.sin(u.angle),
+    };
+  }
+
+  // ── Starfield ────────────────────────────────────────────────────────────
 
   private _initStarfield() {
     const canvas = this.shadowRoot?.getElementById("starsCanvas") as HTMLCanvasElement | null;
     if (!canvas) return;
     if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
-
-
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-
     const isDark = this.theme.theme === "dark";
     const COUNT  = isDark ? 130 : 60;
-
-
-    interface Star {
-      x: number; y: number;
-      radius: number;
-      alpha: number;
-      speed: number;
-      color: string;
-    }
-
-
+    interface Star { x: number; y: number; radius: number; alpha: number; speed: number; color: string; }
     const STAR_COLORS_DARK  = ["#ffffff", "#c8d8ff", "#ffd6e0", "#d0f0ff"];
     const STAR_COLORS_LIGHT = ["#334155", "#475569", "#1e293b"];
-
-
     const stars: Star[] = Array.from({ length: COUNT }, () => ({
       x:      Math.random() * canvas.width,
       y:      Math.random() * canvas.height,
@@ -82,8 +117,6 @@ export class PageLanding extends LitElement {
         ? STAR_COLORS_DARK [Math.floor(Math.random() * STAR_COLORS_DARK.length)]
         : STAR_COLORS_LIGHT[Math.floor(Math.random() * STAR_COLORS_LIGHT.length)],
     }));
-
-
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const star of stars) {
@@ -101,22 +134,18 @@ export class PageLanding extends LitElement {
     draw();
   }
 
+  // ── Icon helpers ─────────────────────────────────────────────────────────
 
   private _sunIcon() {
     return html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
     </svg>`;
   }
-
 
   private _moonIcon() {
     return html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -125,13 +154,11 @@ export class PageLanding extends LitElement {
     </svg>`;
   }
 
-
   private _githubStarIcon() {
     return html`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
     </svg>`;
   }
-
 
   private _starIcon() {
     return html`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -139,18 +166,17 @@ export class PageLanding extends LitElement {
     </svg>`;
   }
 
+  // ── Orbit section ─────────────────────────────────────────────────────────
 
-  /** Renders the orbit visualization with dummy user avatars */
   private _renderOrbitSection() {
-    // Orbit users: { initials, label (mutual servers), orbitClass, posClass, online? }
-    const orbitUsers = [
-      { initials: "AK", label: "1", orbitClass: "orbit-far",    posClass: "pos-top",         online: false },
-      { initials: "SL", label: "2", orbitClass: "orbit-mid",    posClass: "pos-top-left",    online: false },
-      { initials: "MR", label: "2", orbitClass: "orbit-mid",    posClass: "pos-left",        online: false },
-      { initials: "JT", label: "1", orbitClass: "orbit-far",    posClass: "pos-bottom-left", online: false },
-      { initials: "EV", label: "3", orbitClass: "orbit-near",   posClass: "pos-right",       online: true  },
-      { initials: "NB", label: "2", orbitClass: "orbit-mid",    posClass: "pos-bottom",      online: false },
-    ];
+    const STAGE = 480;
+    const cx = STAGE / 2;
+    const isDark = this.theme.theme === "dark";
+    const lineColor = isDark ? "rgba(255,255,255,0.18)" : "rgba(99,102,241,0.28)";
+    const ringColor = isDark ? "rgba(255,255,255,0.10)" : "rgba(99,102,241,0.20)";
+
+    // Compute live positions (driven by @state _orbitTick so Lit re-renders)
+    const positions = this._orbitUsers.map((u) => this._userXY(u, STAGE));
 
     return html`
       <section class="orbits-section" aria-labelledby="orbits-title">
@@ -162,11 +188,39 @@ export class PageLanding extends LitElement {
           </p>
         </div>
 
-        <div class="orbit-stage" role="img" aria-label="Orbit diagram showing users in shared servers">
-          <!-- Dashed orbit rings -->
-          <div class="orbit-ring orbit-ring--far"  aria-hidden="true"><span class="orbit-label">1 SERVER</span></div>
-          <div class="orbit-ring orbit-ring--mid"  aria-hidden="true"></div>
-          <div class="orbit-ring orbit-ring--near" aria-hidden="true"><span class="orbit-label orbit-label--near">3+ SERVERS</span></div>
+        <div class="orbit-stage" style="width:${STAGE}px;height:${STAGE}px">
+
+          <!-- SVG layer: dashed rings + connector lines -->
+          <svg class="orbit-svg" viewBox="0 0 ${STAGE} ${STAGE}" aria-hidden="true">
+            <!-- Three orbit rings -->
+            ${this._ringRadii.map((r, i) => html`
+              <circle
+                cx="${cx}" cy="${cx}"
+                r="${r * STAGE}"
+                fill="none"
+                stroke="${ringColor}"
+                stroke-width="1.5"
+                stroke-dasharray="6 5"
+              />
+            `)}
+
+            <!-- Ring labels -->
+            <text x="${cx}" y="${cx - this._ringRadii[2] * STAGE - 8}"
+              text-anchor="middle" class="orbit-svg-label">1 SERVER</text>
+            <text x="${cx}" y="${cx + this._ringRadii[0] * STAGE + 18}"
+              text-anchor="middle" class="orbit-svg-label">3+ SERVERS</text>
+
+            <!-- Connector lines from center to each user -->
+            ${positions.map((pos) => html`
+              <line
+                x1="${cx}" y1="${cx}"
+                x2="${pos.x}" y2="${pos.y}"
+                stroke="${lineColor}"
+                stroke-width="1"
+                stroke-dasharray="4 4"
+              />
+            `)}
+          </svg>
 
           <!-- Centre avatar (you) -->
           <div class="orbit-center" aria-label="Your profile">
@@ -178,38 +232,46 @@ export class PageLanding extends LitElement {
             <span class="orbit-center__dot"></span>
           </div>
 
-          <!-- Orbiting users -->
-          ${orbitUsers.map(
-            (u) => html`
+          <!-- Animated user avatars -->
+          ${this._orbitUsers.map((u, i) => {
+            const { x, y } = positions[i];
+            const photoUrl = `https://randomuser.me/api/portraits/${
+              ["women/44", "women/68", "men/32", "men/75", "women/12", "men/54"][i]
+            }.jpg`;
+            return html`
               <button
-                class="orbit-avatar ${u.orbitClass} ${u.posClass}"
+                class="orbit-avatar"
+                style="left:${x}px;top:${y}px"
                 aria-label="${u.initials} — ${u.label} mutual server${u.label !== '1' ? 's' : ''}"
               >
-                <span class="orbit-avatar__initials">${u.initials}</span>
+                <img
+                  class="orbit-avatar__photo"
+                  src="${photoUrl}"
+                  alt="${u.initials}"
+                  width="48"
+                  height="48"
+                  loading="lazy"
+                />
                 <span class="orbit-avatar__badge">${u.label}</span>
                 ${u.online ? html`<span class="orbit-avatar__online" aria-hidden="true"></span>` : ""}
               </button>
-            `
-          )}
+            `;
+          })}
         </div>
       </section>
     `;
   }
 
+  // ── Main render ───────────────────────────────────────────────────────────
 
   render() {
     const isDark = this.theme.theme === "dark";
-
-
-    // Re-init starfield whenever theme changes so star count/color adapts.
     this.updateComplete.then(() => this._initStarfield());
-
 
     return html`
       <div class="landing-container">
 
-
-        <!-- ── Space background (fixed, behind everything) ── -->
+        <!-- ── Space background ── -->
         <div class="space-bg" aria-hidden="true">
           <canvas id="starsCanvas" class="stars-canvas"></canvas>
           <div class="nebula nebula-1"></div>
@@ -217,7 +279,6 @@ export class PageLanding extends LitElement {
           <div class="nebula nebula-3"></div>
           <div class="nebula nebula-4"></div>
         </div>
-
 
         <header class="landing-header">
           <div class="logo">
@@ -231,14 +292,10 @@ export class PageLanding extends LitElement {
             </svg>
             <span class="logo-text">Nebula Chat</span>
           </div>
-
-
           <nav class="nav-links">
             <a href="#" class="active">Features</a>
             <a href="#">Communities</a>
           </nav>
-
-
           <div class="header-actions">
             <button
               class="theme-toggle"
@@ -251,7 +308,6 @@ export class PageLanding extends LitElement {
           </div>
         </header>
 
-
         <main class="landing-main">
           <section class="hero-section">
             <div class="version-badge"><span class="dot"></span> Nebula v2.0 is now live</div>
@@ -261,7 +317,6 @@ export class PageLanding extends LitElement {
               spatial audio, and absolute control over your data—no ads, no tracking.
             </p>
             <div class="hero-actions">
-              
               <a
                 class="github-btn"
                 href="https://github.com/iviv62/chat-system"
@@ -276,7 +331,6 @@ export class PageLanding extends LitElement {
               <app-button class="secondary-btn">Open in Browser</app-button>
             </div>
           </section>
-
 
           <section class="features-grid">
             <div class="top-row">
@@ -310,8 +364,6 @@ export class PageLanding extends LitElement {
                   <span class="placeholder-text">Message #design-discussions...</span>
                 </div>
               </div>
-
-
               <div class="side-features">
                 <div class="feature-card">
                   <div class="card-top">
@@ -343,8 +395,6 @@ export class PageLanding extends LitElement {
                 </div>
               </div>
             </div>
-
-
             <div class="bottom-row">
               <div class="feature-card">
                 <div class="icon-wrapper">
@@ -383,11 +433,9 @@ export class PageLanding extends LitElement {
             </div>
           </section>
 
-
           <!-- ── Common Orbits section ── -->
           ${this._renderOrbitSection()}
         </main>
-
 
         <footer class="landing-footer">
           <div class="footer-left">
@@ -415,6 +463,11 @@ export class PageLanding extends LitElement {
         </footer>
       </div>
     `;
+  }
+
+  private _toggleTheme() {
+    const next = this.theme.theme === "dark" ? "light" : "dark";
+    ThemeController.set(next);
   }
 }
 
