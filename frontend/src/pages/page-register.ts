@@ -3,6 +3,7 @@ import { customElement, state } from "lit/decorators.js";
 import { navigate, handleLink } from "../utils/navigate";
 import { register } from "../features/lib/auth/auth-api";
 import pageRegisterStylesRaw from "../styles/page-register.styles.scss?inline";
+import { ThemeController } from "../utils/theme-controller";
 
 @customElement("page-register")
 export class PageRegister extends LitElement {
@@ -10,6 +11,13 @@ export class PageRegister extends LitElement {
   @state() private loading = false;
 
   static styles = unsafeCSS(pageRegisterStylesRaw);
+
+  private theme = new ThemeController(this);
+
+  constructor() {
+    super();
+    this.setAttribute("data-theme", ThemeController.get());
+  }
 
   private async handleSubmit(e: Event) {
     e.preventDefault();
@@ -78,7 +86,7 @@ export class PageRegister extends LitElement {
               />
             </div>
             <button type="submit" ?disabled=${this.loading}>
-              ${this.loading ? "Registering…" : "Register"}
+              ${this.loading ? "Registering\u2026" : "Register"}
             </button>
           </form>
 

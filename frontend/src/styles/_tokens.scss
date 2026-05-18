@@ -1,0 +1,106 @@
+// _tokens.scss — Single source of truth for all CSS custom properties.
+// Light mode on :root; dark mode applied via the dark-theme-vars mixin, which is
+// included in both the explicit selector and the prefers-color-scheme block.
+// To update a dark-mode color, change it once inside the mixin — nowhere else.
+
+// ---------------------------------------------------------------------------
+// Dark theme mixin — edit ONLY here when updating dark colors
+// ---------------------------------------------------------------------------
+@mixin dark-theme-vars {
+  // Surfaces
+  --color-bg:           #0f172a;
+  --color-surface:      #1e293b;
+  --color-surface-2:    #0f172a;
+
+  // Text
+  --color-text:         #f8fafc;
+  --color-text-muted:   #94a3b8;
+
+  // Primary accent (blue)
+  --color-primary:      #3b82f6;
+  --color-primary-hover:#2563eb;
+
+  // Borders & inputs
+  --color-border:       #334155;
+  --color-input-bg:     #0f172a;
+  --color-input-border: #475569;
+
+  // Interactive item states
+  --color-item-bg:              #1e293b;
+  --color-item-hover:           #334155;
+  --color-item-selected-bg:     #172554;
+  --color-item-selected-border: #60a5fa;
+
+  // Table
+  --color-table-header-bg: #0f172a;
+  --color-table-row-1:     #1e293b;
+  --color-table-row-2:     #0f172a;
+  --color-table-row-hover: #1e293b;
+
+  // Dark button (deep navy — dark variant is lighter for contrast on dark surfaces)
+  --color-btn-dark-bg:    #1e40af;
+  --color-btn-dark-hover: #1e3a8a;
+  --color-btn-dark-text:  #ffffff;
+
+  // Misc
+  --color-shadow: rgba(0, 0, 0, 0.5);
+}
+
+// ---------------------------------------------------------------------------
+// Light theme (default)
+// ---------------------------------------------------------------------------
+:root {
+  // Surfaces
+  --color-bg:           #f0f4f8;
+  --color-surface:      #ffffff;
+  --color-surface-2:    #f8fafc;
+
+  // Text
+  --color-text:         #1e293b;
+  --color-text-muted:   #475569;
+
+  // Primary accent (blue)
+  --color-primary:      #3b82f6;
+  --color-primary-hover:#2563eb;
+
+  // Borders & inputs
+  --color-border:       #e2e8f0;
+  --color-input-bg:     #ffffff;
+  --color-input-border: #cbd5e1;
+
+  // Interactive item states
+  --color-item-bg:              #ffffff;
+  --color-item-hover:           #f8fafc;
+  --color-item-selected-bg:     #eff6ff;
+  --color-item-selected-border: #3b82f6;
+
+  // Table
+  --color-table-header-bg: #f8fafc;
+  --color-table-row-1:     #ffffff;
+  --color-table-row-2:     #f8fafc;
+  --color-table-row-hover: #f1f5f9;
+
+  // Dark button (deep navy — works on light surfaces too)
+  --color-btn-dark-bg:    #1e3a8a;
+  --color-btn-dark-hover: #172554;
+  --color-btn-dark-text:  #ffffff;
+
+  // Misc
+  --color-shadow: rgba(0, 0, 0, 0.1);
+}
+
+// ---------------------------------------------------------------------------
+// Dark theme — explicit toggle
+// ---------------------------------------------------------------------------
+body[data-theme="dark"] {
+  @include dark-theme-vars;
+}
+
+// ---------------------------------------------------------------------------
+// Dark theme — OS-level preference fallback (no explicit toggle set)
+// ---------------------------------------------------------------------------
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    @include dark-theme-vars;
+  }
+}

@@ -1,27 +1,32 @@
+// chat-app.styles.scss
+// Local tokens are removed — all theme variables are inherited from :root / _tokens.scss.
+// The @mixin dark-theme-vars and its callers are deleted; toggling data-theme on <body>
+// is handled by ThemeController and the global token file.
+
 chat-app {
-  /* CSS Variables Setup */
-  --bg-color: #f0f4f8;
-  --card-bg: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --border-color: #e2e8f0;
-  --input-bg: #ffffff;
-  --input-border: #cbd5e1;
-  --btn-primary-bg: #60a5fa;
-  --btn-primary-hover: #3b82f6;
-  --btn-primary-text: #ffffff;
-  --btn-dark-bg: #1e3a8a;
-  --btn-dark-hover: #172554;
-  --btn-dark-text: #ffffff;
-  --item-bg: #ffffff;
-  --item-hover: #f8fafc;
-  --item-selected-bg: #eff6ff;
-  --item-selected-border: #3b82f6;
-  --table-header-bg: #f8fafc;
-  --table-row-1: #ffffff;
-  --table-row-2: #f8fafc;
-  --table-row-hover: #f1f5f9;
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  // Map local names still used in this file to the global tokens.
+  --bg-color:                var(--color-bg);
+  --card-bg:                 var(--color-surface);
+  --text-primary:            var(--color-text);
+  --text-secondary:          var(--color-text-muted);
+  --border-color:            var(--color-border);
+  --input-bg:                var(--color-input-bg);
+  --input-border:            var(--color-input-border);
+  --btn-primary-bg:          var(--color-primary);
+  --btn-primary-hover:       var(--color-primary-hover);
+  --btn-primary-text:        #ffffff;
+  --btn-dark-bg:             var(--color-btn-dark-bg);
+  --btn-dark-hover:          var(--color-btn-dark-hover);
+  --btn-dark-text:           var(--color-btn-dark-text);
+  --item-bg:                 var(--color-item-bg);
+  --item-hover:              var(--color-item-hover);
+  --item-selected-bg:        var(--color-item-selected-bg);
+  --item-selected-border:    var(--color-item-selected-border);
+  --table-header-bg:         var(--color-table-header-bg);
+  --table-row-1:             var(--color-table-row-1);
+  --table-row-2:             var(--color-table-row-2);
+  --table-row-hover:         var(--color-table-row-hover);
+  --shadow-color:            var(--color-shadow);
 
   display: flex;
   justify-content: center;
@@ -36,41 +41,6 @@ chat-app {
   color: var(--text-primary);
   padding: 2rem;
   box-sizing: border-box;
-}
-
-@mixin dark-theme-vars {
-  --bg-color: #0f172a;
-  --card-bg: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-color: #334155;
-  --input-bg: #0f172a;
-  --input-border: #475569;
-  --btn-primary-bg: #3b82f6;
-  --btn-primary-hover: #2563eb;
-  --btn-primary-text: #ffffff;
-  --btn-dark-bg: #1e40af;
-  --btn-dark-hover: #1e3a8a;
-  --btn-dark-text: #ffffff;
-  --item-bg: #1e293b;
-  --item-hover: #334155;
-  --item-selected-bg: #172554;
-  --item-selected-border: #60a5fa;
-  --table-header-bg: #0f172a;
-  --table-row-1: #1e293b;
-  --table-row-2: #0f172a;
-  --table-row-hover: #1e293b;
-  --shadow-color: rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="dark"] chat-app {
-  @include dark-theme-vars;
-}
-
-@media (prefers-color-scheme: dark) {
-  body:not([data-theme="light"]) chat-app {
-    @include dark-theme-vars;
-  }
 }
 
 .lobby {
@@ -473,7 +443,6 @@ chat-app {
     system-ui,
     -apple-system,
     sans-serif;
-  /* Prevent the modal itself from ever growing wider than its declared width */
   box-sizing: border-box;
 }
 
@@ -519,7 +488,6 @@ chat-app {
   gap: 1.5rem;
   max-height: 60vh;
   overflow-y: auto;
-  /* Contain children — nothing should escape horizontally */
   overflow-x: hidden;
 
   &::-webkit-scrollbar {
@@ -549,14 +517,12 @@ chat-app {
   display: flex;
   gap: 1rem;
   align-items: center;
-  /* Without min-width: 0, a flex child can overflow its container */
   min-width: 0;
 }
 
 .upload-avatar {
   width: 80px;
   height: 80px;
-  /* Rounded square instead of circle */
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -569,7 +535,6 @@ chat-app {
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  /* Reset default button styles */
   padding: 0;
   overflow: hidden;
 
@@ -590,7 +555,6 @@ chat-app {
     letter-spacing: 0.04em;
   }
 
-  /* Once an image is loaded — solid border, no padding */
   &--has-image {
     border-style: solid;
     border-color: rgba(255, 255, 255, 0.15);
@@ -601,7 +565,6 @@ chat-app {
   }
 }
 
-/* Avatar preview image fills the rounded-square container */
 .upload-avatar__preview {
   width: 100%;
   height: 100%;
@@ -611,7 +574,6 @@ chat-app {
 
 .server-name-input {
   flex: 1;
-  /* Prevents flex child from overflowing its container */
   min-width: 0;
   display: flex;
   flex-direction: column;

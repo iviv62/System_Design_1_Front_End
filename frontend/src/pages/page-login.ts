@@ -4,6 +4,7 @@ import { navigate, handleLink } from "../utils/navigate";
 import { login } from "../features/lib/auth/auth-api";
 import { authStore } from "../store/auth-store";
 import pageLoginStylesRaw from "../styles/page-login.styles.scss?inline";
+import { ThemeController } from "../utils/theme-controller";
 
 @customElement("page-login")
 export class PageLogin extends LitElement {
@@ -11,6 +12,13 @@ export class PageLogin extends LitElement {
   @state() private loading = false;
 
   static styles = unsafeCSS(pageLoginStylesRaw);
+
+  private theme = new ThemeController(this);
+
+  constructor() {
+    super();
+    this.setAttribute("data-theme", ThemeController.get());
+  }
 
   private async handleSubmit(e: Event) {
     e.preventDefault();
@@ -71,7 +79,7 @@ export class PageLogin extends LitElement {
               />
             </div>
             <button type="submit" ?disabled=${this.loading}>
-              ${this.loading ? "Logging in…" : "Log In"}
+              ${this.loading ? "Logging in\u2026" : "Log In"}
             </button>
           </form>
 
