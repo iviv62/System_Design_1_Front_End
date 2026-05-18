@@ -1,7 +1,4 @@
 // page-landing.styles.scss
-// Redesigned landing page — polished light & dark theme.
-// ThemeController sets data-theme on the host, so :host([data-theme="dark"]) is used
-// throughout instead of the deprecated :host-context(...).
 
 :host {
   display: block;
@@ -11,34 +8,47 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   transition: background-color 0.3s, color 0.3s;
 
-  // Local aliases — light defaults
-  --lp-card-bg:         rgba(255, 255, 255, 0.75);
-  --lp-card-border:     rgba(0, 0, 0, 0.08);
-  --lp-card-shadow:     0 4px 24px rgba(0, 0, 0, 0.06);
+  --lp-card-bg:           rgba(255, 255, 255, 0.75);
+  --lp-card-border:       rgba(0, 0, 0, 0.08);
+  --lp-card-shadow:       0 4px 24px rgba(0, 0, 0, 0.06);
   --lp-card-hover-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
-  --lp-hero-glow:       radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
-  --lp-mockup-bg:       rgba(255, 255, 255, 0.65);
-  --lp-mockup-border:   rgba(0, 0, 0, 0.07);
-  --lp-mockup-shadow:   0 20px 48px rgba(0, 0, 0, 0.10);
-  --lp-sidebar-bg:      rgba(0, 0, 0, 0.04);
-  --lp-sidebar-border:  rgba(0, 0, 0, 0.04);
-  --lp-msg-bg:          rgba(0, 0, 0, 0.06);
-  --lp-content-glow:    linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.95) 100%);
+  --lp-hero-glow:         radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  --lp-mockup-bg:         rgba(255, 255, 255, 0.65);
+  --lp-mockup-border:     rgba(0, 0, 0, 0.07);
+  --lp-mockup-shadow:     0 20px 48px rgba(0, 0, 0, 0.10);
+  --lp-sidebar-bg:        rgba(0, 0, 0, 0.04);
+  --lp-sidebar-border:    rgba(0, 0, 0, 0.04);
+  --lp-msg-bg:            rgba(0, 0, 0, 0.06);
+  --lp-content-glow:      linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.95) 100%);
+
+  // GitHub button — light defaults
+  --lp-github-bg:         #24292f;
+  --lp-github-bg-hover:   #32383f;
+  --lp-github-color:      #ffffff;
+  --lp-github-border:     rgba(255, 255, 255, 0.1);
+  --lp-star-color:        #e3b341;
 }
 
 :host([data-theme="dark"]) {
-  --lp-card-bg:         rgba(28, 30, 38, 0.70);
-  --lp-card-border:     rgba(255, 255, 255, 0.07);
-  --lp-card-shadow:     0 4px 24px rgba(0, 0, 0, 0.30);
+  --lp-card-bg:           rgba(28, 30, 38, 0.70);
+  --lp-card-border:       rgba(255, 255, 255, 0.07);
+  --lp-card-shadow:       0 4px 24px rgba(0, 0, 0, 0.30);
   --lp-card-hover-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
-  --lp-hero-glow:       radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
-  --lp-mockup-bg:       rgba(15, 17, 24, 0.65);
-  --lp-mockup-border:   rgba(255, 255, 255, 0.07);
-  --lp-mockup-shadow:   0 20px 48px rgba(0, 0, 0, 0.50);
-  --lp-sidebar-bg:      rgba(0, 0, 0, 0.25);
-  --lp-sidebar-border:  rgba(255, 255, 255, 0.05);
-  --lp-msg-bg:          rgba(255, 255, 255, 0.06);
-  --lp-content-glow:    linear-gradient(135deg, rgba(20, 22, 30, 0.85) 0%, rgba(15, 17, 24, 0.95) 100%);
+  --lp-hero-glow:         radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+  --lp-mockup-bg:         rgba(15, 17, 24, 0.65);
+  --lp-mockup-border:     rgba(255, 255, 255, 0.07);
+  --lp-mockup-shadow:     0 20px 48px rgba(0, 0, 0, 0.50);
+  --lp-sidebar-bg:        rgba(0, 0, 0, 0.25);
+  --lp-sidebar-border:    rgba(255, 255, 255, 0.05);
+  --lp-msg-bg:            rgba(255, 255, 255, 0.06);
+  --lp-content-glow:      linear-gradient(135deg, rgba(20, 22, 30, 0.85) 0%, rgba(15, 17, 24, 0.95) 100%);
+
+  // GitHub button — dark: slightly lighter so it doesn't vanish into the dark bg
+  --lp-github-bg:         #2d333b;
+  --lp-github-bg-hover:   #3c444d;
+  --lp-github-color:      #cdd9e5;
+  --lp-github-border:     rgba(205, 217, 229, 0.1);
+  --lp-star-color:        #e3b341;
 }
 
 // ─── Layout ────────────────────────────────────────────────────────────────
@@ -52,7 +62,6 @@
   min-height: 100vh;
   position: relative;
 
-  // Subtle top glow
   &::before {
     content: "";
     position: fixed;
@@ -73,7 +82,6 @@
   position: relative;
   z-index: 10;
   border-bottom: 1px solid var(--color-border);
-  margin-bottom: 0;
 }
 
 .logo {
@@ -85,9 +93,7 @@
   color: var(--color-text);
   letter-spacing: -0.01em;
 
-  svg {
-    color: var(--color-primary);
-  }
+  svg { color: var(--color-primary); }
 }
 
 .nav-links {
@@ -107,7 +113,6 @@
     &.active {
       color: var(--color-text);
       border-bottom: 2px solid var(--color-primary);
-      padding-bottom: 2px;
     }
   }
 }
@@ -150,13 +155,11 @@
     border: 1px solid var(--color-border);
     transition: background-color 0.2s, border-color 0.2s;
 
-    &:hover {
-      background-color: var(--color-surface-2);
-    }
+    &:hover { background-color: var(--color-surface-2); }
   }
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────
 
 .landing-main {
   flex: 1;
@@ -168,7 +171,7 @@
   z-index: 1;
 }
 
-// ─── Hero ──────────────────────────────────────────────────────────────────
+// ─── Hero ─────────────────────────────────────────────────────────────────
 
 .hero-section {
   text-align: center;
@@ -225,32 +228,52 @@
   margin-top: 8px;
   flex-wrap: wrap;
   justify-content: center;
-
-  // Primary CTA
-  .primary-btn {
-    --ab-light-bg:     var(--color-primary);
-    --ab-light-color:  #ffffff;
-    --ab-light-border: transparent;
-    --ab-dark-bg:      var(--color-primary);
-    --ab-dark-color:   #ffffff;
-    --ab-dark-border:  transparent;
-  }
-
-  // Secondary CTA — ghost style
-  .secondary-btn {
-    --ab-light-bg:     transparent;
-    --ab-light-color:  var(--color-text);
-    --ab-light-border: var(--color-border);
-    --ab-dark-bg:      transparent;
-    --ab-dark-color:   var(--color-text);
-    --ab-dark-border:  var(--color-border);
-  }
+  align-items: center;
 
   app-button::part(button) {
     padding: 13px 26px;
     border-radius: 10px;
     font-size: 0.95rem;
     font-weight: 600;
+  }
+}
+
+// ─── GitHub Star button ─────────────────────────────────────────────────────
+
+.github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  background: var(--lp-github-bg);
+  color: var(--lp-github-color);
+  border: 1px solid var(--lp-github-border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  white-space: nowrap;
+
+  // Star icon gets the golden color
+  svg:last-child {
+    color: var(--lp-star-color);
+    transition: transform 0.2s;
+  }
+
+  &:hover {
+    background: var(--lp-github-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    svg:last-child {
+      transform: rotate(15deg) scale(1.15);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
   }
 }
 
@@ -308,7 +331,6 @@
   }
 }
 
-// Icon — no background box, just the icon itself
 .icon-wrapper {
   width: 40px;
   height: 40px;
@@ -514,5 +536,17 @@
     flex-direction: column;
     gap: 20px;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+
+    .github-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 }
