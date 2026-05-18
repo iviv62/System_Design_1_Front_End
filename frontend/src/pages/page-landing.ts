@@ -140,16 +140,20 @@ export class PageLanding extends LitElement {
   }
 
 
-  /** Renders the orbit visualization with dummy user avatars */
+  /** Renders the orbit visualization with spinning photo avatars */
   private _renderOrbitSection() {
-    // Orbit users: { initials, label (mutual servers), orbitClass, posClass, online? }
+    // delay = -(startAngleDeg / 360) * speed  → places avatar at correct start position
+    // far ring  radius ~216px (90% of 480px / 2), speed 60s
+    // mid ring  radius ~156px (65% of 480px / 2), speed 45s
+    // near ring radius  ~91px (38% of 480px / 2), speed 30s
+    // angle 0=right, 90=bottom, 180=left, 270=top (CSS rotate convention)
     const orbitUsers = [
-      { initials: "AK", label: "1", orbitClass: "orbit-far",    posClass: "pos-top",         online: false },
-      { initials: "SL", label: "2", orbitClass: "orbit-mid",    posClass: "pos-top-left",    online: false },
-      { initials: "MR", label: "2", orbitClass: "orbit-mid",    posClass: "pos-left",        online: false },
-      { initials: "JT", label: "1", orbitClass: "orbit-far",    posClass: "pos-bottom-left", online: false },
-      { initials: "EV", label: "3", orbitClass: "orbit-near",   posClass: "pos-right",       online: true  },
-      { initials: "NB", label: "2", orbitClass: "orbit-mid",    posClass: "pos-bottom",      online: false },
+      { name: "AK", avatar: "/avatars/avatar_ak.png", label: "1", radius: "216px", speed: "60s", delay: "-45s",    online: false }, // far,  top        (270°)
+      { name: "SL", avatar: "/avatars/avatar_sl.png", label: "2", radius: "156px", speed: "45s", delay: "-37.5s",  online: false }, // mid,  top-left   (300°)
+      { name: "MR", avatar: "/avatars/avatar_mr.png", label: "2", radius: "156px", speed: "45s", delay: "-22.5s",  online: false }, // mid,  left       (180°)
+      { name: "JT", avatar: "/avatars/avatar_jt.png", label: "1", radius: "216px", speed: "60s", delay: "-20s",    online: false }, // far,  bottom-left (120°)
+      { name: "EV", avatar: "/avatars/avatar_ev.png", label: "3", radius:  "91px", speed: "30s", delay: "0s",      online: true  }, // near, right        (0°)
+      { name: "NB", avatar: "/avatars/avatar_nb.png", label: "2", radius: "156px", speed: "45s", delay: "-11.25s", online: false }, // mid,  bottom       (90°)
     ];
 
     return html`
@@ -164,9 +168,25 @@ export class PageLanding extends LitElement {
 
         <div class="orbit-stage" role="img" aria-label="Orbit diagram showing users in shared servers">
           <!-- Dashed orbit rings -->
-          <div class="orbit-ring orbit-ring--far"  aria-hidden="true"><span class="orbit-label">1 SERVER</span></div>
+          <div class="orbit-ring orbit-ring--far"  aria-hidden="true"></div>
           <div class="orbit-ring orbit-ring--mid"  aria-hidden="true"></div>
-          <div class="orbit-ring orbit-ring--near" aria-hidden="true"><span class="orbit-label orbit-label--near">3+ SERVERS</span></div>
+          <div class="orbit-ring orbit-ring--near" aria-hidden="true"></div>
+
+          <!-- Vertical legend — each label sits at the top of its ring, all left-aligned -->
+          <div class="orbit-legend" aria-hidden="true">
+            <div class="orbit-legend-item orbit-legend-item--far">
+              <span class="orbit-legend-dot orbit-legend-dot--far"></span>
+              <span class="orbit-legend-text">1 SERVER</span>
+            </div>
+            <div class="orbit-legend-item orbit-legend-item--mid">
+              <span class="orbit-legend-dot orbit-legend-dot--mid"></span>
+              <span class="orbit-legend-text">2 SERVERS</span>
+            </div>
+            <div class="orbit-legend-item orbit-legend-item--near">
+              <span class="orbit-legend-dot orbit-legend-dot--near"></span>
+              <span class="orbit-legend-text">3+ SERVERS</span>
+            </div>
+          </div>
 
           <!-- Centre avatar (you) -->
           <div class="orbit-center" aria-label="Your profile">
@@ -178,23 +198,36 @@ export class PageLanding extends LitElement {
             <span class="orbit-center__dot"></span>
           </div>
 
-          <!-- Orbiting users -->
+          <!-- Orbiting users — each wrapped in an invisible pivot at center -->
           ${orbitUsers.map(
             (u) => html`
-              <button
-                class="orbit-avatar ${u.orbitClass} ${u.posClass}"
-                aria-label="${u.initials} — ${u.label} mutual server${u.label !== '1' ? 's' : ''}"
+              <div
+                class="orbit-wrap"
+                style="--orbit-r:${u.radius};--orbit-speed:${u.speed};--orbit-delay:${u.delay}"
               >
-                <span class="orbit-avatar__initials">${u.initials}</span>
-                <span class="orbit-avatar__badge">${u.label}</span>
-                ${u.online ? html`<span class="orbit-avatar__online" aria-hidden="true"></span>` : ""}
-              </button>
+                <!-- Dashed connector line from center to avatar -->
+                <div class="orbit-spoke"></div>
+                <button
+                  class="orbit-avatar"
+                  aria-label="${u.name} — ${u.label} mutual server${u.label !== "1" ? "s" : ""}"
+                >
+                  <img
+                    class="orbit-avatar__photo"
+                    src=${u.avatar}
+                    alt=${u.name}
+                    draggable="false"
+                  />
+                  <span class="orbit-avatar__badge">${u.label}</span>
+                  ${u.online ? html`<span class="orbit-avatar__online" aria-hidden="true"></span>` : ""}
+                </button>
+              </div>
             `
           )}
         </div>
       </section>
     `;
   }
+
 
 
   render() {
