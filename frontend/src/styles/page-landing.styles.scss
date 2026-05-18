@@ -7,47 +7,49 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   transition: color 0.3s;
 
-  // ── Space background tokens (light theme) ──────────────────────────────
-  --lp-space-bg:         #0f172a;   // slate-900 — deep blue-navy base
-  --lp-nebula-1:         rgba(139, 92, 246, 0.18);  // violet
-  --lp-nebula-2:         rgba(59,  130, 246, 0.14);  // blue
-  --lp-nebula-3:         rgba(6,   182, 212, 0.12);  // cyan
-  --lp-nebula-4:         rgba(168,  85, 247, 0.10);  // purple
-  --lp-nebula-blur:      130px;
+  // ── Space background tokens — LIGHT theme: soft twilight sky ─────────────
+  --lp-space-bg:    #dde3f5;   // soft periwinkle — daylight sky at dusk
+  --lp-nebula-1:    rgba(99,  102, 241, 0.15);  // indigo (pastel)
+  --lp-nebula-2:    rgba(59,  130, 246, 0.12);  // blue
+  --lp-nebula-3:    rgba(6,   182, 212, 0.10);  // cyan
+  --lp-nebula-4:    rgba(168,  85, 247, 0.08);  // purple
+  --lp-nebula-blur: 130px;
 
-  // ── Card / UI tokens (light: glassy over dark bg) ─────────────────────
-  --lp-card-bg:           rgba(15,  23, 42, 0.60);
-  --lp-card-border:       rgba(255, 255, 255, 0.08);
-  --lp-card-shadow:       0 4px 24px rgba(0, 0, 0, 0.40);
-  --lp-card-hover-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
-  --lp-mockup-bg:         rgba(8,   14, 30, 0.65);
-  --lp-mockup-border:     rgba(255, 255, 255, 0.07);
-  --lp-mockup-shadow:     0 20px 48px rgba(0, 0, 0, 0.55);
-  --lp-sidebar-bg:        rgba(0,   0,   0, 0.25);
-  --lp-sidebar-border:    rgba(255, 255, 255, 0.05);
-  --lp-msg-bg:            rgba(255, 255, 255, 0.07);
-  --lp-content-glow:      linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(8, 14, 30, 0.95) 100%);
+  // ── Card / UI tokens (light: frosted glass over soft bg) ─────────────
+  --lp-card-bg:           rgba(255, 255, 255, 0.60);
+  --lp-card-border:       rgba(99, 102, 241, 0.14);
+  --lp-card-shadow:       0 4px 24px rgba(99, 102, 241, 0.08);
+  --lp-card-hover-shadow: 0 8px 40px rgba(99, 102, 241, 0.14);
+  --lp-mockup-bg:         rgba(255, 255, 255, 0.70);
+  --lp-mockup-border:     rgba(99, 102, 241, 0.12);
+  --lp-mockup-shadow:     0 20px 48px rgba(99, 102, 241, 0.12);
+  --lp-sidebar-bg:        rgba(99, 102, 241, 0.06);
+  --lp-sidebar-border:    rgba(99, 102, 241, 0.08);
+  --lp-msg-bg:            rgba(99, 102, 241, 0.08);
+  --lp-content-glow:      linear-gradient(135deg, rgba(255,255,255,0.80) 0%, rgba(240,244,255,0.90) 100%);
 
-  // ── Text overrides for dark background (light theme on space bg) ──────
-  --lp-text:              #e2e8f0;  // slate-200
-  --lp-text-muted:        #94a3b8;  // slate-400
-  --lp-border:            rgba(255, 255, 255, 0.10);
+  // ── Text (dark on light bg) ──────────────────────────────────────
+  --lp-text:         #1e293b;  // slate-800
+  --lp-text-muted:   #475569;  // slate-600
+  --lp-border:       rgba(99, 102, 241, 0.14);
+  --lp-accent:       #4f46e5;  // indigo-600 — readable on light bg
 
   // ── GitHub button ─────────────────────────────────────────────────────
-  --lp-github-bg:         #24292f;
-  --lp-github-bg-hover:   #32383f;
-  --lp-github-color:      #ffffff;
-  --lp-github-border:     rgba(255, 255, 255, 0.12);
-  --lp-star-color:        #e3b341;
+  --lp-github-bg:       #24292f;
+  --lp-github-bg-hover: #32383f;
+  --lp-github-color:    #ffffff;
+  --lp-github-border:   rgba(0, 0, 0, 0.12);
+  --lp-star-color:      #d97706;  // amber-600 — visible on dark button
 }
 
-// Dark theme: richer, deeper space with more saturated nebulae
+// Dark theme: deep void with rich saturated nebulae
 :host([data-theme="dark"]) {
-  --lp-space-bg:         #030712;   // slate-950 — true void
-  --lp-nebula-1:         rgba(139, 92,  246, 0.22);
-  --lp-nebula-2:         rgba(59,  130, 246, 0.16);
-  --lp-nebula-3:         rgba(6,   182, 212, 0.14);
-  --lp-nebula-4:         rgba(192,  38, 211, 0.12);  // fuchsia shift
+  --lp-space-bg:    #030712;   // slate-950 — true void
+  --lp-nebula-1:    rgba(139, 92,  246, 0.22);
+  --lp-nebula-2:    rgba(59,  130, 246, 0.16);
+  --lp-nebula-3:    rgba(6,   182, 212, 0.14);
+  --lp-nebula-4:    rgba(192,  38, 211, 0.12);
+  --lp-nebula-blur: 130px;
 
   --lp-card-bg:           rgba(3,   7,  18, 0.65);
   --lp-card-border:       rgba(255, 255, 255, 0.07);
@@ -59,17 +61,18 @@
   --lp-sidebar-bg:        rgba(0,   0,   0, 0.35);
   --lp-sidebar-border:    rgba(255, 255, 255, 0.04);
   --lp-msg-bg:            rgba(255, 255, 255, 0.06);
-  --lp-content-glow:      linear-gradient(135deg, rgba(3, 7, 18, 0.90) 0%, rgba(2, 4, 14, 0.97) 100%);
+  --lp-content-glow:      linear-gradient(135deg, rgba(3,7,18,0.90) 0%, rgba(2,4,14,0.97) 100%);
 
-  --lp-text:              #f1f5f9;  // slate-100
-  --lp-text-muted:        #94a3b8;
-  --lp-border:            rgba(255, 255, 255, 0.08);
+  --lp-text:        #f1f5f9;  // slate-100
+  --lp-text-muted:  #94a3b8;  // slate-400
+  --lp-border:      rgba(255, 255, 255, 0.08);
+  --lp-accent:      #818cf8;  // indigo-400 — pops on dark bg
 
-  --lp-github-bg:         #2d333b;
-  --lp-github-bg-hover:   #3c444d;
-  --lp-github-color:      #cdd9e5;
-  --lp-github-border:     rgba(205, 217, 229, 0.12);
-  --lp-star-color:        #e3b341;
+  --lp-github-bg:       #2d333b;
+  --lp-github-bg-hover: #3c444d;
+  --lp-github-color:    #cdd9e5;
+  --lp-github-border:   rgba(205, 217, 229, 0.12);
+  --lp-star-color:      #e3b341;
 }
 
 // ─── Space background layers ──────────────────────────────────────────────
@@ -81,6 +84,7 @@
   background: var(--lp-space-bg);
   overflow: hidden;
   pointer-events: none;
+  transition: background 0.4s;
 }
 
 .stars-canvas {
@@ -97,40 +101,38 @@
   position: absolute;
   border-radius: 50%;
   filter: blur(var(--lp-nebula-blur));
-  mix-blend-mode: screen;
+  mix-blend-mode: multiply;  // blends into light bg naturally
   pointer-events: none;
   z-index: 0;
+  transition: background 0.4s;
+}
+
+// In dark mode nebulae use screen blend instead
+:host([data-theme="dark"]) .nebula {
+  mix-blend-mode: screen;
 }
 
 .nebula-1 {
-  width: 520px;
-  height: 520px;
-  top: -80px;
-  left: 15%;
+  width: 520px; height: 520px;
+  top: -80px; left: 15%;
   background: var(--lp-nebula-1);
   animation: nebula-float 16s ease-in-out infinite;
 }
 .nebula-2 {
-  width: 480px;
-  height: 480px;
-  top: 20%;
-  right: 5%;
+  width: 480px; height: 480px;
+  top: 20%; right: 5%;
   background: var(--lp-nebula-2);
   animation: nebula-float 20s ease-in-out infinite reverse;
 }
 .nebula-3 {
-  width: 400px;
-  height: 400px;
-  bottom: 10%;
-  left: 5%;
+  width: 400px; height: 400px;
+  bottom: 10%; left: 5%;
   background: var(--lp-nebula-3);
   animation: nebula-float 14s ease-in-out infinite 4s;
 }
 .nebula-4 {
-  width: 360px;
-  height: 360px;
-  bottom: 20%;
-  right: 20%;
+  width: 360px; height: 360px;
+  bottom: 20%; right: 20%;
   background: var(--lp-nebula-4);
   animation: nebula-float 18s ease-in-out infinite 8s;
 }
@@ -154,7 +156,7 @@
   flex-direction: column;
   min-height: 100vh;
   position: relative;
-  z-index: 1;  // sits above .space-bg
+  z-index: 1;
 }
 
 // ─── Header ────────────────────────────────────────────────────────────────
@@ -178,7 +180,7 @@
   color: var(--lp-text);
   letter-spacing: -0.01em;
 
-  svg { color: #818cf8; }  // indigo-400 — pops nicely on dark
+  svg { color: var(--lp-accent); }
 }
 
 .nav-links {
@@ -197,7 +199,7 @@
 
     &.active {
       color: var(--lp-text);
-      border-bottom: 2px solid #818cf8;
+      border-bottom: 2px solid var(--lp-accent);
     }
   }
 }
@@ -215,23 +217,29 @@
     height: 36px;
     border-radius: 8px;
     border: 1px solid var(--lp-border);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.30);
     color: var(--lp-text-muted);
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.50);
       color: var(--lp-text);
     }
 
     svg { display: block; }
   }
 
+  // In dark mode the toggle is a darker glass
+  :host([data-theme="dark"]) & .theme-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    &:hover { background: rgba(255, 255, 255, 0.10); }
+  }
+
   .login-btn {
     display: inline-block;
     padding: 8px 20px;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.30);
     color: var(--lp-text);
     text-decoration: none;
     border-radius: 8px;
@@ -240,6 +248,11 @@
     border: 1px solid var(--lp-border);
     transition: background 0.2s;
 
+    &:hover { background: rgba(255, 255, 255, 0.50); }
+  }
+
+  :host([data-theme="dark"]) & .login-btn {
+    background: rgba(255, 255, 255, 0.06);
     &:hover { background: rgba(255, 255, 255, 0.11); }
   }
 }
@@ -272,7 +285,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.40);
   padding: 5px 14px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -284,9 +297,18 @@
   .dot {
     width: 6px;
     height: 6px;
-    background-color: #34d399;
+    background-color: #16a34a;  // green-600 — visible on light bg
     border-radius: 50%;
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+  }
+}
+
+:host([data-theme="dark"]) .version-badge {
+  background: rgba(255, 255, 255, 0.06);
+
+  .dot {
+    background-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.20);
   }
 }
 
@@ -348,7 +370,7 @@
   &:hover {
     background: var(--lp-github-bg-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 
     svg:last-child { transform: rotate(15deg) scale(1.15); }
   }
@@ -416,10 +438,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #818cf8;
+  color: var(--lp-accent);
   border-radius: 10px;
-  background: rgba(129, 140, 248, 0.12);
+  background: rgba(99, 102, 241, 0.10);
   flex-shrink: 0;
+}
+
+:host([data-theme="dark"]) .icon-wrapper {
+  background: rgba(129, 140, 248, 0.12);
 }
 
 // ─── Main feature card (mockup) ─────────────────────────────────────────────
@@ -452,7 +478,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 60% 60%, rgba(129, 140, 248, 0.08) 0%, transparent 65%);
+      background: radial-gradient(circle at 60% 60%, rgba(99, 102, 241, 0.06) 0%, transparent 65%);
       pointer-events: none;
     }
   }
@@ -493,34 +519,40 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background-color: rgba(52, 211, 153, 0.10);
-    color: #34d399;
+    background-color: rgba(22, 163, 74, 0.10);
+    color: #16a34a;
     padding: 3px 9px;
     border-radius: 10px;
     font-size: 0.72rem;
     font-weight: 600;
-    border: 1px solid rgba(52, 211, 153, 0.18);
+    border: 1px solid rgba(22, 163, 74, 0.18);
     letter-spacing: 0.02em;
     text-transform: uppercase;
 
     .dot {
       width: 4px;
       height: 4px;
-      background-color: #34d399;
+      background-color: #16a34a;
       border-radius: 50%;
     }
   }
+}
+
+:host([data-theme="dark"]) .live-badge {
+  background-color: rgba(52, 211, 153, 0.10);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.18);
+
+  .dot { background-color: #34d399; }
 }
 
 // ─── Mockup decorations ─────────────────────────────────────────────────────
 
 .mockup-window {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 78%;
-  height: 72%;
+  width: 78%; height: 72%;
   background: var(--lp-mockup-bg);
   border: 1px solid var(--lp-mockup-border);
   border-radius: 10px;
@@ -558,9 +590,8 @@
 
 .mockup-avatar-large {
   position: absolute;
-  right: 16px;
-  bottom: 16px;
-  color: #818cf8;
+  right: 16px; bottom: 16px;
+  color: var(--lp-accent);
   opacity: 0.75;
 }
 
