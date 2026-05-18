@@ -3,10 +3,13 @@ import { customElement } from "lit/decorators.js";
 import { handleLink } from "../utils/navigate";
 import pageLandingStylesRaw from "../styles/page-landing.styles.scss?inline";
 import "../components/ui/app-button";
+import { ThemeController } from "../utils/theme-controller";
 
 @customElement("page-landing")
 export class PageLanding extends LitElement {
   static styles = unsafeCSS(pageLandingStylesRaw);
+
+  private theme = new ThemeController(this);
 
   render() {
     return html`
