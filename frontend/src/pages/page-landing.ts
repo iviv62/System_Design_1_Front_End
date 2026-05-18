@@ -139,7 +139,7 @@ export class PageLanding extends LitElement {
                           <circle cx="32" cy="32" r="28" opacity="0.25"></circle>
                           <path d="M44 48C44 41.3726 38.6274 36 32 36C25.3726 36 20 41.3726 20 48" opacity="0.5"></path>
                           <circle cx="32" cy="24" r="8" opacity="0.5"></circle>
-                        </svg>
+3                        </svg>
                       </div>
                     </div>
                   </div>
@@ -182,7 +182,7 @@ export class PageLanding extends LitElement {
                     </svg>
                   </div>
                   <h3>Deep Customization</h3>
-                  <p>Tailor your workspace with advanced themes, layout toggles, and custom keybinds.</p>
+                  <p>Fully open source. Fork it, tweak the UI, or build custom plugins to make Nebula truly yours.</p>
                 </div>
               </div>
             </div>
