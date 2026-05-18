@@ -15,6 +15,11 @@ export class PageLogin extends LitElement {
 
   private theme = new ThemeController(this);
 
+  constructor() {
+    super();
+    this.setAttribute("data-theme", ThemeController.get());
+  }
+
   private async handleSubmit(e: Event) {
     e.preventDefault();
     this.errorMsg = "";

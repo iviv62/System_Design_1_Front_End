@@ -11,6 +11,15 @@ export class PageLanding extends LitElement {
 
   private theme = new ThemeController(this);
 
+  constructor() {
+    super();
+    // Apply data-theme synchronously before first render to avoid FOUC.
+    // ThemeController.hostConnected() does this too, but fires after the first
+    // paint — setting it here ensures the correct :host([data-theme]) vars are
+    // used from frame 0.
+    this.setAttribute("data-theme", ThemeController.get());
+  }
+
   private _toggleTheme() {
     const next = this.theme.theme === "dark" ? "light" : "dark";
     ThemeController.set(next);
