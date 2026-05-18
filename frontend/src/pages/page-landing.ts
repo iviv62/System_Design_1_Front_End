@@ -5,27 +5,33 @@ import pageLandingStylesRaw from "../styles/page-landing.styles.scss?inline";
 import "../components/ui/app-button";
 import { ThemeController } from "../utils/theme-controller";
 
+
 @customElement("page-landing")
 export class PageLanding extends LitElement {
   static styles = unsafeCSS(pageLandingStylesRaw);
 
+
   private theme = new ThemeController(this);
   private _starsAnimId: number | null = null;
+
 
   constructor() {
     super();
     this.setAttribute("data-theme", ThemeController.get());
   }
 
+
   private _toggleTheme() {
     const next = this.theme.theme === "dark" ? "light" : "dark";
     ThemeController.set(next);
   }
 
+
   override firstUpdated() {
     this._initStarfield();
     window.addEventListener("resize", this._onResize);
   }
+
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -33,20 +39,25 @@ export class PageLanding extends LitElement {
     window.removeEventListener("resize", this._onResize);
   }
 
+
   private _onResize = () => this._initStarfield();
+
 
   private _initStarfield() {
     const canvas = this.shadowRoot?.getElementById("starsCanvas") as HTMLCanvasElement | null;
     if (!canvas) return;
     if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
 
+
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+
     const isDark = this.theme.theme === "dark";
     const COUNT  = isDark ? 130 : 60;
+
 
     interface Star {
       x: number; y: number;
@@ -56,8 +67,10 @@ export class PageLanding extends LitElement {
       color: string;
     }
 
+
     const STAR_COLORS_DARK  = ["#ffffff", "#c8d8ff", "#ffd6e0", "#d0f0ff"];
     const STAR_COLORS_LIGHT = ["#334155", "#475569", "#1e293b"];
+
 
     const stars: Star[] = Array.from({ length: COUNT }, () => ({
       x:      Math.random() * canvas.width,
@@ -69,6 +82,7 @@ export class PageLanding extends LitElement {
         ? STAR_COLORS_DARK [Math.floor(Math.random() * STAR_COLORS_DARK.length)]
         : STAR_COLORS_LIGHT[Math.floor(Math.random() * STAR_COLORS_LIGHT.length)],
     }));
+
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -87,6 +101,7 @@ export class PageLanding extends LitElement {
     draw();
   }
 
+
   private _sunIcon() {
     return html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -102,6 +117,7 @@ export class PageLanding extends LitElement {
     </svg>`;
   }
 
+
   private _moonIcon() {
     return html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -109,11 +125,13 @@ export class PageLanding extends LitElement {
     </svg>`;
   }
 
+
   private _githubStarIcon() {
     return html`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
     </svg>`;
   }
+
 
   private _starIcon() {
     return html`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -121,14 +139,18 @@ export class PageLanding extends LitElement {
     </svg>`;
   }
 
+
   render() {
     const isDark = this.theme.theme === "dark";
+
 
     // Re-init starfield whenever theme changes so star count/color adapts.
     this.updateComplete.then(() => this._initStarfield());
 
+
     return html`
       <div class="landing-container">
+
 
         <!-- ── Space background (fixed, behind everything) ── -->
         <div class="space-bg" aria-hidden="true">
@@ -138,6 +160,7 @@ export class PageLanding extends LitElement {
           <div class="nebula nebula-3"></div>
           <div class="nebula nebula-4"></div>
         </div>
+
 
         <header class="landing-header">
           <div class="logo">
@@ -152,11 +175,12 @@ export class PageLanding extends LitElement {
             <span class="logo-text">Nebula Chat</span>
           </div>
 
+
           <nav class="nav-links">
             <a href="#" class="active">Features</a>
             <a href="#">Communities</a>
-            <a href="#">Download</a>
           </nav>
+
 
           <div class="header-actions">
             <button
@@ -170,16 +194,17 @@ export class PageLanding extends LitElement {
           </div>
         </header>
 
+
         <main class="landing-main">
           <section class="hero-section">
             <div class="version-badge"><span class="dot"></span> Nebula v2.0 is now live</div>
-            <h1 class="hero-title">Your Digital Home,<br />Reimagined.</h1>
+            <h1 class="hero-title">The Open-Source Discord Alternative</h1>
             <p class="hero-subtitle">
               The open-source, self-hostable community chat. Immersive spaces,
               spatial audio, and absolute control over your data—no ads, no tracking.
             </p>
             <div class="hero-actions">
-              <app-button class="primary-btn">Download for Windows</app-button>
+              
               <a
                 class="github-btn"
                 href="https://github.com/iviv62/chat-system"
@@ -194,6 +219,7 @@ export class PageLanding extends LitElement {
               <app-button class="secondary-btn">Open in Browser</app-button>
             </div>
           </section>
+
 
           <section class="features-grid">
             <div class="top-row">
@@ -228,6 +254,7 @@ export class PageLanding extends LitElement {
                 </div>
               </div>
 
+
               <div class="side-features">
                 <div class="feature-card">
                   <div class="card-top">
@@ -259,6 +286,7 @@ export class PageLanding extends LitElement {
                 </div>
               </div>
             </div>
+
 
             <div class="bottom-row">
               <div class="feature-card">
@@ -299,6 +327,7 @@ export class PageLanding extends LitElement {
           </section>
         </main>
 
+
         <footer class="landing-footer">
           <div class="footer-left">
             <div class="logo">
@@ -312,7 +341,7 @@ export class PageLanding extends LitElement {
               </svg>
               <span class="logo-text">Nebula Chat</span>
             </div>
-            <div class="copyright">© 2024 Nebula Chat. All rights reserved.</div>
+            <div class="copyright">© 2026 Nebula Chat. All rights reserved.</div>
           </div>
           <div class="footer-links">
             <a href="#">Privacy Policy</a>
@@ -327,6 +356,7 @@ export class PageLanding extends LitElement {
     `;
   }
 }
+
 
 declare global {
   interface HTMLElementTagNameMap {
