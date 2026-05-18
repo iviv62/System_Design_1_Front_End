@@ -25,7 +25,7 @@
   max-width: 400px;
 }
 
-:host-context(body[data-theme="dark"]) .auth-card {
+:host([data-theme="dark"]) .auth-card {
   background: #1e293b;
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.3),
@@ -40,7 +40,7 @@ h2 {
   text-align: center;
 }
 
-:host-context(body[data-theme="dark"]) h2 {
+:host([data-theme="dark"]) h2 {
   color: #f3f4f6;
 }
 
@@ -51,7 +51,7 @@ h2 {
   text-align: center;
 }
 
-:host-context(body[data-theme="dark"]) .subtitle {
+:host([data-theme="dark"]) .subtitle {
   color: #9ca3af;
 }
 
@@ -66,7 +66,7 @@ h2 {
   text-align: center;
 }
 
-:host-context(body[data-theme="dark"]) .error {
+:host([data-theme="dark"]) .error {
   color: #fca5a5;
   background: rgba(220, 38, 38, 0.2);
   border-color: rgba(220, 38, 38, 0.5);
@@ -96,7 +96,7 @@ input {
   outline: none;
 }
 
-:host-context(body[data-theme="dark"]) input {
+:host([data-theme="dark"]) input {
   background: #334155;
   border-color: #475569;
   color: #f3f4f6;
@@ -107,7 +107,7 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-:host-context(body[data-theme="dark"]) input:focus {
+:host([data-theme="dark"]) input:focus {
   border-color: #60a5fa;
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
@@ -138,15 +138,15 @@ button:disabled {
   cursor: not-allowed;
 }
 
-:host-context(body[data-theme="dark"]) button {
+:host([data-theme="dark"]) button {
   background: #2563eb;
 }
 
-:host-context(body[data-theme="dark"]) button:hover:not(:disabled) {
+:host([data-theme="dark"]) button:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-:host-context(body[data-theme="dark"]) button:disabled {
+:host([data-theme="dark"]) button:disabled {
   background: #1e3a8a;
   color: #94a3b8;
 }
@@ -158,7 +158,7 @@ button:disabled {
   color: #4b5563;
 }
 
-:host-context(body[data-theme="dark"]) .links {
+:host([data-theme="dark"]) .links {
   color: #9ca3af;
 }
 
@@ -172,6 +172,6 @@ button:disabled {
   text-decoration: underline;
 }
 
-:host-context(body[data-theme="dark"]) .links a {
+:host([data-theme="dark"]) .links a {
   color: #60a5fa;
 }

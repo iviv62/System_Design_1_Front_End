@@ -38,7 +38,7 @@ chat-app {
   box-sizing: border-box;
 }
 
-@mixin dark-theme-vars {
+[data-theme="dark"] chat-app {
   --bg-color: #0f172a;
   --card-bg: #1e293b;
   --text-primary: #f8fafc;
@@ -61,16 +61,6 @@ chat-app {
   --table-row-2: #0f172a;
   --table-row-hover: #1e293b;
   --shadow-color: rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="dark"] chat-app {
-  @include dark-theme-vars;
-}
-
-@media (prefers-color-scheme: dark) {
-  body:not([data-theme="light"]) chat-app {
-    @include dark-theme-vars;
-  }
 }
 
 .lobby {
@@ -473,7 +463,6 @@ chat-app {
     system-ui,
     -apple-system,
     sans-serif;
-  /* Prevent the modal itself from ever growing wider than its declared width */
   box-sizing: border-box;
 }
 
@@ -519,7 +508,6 @@ chat-app {
   gap: 1.5rem;
   max-height: 60vh;
   overflow-y: auto;
-  /* Contain children — nothing should escape horizontally */
   overflow-x: hidden;
 
   &::-webkit-scrollbar {
@@ -549,14 +537,12 @@ chat-app {
   display: flex;
   gap: 1rem;
   align-items: center;
-  /* Without min-width: 0, a flex child can overflow its container */
   min-width: 0;
 }
 
 .upload-avatar {
   width: 80px;
   height: 80px;
-  /* Rounded square instead of circle */
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -569,7 +555,6 @@ chat-app {
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  /* Reset default button styles */
   padding: 0;
   overflow: hidden;
 
@@ -590,7 +575,6 @@ chat-app {
     letter-spacing: 0.04em;
   }
 
-  /* Once an image is loaded — solid border, no padding */
   &--has-image {
     border-style: solid;
     border-color: rgba(255, 255, 255, 0.15);
@@ -601,7 +585,6 @@ chat-app {
   }
 }
 
-/* Avatar preview image fills the rounded-square container */
 .upload-avatar__preview {
   width: 100%;
   height: 100%;
@@ -611,7 +594,6 @@ chat-app {
 
 .server-name-input {
   flex: 1;
-  /* Prevents flex child from overflowing its container */
   min-width: 0;
   display: flex;
   flex-direction: column;

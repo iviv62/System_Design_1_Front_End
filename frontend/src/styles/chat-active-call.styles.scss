@@ -1,14 +1,45 @@
+:host {
+  // Default dark tokens (dark is the primary mode for the active call view)
+  --ac-bg: #111827;
+  --ac-card-bg: #1f2937;
+  --ac-toolbar-bg: #1f2937;
+  --ac-border: rgba(255, 255, 255, 0.05);
+  --ac-text: #9ca3af;
+  --ac-text-bright: #e5e7eb;
+  --ac-timer-color: #6b7280;
+  --ac-icon-btn-color: #6b7280;
+  --ac-screen-bg: #0f172a;
+  --ac-screen-border: rgba(148, 163, 184, 0.18);
+  --ac-badge-bg: #111827;
+  --ac-toolbar-divider: rgba(255, 255, 255, 0.1);
+}
+
+:host([data-theme="light"]) {
+  --ac-bg: #f1f5f9;
+  --ac-card-bg: #e2e8f0;
+  --ac-toolbar-bg: #e2e8f0;
+  --ac-border: rgba(0, 0, 0, 0.06);
+  --ac-text: #475569;
+  --ac-text-bright: #1e293b;
+  --ac-timer-color: #64748b;
+  --ac-icon-btn-color: #64748b;
+  --ac-screen-bg: #cbd5e1;
+  --ac-screen-border: rgba(100, 116, 139, 0.3);
+  --ac-badge-bg: #f1f5f9;
+  --ac-toolbar-divider: rgba(0, 0, 0, 0.1);
+}
+
 .active-call {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: #111827; // dark bg matching image
+  background: var(--ac-bg);
   z-index: 50;
   display: flex;
   flex-direction: column;
-  color: #9ca3af;
+  color: var(--ac-text);
   font-family: inherit;
 }
 
@@ -17,7 +48,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--ac-border);
 }
 
 .active-call__header-left {
@@ -27,7 +58,7 @@
 }
 
 .active-call__header-title {
-  color: #9ca3af;
+  color: var(--ac-text);
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -42,14 +73,14 @@
 .active-call__timer {
   font-family: monospace;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--ac-timer-color);
   letter-spacing: 0.05em;
 }
 
 .active-call__icon-btn {
   background: transparent;
   border: none;
-  color: #6b7280;
+  color: var(--ac-icon-btn-color);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -57,7 +88,7 @@
   padding: 0;
 
   &:hover {
-    color: #e5e7eb;
+    color: var(--ac-text-bright);
   }
 }
 
@@ -80,8 +111,8 @@
   margin: 0 1rem 1rem;
   padding: 0.9rem;
   border-radius: 14px;
-  background: #0f172a;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: var(--ac-screen-bg);
+  border: 1px solid var(--ac-screen-border);
 }
 
 .active-call__screen-share-header {
@@ -94,7 +125,7 @@
 
 .active-call__screen-share-label {
   margin: 0;
-  color: #d1d5db;
+  color: var(--ac-text-bright);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -126,7 +157,7 @@
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  color: #cbd5e1;
+  color: var(--ac-text-bright);
   font-size: 0.82rem;
   margin-bottom: 0.55rem;
 }
@@ -156,7 +187,7 @@
 }
 
 .active-call__card {
-  background: #1f2937;
+  background: var(--ac-card-bg);
   border-radius: 12px;
   position: relative;
   display: flex;
@@ -164,9 +195,8 @@
   justify-content: center;
   aspect-ratio: 4/3;
   overflow: hidden;
-  border: 2px solid transparent; // for active speaker border
+  border: 2px solid transparent;
 
-  // Solo card: smaller avatar
   &:only-child .active-call__avatar {
     width: 80px;
     height: 80px;
@@ -203,8 +233,8 @@
 }
 
 .active-call__badge {
-  background: #111827;
-  color: #e5e7eb;
+  background: var(--ac-badge-bg);
+  color: var(--ac-text-bright);
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -216,7 +246,7 @@
 
 .active-call__badge-you {
   font-size: 0.6rem;
-  color: #9ca3af;
+  color: var(--ac-text);
   font-weight: 500;
 }
 
@@ -231,7 +261,7 @@
 .active-call__toolbar-center {
   display: flex;
   align-items: center;
-  background: #1f2937;
+  background: var(--ac-toolbar-bg);
   padding: 0.5rem;
   border-radius: 16px;
   gap: 0.5rem;
@@ -243,7 +273,7 @@
   border-radius: 12px;
   background: transparent;
   border: none;
-  color: #9ca3af;
+  color: var(--ac-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -252,7 +282,7 @@
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: #f3f4f6;
+    color: var(--ac-text-bright);
   }
 
   &--active {
@@ -275,7 +305,7 @@
 .active-call__toolbar-divider {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--ac-toolbar-divider);
   margin: 0 0.5rem;
 }
 

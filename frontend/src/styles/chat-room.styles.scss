@@ -74,20 +74,17 @@
   --cr-placeholder-color: #6e81a6;
 }
 
+// Default to light tokens; dark tokens applied when ThemeController sets data-theme="dark" on the host.
 :host {
   display: block;
   width: 100%;
   height: 100%;
   font-family: inherit;
+  @include light-tokens;
 }
 
-.chat-room {
-  &--light {
-    @include light-tokens;
-  }
-  &--dark {
-    @include dark-tokens;
-  }
+:host([data-theme="dark"]) {
+  @include dark-tokens;
 }
 
 .chat-room {
