@@ -7,13 +7,15 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   transition: color 0.3s;
 
-  --lp-space-bg:    #dde3f5;
-  --lp-nebula-1:    rgba(99,  102, 241, 0.15);
-  --lp-nebula-2:    rgba(59,  130, 246, 0.12);
-  --lp-nebula-3:    rgba(6,   182, 212, 0.10);
-  --lp-nebula-4:    rgba(168,  85, 247, 0.08);
+  // ── Space background tokens — LIGHT theme: soft twilight sky ─────────────
+  --lp-space-bg:    #dde3f5;   // soft periwinkle — daylight sky at dusk
+  --lp-nebula-1:    rgba(99,  102, 241, 0.15);  // indigo (pastel)
+  --lp-nebula-2:    rgba(59,  130, 246, 0.12);  // blue
+  --lp-nebula-3:    rgba(6,   182, 212, 0.10);  // cyan
+  --lp-nebula-4:    rgba(168,  85, 247, 0.08);  // purple
   --lp-nebula-blur: 130px;
 
+  // ── Card / UI tokens (light: frosted glass over soft bg) ─────────────
   --lp-card-bg:           rgba(255, 255, 255, 0.60);
   --lp-card-border:       rgba(99, 102, 241, 0.14);
   --lp-card-shadow:       0 4px 24px rgba(99, 102, 241, 0.08);
@@ -26,27 +28,34 @@
   --lp-msg-bg:            rgba(99, 102, 241, 0.08);
   --lp-content-glow:      linear-gradient(135deg, rgba(255,255,255,0.80) 0%, rgba(240,244,255,0.90) 100%);
 
-  --lp-text:         #1e293b;
-  --lp-text-muted:   #475569;
+  // ── Text (dark on light bg) ──────────────────────────────────────
+  --lp-text:         #1e293b;  // slate-800
+  --lp-text-muted:   #475569;  // slate-600
   --lp-border:       rgba(99, 102, 241, 0.14);
-  --lp-accent:       #4f46e5;
+  --lp-accent:       #4f46e5;  // indigo-600 — readable on light bg
 
+  // ── GitHub button ─────────────────────────────────────────────────────
   --lp-github-bg:       #24292f;
   --lp-github-bg-hover: #32383f;
   --lp-github-color:    #ffffff;
   --lp-github-border:   rgba(0, 0, 0, 0.12);
-  --lp-star-color:      #d97706;
+  --lp-star-color:      #d97706;  // amber-600 — visible on dark button
 
-  --lp-orbit-center-bg:    #4f46e5;
-  --lp-orbit-center-color: #ffffff;
-  --lp-orbit-avatar-border: rgba(99, 102, 241, 0.30);
-  --lp-orbit-badge-bg:     #4f46e5;
-  --lp-orbit-badge-color:  #ffffff;
-  --lp-orbit-label-color:  rgba(71, 85, 105, 0.60);
+  // ── Orbit section tokens (light) ─────────────────────────────────────
+  --lp-orbit-bg:          rgba(255, 255, 255, 0.55);
+  --lp-orbit-ring:        rgba(99, 102, 241, 0.18);
+  --lp-orbit-center-bg:   #4f46e5;
+  --lp-orbit-center-color:#ffffff;
+  --lp-orbit-avatar-bg:   rgba(255, 255, 255, 0.80);
+  --lp-orbit-avatar-border: rgba(99, 102, 241, 0.22);
+  --lp-orbit-badge-bg:    #4f46e5;
+  --lp-orbit-badge-color: #ffffff;
+  --lp-orbit-label-color: rgba(71, 85, 105, 0.55);
 }
 
+// Dark theme: deep void with rich saturated nebulae
 :host([data-theme="dark"]) {
-  --lp-space-bg:    #030712;
+  --lp-space-bg:    #030712;   // slate-950 — true void
   --lp-nebula-1:    rgba(139, 92,  246, 0.22);
   --lp-nebula-2:    rgba(59,  130, 246, 0.16);
   --lp-nebula-3:    rgba(6,   182, 212, 0.14);
@@ -65,10 +74,10 @@
   --lp-msg-bg:            rgba(255, 255, 255, 0.06);
   --lp-content-glow:      linear-gradient(135deg, rgba(3,7,18,0.90) 0%, rgba(2,4,14,0.97) 100%);
 
-  --lp-text:        #f1f5f9;
-  --lp-text-muted:  #94a3b8;
+  --lp-text:        #f1f5f9;  // slate-100
+  --lp-text-muted:  #94a3b8;  // slate-400
   --lp-border:      rgba(255, 255, 255, 0.08);
-  --lp-accent:      #818cf8;
+  --lp-accent:      #818cf8;  // indigo-400 — pops on dark bg
 
   --lp-github-bg:       #2d333b;
   --lp-github-bg-hover: #3c444d;
@@ -76,15 +85,19 @@
   --lp-github-border:   rgba(205, 217, 229, 0.12);
   --lp-star-color:      #e3b341;
 
-  --lp-orbit-center-bg:    #6d28d9;
-  --lp-orbit-center-color: #ffffff;
-  --lp-orbit-avatar-border: rgba(255, 255, 255, 0.18);
-  --lp-orbit-badge-bg:     #7c3aed;
-  --lp-orbit-badge-color:  #ffffff;
-  --lp-orbit-label-color:  rgba(148, 163, 184, 0.55);
+  // ── Orbit section tokens (dark) ───────────────────────────────────────
+  --lp-orbit-bg:          rgba(3, 7, 18, 0.70);
+  --lp-orbit-ring:        rgba(255, 255, 255, 0.08);
+  --lp-orbit-center-bg:   #6d28d9;
+  --lp-orbit-center-color:#ffffff;
+  --lp-orbit-avatar-bg:   rgba(15, 20, 40, 0.85);
+  --lp-orbit-avatar-border: rgba(255, 255, 255, 0.12);
+  --lp-orbit-badge-bg:    #7c3aed;
+  --lp-orbit-badge-color: #ffffff;
+  --lp-orbit-label-color: rgba(148, 163, 184, 0.50);
 }
 
-// ─── Space background ──────────────────────────────────────────────────────
+// ─── Space background layers ──────────────────────────────────────────────
 
 .space-bg {
   position: fixed;
@@ -105,29 +118,55 @@
   z-index: 1;
 }
 
+// Nebula blobs — Layer 2
 .nebula {
   position: absolute;
   border-radius: 50%;
   filter: blur(var(--lp-nebula-blur));
-  mix-blend-mode: multiply;
+  mix-blend-mode: multiply;  // blends into light bg naturally
   pointer-events: none;
   z-index: 0;
   transition: background 0.4s;
 }
 
-:host([data-theme="dark"]) .nebula { mix-blend-mode: screen; }
-
-.nebula-1 { width: 520px; height: 520px; top: -80px; left: 15%;   background: var(--lp-nebula-1); animation: nebula-float 16s ease-in-out infinite; }
-.nebula-2 { width: 480px; height: 480px; top: 20%;  right: 5%;   background: var(--lp-nebula-2); animation: nebula-float 20s ease-in-out infinite reverse; }
-.nebula-3 { width: 400px; height: 400px; bottom: 10%; left: 5%;  background: var(--lp-nebula-3); animation: nebula-float 14s ease-in-out infinite 4s; }
-.nebula-4 { width: 360px; height: 360px; bottom: 20%; right: 20%;background: var(--lp-nebula-4); animation: nebula-float 18s ease-in-out infinite 8s; }
-
-@keyframes nebula-float {
-  0%, 100% { transform: translateY(0px)   scale(1);    }
-  50%       { transform: translateY(-18px) scale(1.06); }
+// In dark mode nebulae use screen blend instead
+:host([data-theme="dark"]) .nebula {
+  mix-blend-mode: screen;
 }
 
-@media (prefers-reduced-motion: reduce) { .nebula { animation: none; } }
+.nebula-1 {
+  width: 520px; height: 520px;
+  top: -80px; left: 15%;
+  background: var(--lp-nebula-1);
+  animation: nebula-float 16s ease-in-out infinite;
+}
+.nebula-2 {
+  width: 480px; height: 480px;
+  top: 20%; right: 5%;
+  background: var(--lp-nebula-2);
+  animation: nebula-float 20s ease-in-out infinite reverse;
+}
+.nebula-3 {
+  width: 400px; height: 400px;
+  bottom: 10%; left: 5%;
+  background: var(--lp-nebula-3);
+  animation: nebula-float 14s ease-in-out infinite 4s;
+}
+.nebula-4 {
+  width: 360px; height: 360px;
+  bottom: 20%; right: 20%;
+  background: var(--lp-nebula-4);
+  animation: nebula-float 18s ease-in-out infinite 8s;
+}
+
+@keyframes nebula-float {
+  0%,  100% { transform: translateY(0px)   scale(1);    }
+  50%        { transform: translateY(-18px) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nebula { animation: none; }
+}
 
 // ─── Layout ────────────────────────────────────────────────────────────────
 
@@ -162,12 +201,14 @@
   font-size: 1.05rem;
   color: var(--lp-text);
   letter-spacing: -0.01em;
+
   svg { color: var(--lp-accent); }
 }
 
 .nav-links {
   display: flex;
   gap: 28px;
+
   a {
     color: var(--lp-text-muted);
     text-decoration: none;
@@ -175,8 +216,13 @@
     font-weight: 500;
     transition: color 0.2s;
     padding-bottom: 2px;
+
     &:hover { color: var(--lp-text); }
-    &.active { color: var(--lp-text); border-bottom: 2px solid var(--lp-accent); }
+
+    &.active {
+      color: var(--lp-text);
+      border-bottom: 2px solid var(--lp-accent);
+    }
   }
 }
 
@@ -186,18 +232,27 @@
   gap: 10px;
 
   .theme-toggle {
-    display: flex; align-items: center; justify-content: center;
-    width: 36px; height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     border: 1px solid var(--lp-border);
     background: rgba(255, 255, 255, 0.30);
     color: var(--lp-text-muted);
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
-    &:hover { background: rgba(255, 255, 255, 0.50); color: var(--lp-text); }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.50);
+      color: var(--lp-text);
+    }
+
     svg { display: block; }
   }
 
+  // In dark mode the toggle is a darker glass
   :host([data-theme="dark"]) & .theme-toggle {
     background: rgba(255, 255, 255, 0.05);
     &:hover { background: rgba(255, 255, 255, 0.10); }
@@ -214,6 +269,7 @@
     font-weight: 500;
     border: 1px solid var(--lp-border);
     transition: background 0.2s;
+
     &:hover { background: rgba(255, 255, 255, 0.50); }
   }
 
@@ -223,7 +279,7 @@
   }
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────
 
 .landing-main {
   flex: 1;
@@ -235,7 +291,7 @@
   z-index: 1;
 }
 
-// ─── Hero ──────────────────────────────────────────────────────────────────
+// ─── Hero ─────────────────────────────────────────────────────────────────
 
 .hero-section {
   text-align: center;
@@ -259,9 +315,11 @@
   color: var(--lp-text-muted);
   border: 1px solid var(--lp-border);
   letter-spacing: 0.01em;
+
   .dot {
-    width: 6px; height: 6px;
-    background-color: #16a34a;
+    width: 6px;
+    height: 6px;
+    background-color: #16a34a;  // green-600 — visible on light bg
     border-radius: 50%;
     box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
   }
@@ -269,7 +327,11 @@
 
 :host([data-theme="dark"]) .version-badge {
   background: rgba(255, 255, 255, 0.06);
-  .dot { background-color: #34d399; box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.20); }
+
+  .dot {
+    background-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.20);
+  }
 }
 
 .hero-title {
@@ -296,6 +358,7 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+
   app-button::part(button) {
     padding: 13px 26px;
     border-radius: 10px;
@@ -304,7 +367,7 @@
   }
 }
 
-// ─── GitHub button ─────────────────────────────────────────────────────────
+// ─── GitHub Star button ────────────────────────────────────────────────────
 
 .github-btn {
   display: inline-flex;
@@ -320,19 +383,30 @@
   text-decoration: none;
   transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
   white-space: nowrap;
-  svg:last-child { color: var(--lp-star-color); transition: transform 0.2s; }
+
+  svg:last-child {
+    color: var(--lp-star-color);
+    transition: transform 0.2s;
+  }
+
   &:hover {
     background: var(--lp-github-bg-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+
     svg:last-child { transform: rotate(15deg) scale(1.15); }
   }
+
   &:active { transform: translateY(0); box-shadow: none; }
 }
 
 // ─── Feature Grid ──────────────────────────────────────────────────────────
 
-.features-grid { display: flex; flex-direction: column; gap: 20px; }
+.features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
 .top-row {
   display: grid;
@@ -358,70 +432,131 @@
   -webkit-backdrop-filter: blur(20px);
   box-shadow: var(--lp-card-shadow);
   transition: box-shadow 0.25s, transform 0.25s;
-  &:hover { box-shadow: var(--lp-card-hover-shadow); transform: translateY(-2px); }
-  h3 { font-size: 1.1rem; font-weight: 650; margin: 14px 0 6px; color: var(--lp-text); letter-spacing: -0.01em; }
-  p  { font-size: 0.9rem; color: var(--lp-text-muted); line-height: 1.55; margin: 0; }
+
+  &:hover {
+    box-shadow: var(--lp-card-hover-shadow);
+    transform: translateY(-2px);
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 650;
+    margin: 14px 0 6px;
+    color: var(--lp-text);
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: var(--lp-text-muted);
+    line-height: 1.55;
+    margin: 0;
+  }
 }
 
 .icon-wrapper {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--lp-accent);
   border-radius: 10px;
   background: rgba(99, 102, 241, 0.10);
   flex-shrink: 0;
 }
 
-:host([data-theme="dark"]) .icon-wrapper { background: rgba(129, 140, 248, 0.12); }
+:host([data-theme="dark"]) .icon-wrapper {
+  background: rgba(129, 140, 248, 0.12);
+}
+
+// ─── Main feature card (mockup) ─────────────────────────────────────────────
 
 .main-feature {
   padding: 0;
   overflow: hidden;
+
   .card-header {
     padding: 14px 20px;
     font-weight: 600;
     font-size: 0.9rem;
-    display: flex; align-items: center; gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     border-bottom: 1px solid var(--lp-card-border);
     color: var(--lp-text);
+
     .hashtag { color: var(--lp-text-muted); }
   }
+
   .card-content {
     flex: 1;
     min-height: 280px;
     position: relative;
     background: var(--lp-content-glow);
     overflow: hidden;
+
     &::after {
       content: "";
-      position: absolute; inset: 0;
+      position: absolute;
+      inset: 0;
       background: radial-gradient(circle at 60% 60%, rgba(99, 102, 241, 0.06) 0%, transparent 65%);
       pointer-events: none;
     }
   }
+
   .card-footer {
     padding: 13px 20px;
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     border-top: 1px solid var(--lp-card-border);
+
     .plus-icon { color: var(--lp-text-muted); }
-    .placeholder-text { color: var(--lp-text-muted); opacity: 0.5; font-size: 0.9rem; }
+
+    .placeholder-text {
+      color: var(--lp-text-muted);
+      opacity: 0.5;
+      font-size: 0.9rem;
+    }
   }
 }
 
+// ─── Side features ─────────────────────────────────────────────────────────
+
 .side-features {
-  display: flex; flex-direction: column; gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
   .feature-card { flex: 1; }
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
   .live-badge {
-    display: inline-flex; align-items: center; gap: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     background-color: rgba(22, 163, 74, 0.10);
     color: #16a34a;
     padding: 3px 9px;
     border-radius: 10px;
-    font-size: 0.72rem; font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 600;
     border: 1px solid rgba(22, 163, 74, 0.18);
-    letter-spacing: 0.02em; text-transform: uppercase;
-    .dot { width: 4px; height: 4px; background-color: #16a34a; border-radius: 50%; }
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+
+    .dot {
+      width: 4px;
+      height: 4px;
+      background-color: #16a34a;
+      border-radius: 50%;
+    }
   }
 }
 
@@ -429,8 +564,11 @@
   background-color: rgba(52, 211, 153, 0.10);
   color: #34d399;
   border-color: rgba(52, 211, 153, 0.18);
+
   .dot { background-color: #34d399; }
 }
+
+// ─── Mockup decorations ─────────────────────────────────────────────────────
 
 .mockup-window {
   position: absolute;
@@ -440,17 +578,26 @@
   background: var(--lp-mockup-bg);
   border: 1px solid var(--lp-mockup-border);
   border-radius: 10px;
-  display: flex; overflow: hidden;
+  display: flex;
+  overflow: hidden;
   backdrop-filter: blur(10px);
   z-index: 1;
   box-shadow: var(--lp-mockup-shadow);
 }
 
-.mockup-sidebar { width: 52px; background: var(--lp-sidebar-bg); border-right: 1px solid var(--lp-sidebar-border); flex-shrink: 0; }
+.mockup-sidebar {
+  width: 52px;
+  background: var(--lp-sidebar-bg);
+  border-right: 1px solid var(--lp-sidebar-border);
+  flex-shrink: 0;
+}
 
 .mockup-main {
-  flex: 1; padding: 16px;
-  display: flex; flex-direction: column; gap: 10px;
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   position: relative;
 }
 
@@ -459,12 +606,15 @@
   background: var(--lp-msg-bg);
   border-radius: 4px;
   width: 58%;
+
   &:nth-child(2) { width: 38%; opacity: 0.6; }
 }
 
 .mockup-avatar-large {
-  position: absolute; right: 16px; bottom: 16px;
-  color: var(--lp-accent); opacity: 0.75;
+  position: absolute;
+  right: 16px; bottom: 16px;
+  color: var(--lp-accent);
+  opacity: 0.75;
 }
 
 // ─── Common Orbits Section ──────────────────────────────────────────────────
@@ -480,7 +630,9 @@
 .orbits-header {
   text-align: center;
   max-width: 600px;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .orbits-title {
@@ -499,35 +651,52 @@
   margin: 0;
 }
 
-// ── Orbit stage ──────────────────────────────────────────────────────────
+// ── Orbit stage: the circular diagram ────────────────────────────────────
 
 .orbit-stage {
   position: relative;
+  width: 480px;
+  height: 480px;
   max-width: 100%;
+  aspect-ratio: 1;
   flex-shrink: 0;
 }
 
-// SVG overlay — absolutely fills the stage
-.orbit-svg {
+// Orbit rings (dashed circles)
+.orbit-ring {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+  border-radius: 50%;
+  border: 1.5px dashed var(--lp-orbit-ring);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 0;
 }
 
-.orbit-svg-label {
-  font-family: "Inter", -apple-system, sans-serif;
-  font-size: 9px;
+.orbit-ring--far  { width: 90%;  height: 90%; }
+.orbit-ring--mid  { width: 65%;  height: 65%; }
+.orbit-ring--near { width: 38%;  height: 38%; }
+
+// Orbit ring labels
+.orbit-label {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  fill: var(--lp-orbit-label-color);
+  color: var(--lp-orbit-label-color);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-// Centre avatar
+.orbit-label--near {
+  top: auto;
+  bottom: 12px;
+}
+
+// Centre avatar ("you")
 .orbit-center {
   position: absolute;
   top: 50%; left: 50%;
@@ -536,87 +705,102 @@
   border-radius: 50%;
   background: var(--lp-orbit-center-bg);
   color: var(--lp-orbit-center-color);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 0 8px rgba(79, 70, 229, 0.16), 0 4px 24px rgba(79, 70, 229, 0.40);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.18), 0 4px 20px rgba(79, 70, 229, 0.35);
   z-index: 2;
+
   svg { flex-shrink: 0; }
 }
 
 :host([data-theme="dark"]) .orbit-center {
-  box-shadow: 0 0 0 8px rgba(109, 40, 217, 0.22), 0 4px 28px rgba(109, 40, 217, 0.50);
+  box-shadow: 0 0 0 6px rgba(109, 40, 217, 0.25), 0 4px 24px rgba(109, 40, 217, 0.45);
 }
 
 .orbit-center__dot {
-  position: absolute;
-  bottom: 3px; right: 3px;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: #34d399;
-  border: 2px solid var(--lp-orbit-center-bg);
-}
-
-// Orbit avatar buttons — positioned by JS via inline style left/top
-.orbit-avatar {
-  position: absolute;
-  // JS sets left/top to the center of the avatar; offset by half its size
-  width: 52px; height: 52px;
-  margin-left: -26px;
-  margin-top:  -26px;
-  border-radius: 50%;
-  border: 2.5px solid var(--lp-orbit-avatar-border);
-  overflow: hidden;
-  cursor: pointer;
-  z-index: 3;
-  padding: 0;
-  background: transparent;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-
-  &:hover {
-    transform: scale(1.15);
-    box-shadow: 0 4px 24px rgba(79, 70, 229, 0.40);
-    border-color: var(--lp-accent);
-    z-index: 10;
-  }
-}
-
-.orbit-avatar__photo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  pointer-events: none;
-  user-select: none;
-  // Counteract parent's CSS rotation so the face always stays upright
-  // (no CSS rotation used here — done by JS, so this isn't needed)
-}
-
-.orbit-avatar__badge {
-  position: absolute;
-  top: -4px; right: -4px;
-  min-width: 18px; height: 18px;
-  border-radius: 10px;
-  background: var(--lp-orbit-badge-bg);
-  color: var(--lp-orbit-badge-color);
-  font-size: 0.65rem; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 4px;
-  border: 2px solid var(--lp-orbit-center-bg);
-  pointer-events: none;
-  z-index: 4;
-}
-
-.orbit-avatar__online {
   position: absolute;
   bottom: 2px; right: 2px;
   width: 10px; height: 10px;
   border-radius: 50%;
   background: #34d399;
   border: 2px solid var(--lp-orbit-center-bg);
-  pointer-events: none;
-  z-index: 4;
 }
+
+// Orbit avatar buttons
+.orbit-avatar {
+  position: absolute;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--lp-orbit-avatar-bg);
+  border: 2px solid var(--lp-orbit-avatar-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  padding: 0;
+
+  &:hover {
+    transform: scale(1.12);
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.30);
+    border-color: var(--lp-accent);
+  }
+}
+
+.orbit-avatar__initials {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lp-text);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.orbit-avatar__badge {
+  position: absolute;
+  top: -5px; right: -5px;
+  min-width: 18px; height: 18px;
+  border-radius: 10px;
+  background: var(--lp-orbit-badge-bg);
+  color: var(--lp-orbit-badge-color);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--lp-orbit-avatar-bg);
+  pointer-events: none;
+}
+
+.orbit-avatar__online {
+  position: absolute;
+  bottom: 1px; right: 1px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #34d399;
+  border: 2px solid var(--lp-orbit-avatar-bg);
+  pointer-events: none;
+}
+
+// Avatar position helpers — place avatars around the orbit rings
+// Far ring  (~45% from center)
+.orbit-far.pos-top         { top: 4%;  left: 50%; transform: translate(-50%, 0); }
+.orbit-far.pos-bottom-left { top: 72%; left: 12%; }
+
+// Mid ring (~32.5% from center)
+.orbit-mid.pos-top-left  { top: 18%; left: 20%; }
+.orbit-mid.pos-left      { top: 42%; left: 8%;  transform: translateY(-50%); }
+.orbit-mid.pos-bottom    { top: 78%; left: 50%; transform: translateX(-50%); }
+
+// Near ring (~19% from center)
+.orbit-near.pos-right    { top: 50%; right: 22%; transform: translateY(-50%); }
 
 // ─── Footer ─────────────────────────────────────────────────────────────────
 
@@ -632,17 +816,26 @@
 }
 
 .footer-left {
-  display: flex; flex-direction: column; gap: 6px;
-  .copyright { color: var(--lp-text-muted); font-size: 0.8rem; }
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .copyright {
+    color: var(--lp-text-muted);
+    font-size: 0.8rem;
+  }
 }
 
 .footer-links {
-  display: flex; gap: 20px;
+  display: flex;
+  gap: 20px;
+
   a {
     color: var(--lp-text-muted);
     text-decoration: none;
     font-size: 0.82rem;
     transition: color 0.2s;
+
     &:hover { color: var(--lp-text); }
   }
 }
@@ -653,17 +846,22 @@
   .top-row    { grid-template-columns: 1fr; }
   .bottom-row { grid-template-columns: 1fr; }
   .nav-links  { display: none; }
-  .landing-footer { flex-direction: column; gap: 20px; align-items: flex-start; }
+  .landing-footer {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
 }
 
-@media (max-width: 540px) {
-  .orbit-stage { width: 320px !important; height: 320px !important; }
+@media (max-width: 600px) {
+  .orbit-stage { width: 320px; height: 320px; }
 }
 
 @media (max-width: 480px) {
   .hero-actions {
     flex-direction: column;
     width: 100%;
+
     .github-btn { width: 100%; justify-content: center; }
   }
 }
