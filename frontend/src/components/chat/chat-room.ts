@@ -185,6 +185,14 @@ export class ChatRoom extends LitElement {
   }
 
   disconnectedCallback(): void {
+    // Flush all pending typing timers so their callbacks don't fire into a
+    // detached component, dispatch events on a dead node, or hold this instance
+    // in memory for up to 5 s after unmount.
+    for (const timer of this.typingTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.typingTimers.clear();
+
     window.removeEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.removeEventListener("focus", this.boundHandleVisibilityChange);
     this.controller.stop();
