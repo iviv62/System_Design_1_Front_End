@@ -91,8 +91,15 @@ export class ChatRoom extends LitElement {
 
   /**
    * Remote audio elements keyed by track.id.
-   * Created in response to onAudioTrack, cleaned up via onAudioTrackEnded.
-   * Appended to this component's shadow root — never to document.body.
+   *
+   * Appended to document.body (not shadow root) because:
+   *  1. Autoplay policy is enforced at the document level.
+   *  2. MediaSession / Web Audio APIs operate on document-level media.
+   *  3. Shadow DOM does not affect audio element behaviour — it only
+   *     affects style scoping.
+   *
+   * Each element carries data-chat-audio="<trackId>" for debuggability.
+   * Cleanup is always driven through this Map — never via querySelectorAll.
    */
   private readonly audioElements = new Map<string, HTMLAudioElement>();
 
@@ -122,23 +129,28 @@ export class ChatRoom extends LitElement {
         onParticipantsChange: (participants: Participant[]) => {
           this._voiceParticipants = participants as VoiceParticipant[];
         },
-        onAudioTrack: (track, streams) => {
-          // Guard against duplicate tracks (e.g. renegotiation).
+        onAudioTrack: (track, safeStream) => {
+          // Guard against duplicate tracks from renegotiation.
           if (this.audioElements.has(track.id)) return;
+
           const audio = document.createElement("audio");
-          audio.autoplay = true;
-          audio.srcObject = streams[0] ?? new MediaStream([track]);
-          // Mount inside shadow root, not document.body.
-          this.shadowRoot?.appendChild(audio);
+          audio.srcObject = safeStream;
+          audio.dataset["chatAudio"] = track.id;
+          // Hidden — purely for audio output, no visual.
+          audio.style.display = "none";
+          document.body.appendChild(audio);
           this.audioElements.set(track.id, audio);
-        },
-        onAudioTrackEnded: (trackId) => {
-          const audio = this.audioElements.get(trackId);
-          if (!audio) return;
-          audio.pause();
-          audio.srcObject = null;
-          audio.remove();
-          this.audioElements.delete(trackId);
+
+          // Explicit play() — autoplay attribute alone is not reliable after
+          // a user gesture may have already occurred in a previous interaction.
+          audio.play().catch(() => {
+            // Autoplay blocked (browser policy). Audio will resume on next
+            // user interaction. This is expected on first load before any gesture.
+            console.warn("[ChatRoom] autoplay blocked for remote audio track", track.id);
+          });
+
+          // Tear down when the track ends (peer left / SFU removed the stream).
+          track.onended = () => this.removeAudioElement(track.id);
         },
         onScreenShareStarted: (stream, sharerName, isLocal) => {
           this._screenSharingUser = sharerName.replace(" (you)", "") || this.username;
@@ -208,13 +220,10 @@ export class ChatRoom extends LitElement {
     for (const timer of this.typingTimers.values()) clearTimeout(timer);
     this.typingTimers.clear();
 
-    // Clean up any lingering audio elements.
-    for (const audio of this.audioElements.values()) {
-      audio.pause();
-      audio.srcObject = null;
-      audio.remove();
+    // Clean up all remote audio elements we own.
+    for (const trackId of [...this.audioElements.keys()]) {
+      this.removeAudioElement(trackId);
     }
-    this.audioElements.clear();
 
     window.removeEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.removeEventListener("focus", this.boundHandleVisibilityChange);
@@ -240,6 +249,19 @@ export class ChatRoom extends LitElement {
   }
 
   @state() private _activeUsersCount = 0;
+
+  /**
+   * Tear down a single remote audio element by track ID.
+   * Called both from track.onended and from disconnectedCallback.
+   */
+  private removeAudioElement(trackId: string): void {
+    const audio = this.audioElements.get(trackId);
+    if (!audio) return;
+    audio.pause();
+    audio.srcObject = null;
+    audio.remove();
+    this.audioElements.delete(trackId);
+  }
 
   private updateAdapterIdentity(): void {
     this.controller.updateIdentity({ room: this.roomId, username: this.username });

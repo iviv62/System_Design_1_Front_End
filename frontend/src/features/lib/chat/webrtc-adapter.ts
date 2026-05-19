@@ -28,15 +28,16 @@ export type WebRTCAdapterEvents = {
   onParticipantsChange?: (participants: Participant[]) => void;
   /**
    * Fired when a remote audio track is received.
-   * The UI layer must create an <audio> element, set srcObject, and manage
-   * its lifecycle. This adapter makes no direct document.* calls.
+   *
+   * `safeStream` is a single-track MediaStream wrapping `track` — safe to
+   * assign directly to an <audio> element's srcObject. The adapter creates
+   * it here so callers never have to reason about whether streams[0] from
+   * RTCTrackEvent is populated (it varies by SFU implementation).
+   *
+   * The UI layer owns the <audio> element lifecycle: create, append to
+   * document.body, play, and clean up when the track ends.
    */
-  onAudioTrack?: (track: MediaStreamTrack, streams: readonly MediaStream[]) => void;
-  /**
-   * Fired when a remote audio track ends (peer disconnected or stream stopped).
-   * The UI layer should pause, clear srcObject, and remove its <audio> element.
-   */
-  onAudioTrackEnded?: (trackId: string) => void;
+  onAudioTrack?: (track: MediaStreamTrack, safeStream: MediaStream) => void;
   onScreenShareStarted?: (stream: MediaStream | null, sharerName: string, isLocal: boolean) => void;
   onScreenShareStopped?: () => void;
   onSystemNotice?: (text: string) => void;
@@ -54,8 +55,7 @@ const FALLBACK_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19
  *  - Participant state tracking
  *
  * This class makes NO direct document.* calls. All UI side-effects are
- * delegated to the caller via events (onAudioTrack, onAudioTrackEnded,
- * onScreenShareStarted, onScreenShareStopped).
+ * delegated to the caller via events.
  */
 export class WebRTCAdapter {
   // ── Main audio PC ───────────────────────────────────────────────────────────
@@ -424,11 +424,12 @@ export class WebRTCAdapter {
       this.monitor.startMonitoring((metrics) => this.events.onConnectionMetrics?.(metrics));
     }
 
-    peer.ontrack = ({ track, streams }) => {
+    peer.ontrack = ({ track }) => {
       if (track.kind !== "audio") return;
-      // Delegate entirely to the UI layer — no document.* calls here.
-      this.events.onAudioTrack?.(track, streams);
-      track.onended = () => this.events.onAudioTrackEnded?.(track.id);
+      // Wrap into a guaranteed single-track stream — safe regardless of SFU behaviour.
+      // The UI layer owns the <audio> element; this adapter stays DOM-free.
+      const safeStream = new MediaStream([track]);
+      this.events.onAudioTrack?.(track, safeStream);
     };
 
     peer.oniceconnectionstatechange = () => {
