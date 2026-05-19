@@ -119,10 +119,10 @@ export class ChatRoom extends LitElement {
           this._voiceParticipants = participants as VoiceParticipant[];
         },
         onScreenShareStarted: (stream, sharerName, isLocal) => {
-          // stream may be null on the initial WS notification (before the
-          // WebRTC offer/track has arrived). We still set _screenSharingUser
-          // so the viewer mounts immediately and shows the loading state.
-          // A second call from ontrack will pass the real MediaStream.
+          // Always set the sharer name so the viewer mounts immediately (loading state).
+          // Only overwrite the stream if the new value is non-null — the first call from
+          // screen_share_started passes null (WS notification before WebRTC track arrives);
+          // the second call from ontrack passes the real MediaStream.
           this._screenSharingUser = sharerName.replace(" (you)", "") || this.username;
           if (stream !== null) {
             this._screenShareStream = stream;
@@ -443,12 +443,430 @@ export class ChatRoom extends LitElement {
 
   private async handleScreenShareToggle() {
     try {
-      if (this.webrtc.isScreenSharing) {
+      if (this._isScreenSharing) {
         this.webrtc.stopScreenShare();
       } else {
         await this.webrtc.startScreenShare();
       }
-    } catch (err) {
-      console.error("[ChatRoom] screen share toggle failed", err);
+    } catch (error) {
+      console.error("[ChatRoom] screen share toggle failed", error);
+      this.addSystemNotice("Screen sharing could not be updated.");
     }
   }
+
+  // Scroll helpers
+  private handleMessagesUpdated() {
+    this.applyPendingScrollEffect();
+    this.applyUnreadFallbackFromSnapshot();
+    this.checkAndClearUnreadMarker();
+  }
+
+  private handleVisibilityChange() {
+    this.checkAndClearUnreadMarker();
+  }
+
+  private checkAndClearUnreadMarker() {
+    if (this.hasUnseenMessages && this.isPageActive() && this.isMessagesNearBottom()) {
+      this.clearUnreadMarker();
+    }
+  }
+
+  private applyPendingScrollEffect() {
+    const messagesEl = getMessagesContainer(this);
+    if (messagesEl && this.pendingAutoScroll && !this.pendingScrollToAnchor) {
+      this.runBottomScroll(messagesEl);
+      this.pendingAutoScroll = false;
+      return;
+    }
+    if (this.pendingScrollToAnchor) {
+      this.pendingScrollToAnchor = false;
+      scrollToUnreadBoundary(this, "instant");
+    }
+  }
+
+  private applyUnreadFallbackFromSnapshot() {
+    if (
+      this.isLoadingHistory ||
+      this.unreadAnchorMessageId ||
+      this.pendingUnreadCount === null ||
+      this.pendingUnreadCount <= 0
+    )
+      return;
+    const anchorId = getUnreadAnchorFromSnapshot(
+      this.messages,
+      this.username,
+      this.pendingUnreadCount,
+    );
+    if (anchorId) {
+      this.markUnreadFromMessage(anchorId);
+      this.pendingScrollToAnchor = true;
+    }
+    this.pendingUnreadCount = null;
+  }
+
+  private runBottomScroll(messagesEl: HTMLElement) {
+    this.isAutoScrolling = true;
+    scrollMessagesToBottom(messagesEl, () => {
+      this.isAutoScrolling = false;
+    });
+  }
+
+  private markUnreadFromMessage(messageId: string) {
+    this.unreadAnchorMessageId = messageId;
+    this.hasUnseenMessages = true;
+  }
+
+  private scheduleAutoScroll() {
+    this.pendingAutoScroll = true;
+  }
+  private scheduleScrollToUnreadBoundary() {
+    this.pendingScrollToAnchor = true;
+  }
+  private isPageActive(): boolean {
+    return document.visibilityState === "visible" && document.hasFocus();
+  }
+  private isMessagesNearBottom(): boolean {
+    return isMessagesNearBottom(this, DEFAULT_NEAR_BOTTOM_THRESHOLD_PX);
+  }
+
+  private clearUnreadMarker() {
+    this.unreadAnchorMessageId = null;
+    this.hasUnseenMessages = false;
+  }
+
+  private handleImagePreview(e: CustomEvent<{ url: string }>) {
+    this._previewImageUrl = e.detail.url;
+  }
+  private closePreview() {
+    this._previewImageUrl = null;
+  }
+
+  private handleMessagesScroll() {
+    if (this.isAutoScrolling) return;
+    const nearBottom = this.isMessagesNearBottom();
+    this.isScrolledUp = !nearBottom;
+    if (nearBottom && this.hasUnseenMessages) this.clearUnreadMarker();
+  }
+
+  private forceScrollToBottom() {
+    const messagesEl = getMessagesContainer(this);
+    if (messagesEl) {
+      this.isAutoScrolling = true;
+      scrollMessagesToBottom(messagesEl, () => {
+        this.isAutoScrolling = false;
+        this.isScrolledUp = false;
+      });
+    }
+  }
+
+  private addMessage(msg: UiMessage) {
+    console.log(
+      `[ChatRoom] addMessage — id=${msg.id} kind=${msg.kind} from=${msg.username} status=${(msg as { status?: string }).status ?? "n/a"}`,
+    );
+    const isNearBottom = this.isMessagesNearBottom();
+    if (msg.kind === "user") {
+      if (!this.trackIncomingUserMessage(msg, isNearBottom)) return;
+    } else if (
+      shouldAutoScrollForNonUserMessage({
+        isLoadingHistory: this.isLoadingHistory,
+        isPageActive: this.isPageActive(),
+        isNearBottom,
+        hasUnseenMessages: this.hasUnseenMessages,
+      })
+    ) {
+      this.scheduleAutoScroll();
+    }
+    this.messages = [...this.messages, msg];
+  }
+
+  private trackIncomingUserMessage(message: UiMessage, isNearBottom: boolean): boolean {
+    console.log(
+      `[ChatRoom] trackIncomingUserMessage — id=${message.id} seenAlready=${this.seenMessageIds.has(message.id)}`,
+    );
+    if (this.seenMessageIds.has(message.id)) return false;
+    this.seenMessageIds.add(message.id);
+    const isOwnMessage = message.username === this.username;
+    if (
+      shouldAnchorFirstReplayMessage({
+        waitingForFirstReplayMessage: this.awaitingFirstReplayMessage,
+        unreadAnchorMessageId: this.unreadAnchorMessageId,
+        isOwnMessage,
+      })
+    ) {
+      this.markUnreadFromMessage(message.id);
+      this.scheduleScrollToUnreadBoundary();
+    }
+    this.awaitingFirstReplayMessage = false;
+    if (
+      shouldAutoScrollForUserMessage({
+        isOwnMessage,
+        isLoadingHistory: this.isLoadingHistory,
+        isPageActive: this.isPageActive(),
+        isNearBottom,
+        hasUnseenMessages: this.hasUnseenMessages,
+      })
+    ) {
+      this.scheduleAutoScroll();
+      return true;
+    }
+    if (!isNearBottom) {
+      if (!this.unreadAnchorMessageId) this.markUnreadFromMessage(message.id);
+      else this.hasUnseenMessages = true;
+    }
+    return true;
+  }
+
+  private scrollToLastSeen() {
+    scrollToUnreadBoundary(this, "smooth");
+  }
+  private getUnreadCount(): number {
+    return getUnreadCount(this.messages, this.unreadAnchorMessageId, this.username);
+  }
+
+  private addSystemNotice(text: string) {
+    this.addMessage({
+      id: `sys-${Date.now()}-${Math.random()}`,
+      kind: "system",
+      username: "",
+      text,
+      createdAt: new Date().toISOString(),
+      reactions: {},
+    });
+  }
+
+  private applyReactionUpdate(update: ReactionUpdate) {
+    if (update.room && update.room !== this.roomId) return;
+    this.messages = this.messages.map((message) => {
+      if (message.id !== update.messageId || message.kind !== "user") return message;
+      return { ...message, reactions: update.reactions };
+    });
+  }
+
+  private async handleMessageReactionToggle(e: CustomEvent<{ messageId: string; emoji: string }>) {
+    const { messageId, emoji } = e.detail;
+    if (!messageId || !emoji) return;
+    const username = this.username.trim();
+    if (!username) return;
+    const message = this.messages.find((item) => item.id === messageId && item.kind === "user");
+    if (!message) return;
+    const alreadyReacted = (message.reactions[emoji] ?? []).includes(username);
+    try {
+      const response = alreadyReacted
+        ? await removeMessageReaction(this.roomId, messageId, username, emoji)
+        : await addMessageReaction(this.roomId, messageId, username, emoji);
+      this.applyReactionUpdate({
+        kind: "updated",
+        room: this.roomId,
+        messageId: response.message_id,
+        reactions: response.reactions,
+      });
+    } catch {
+      this.addSystemNotice("Could not update reaction. Please try again.");
+    }
+  }
+
+  private async handleMessageSubmit(e: CustomEvent<{ text: string; imageFile?: File }>) {
+    const text = e.detail.text.trim();
+    const imageFile = e.detail.imageFile;
+    if (!text && !imageFile) return;
+
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      this.isUploadingImage = true;
+      try {
+        const uploaded = await uploadChatImage(imageFile);
+        imageUrl = uploaded.url;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Image upload failed. Please try again.";
+        this.addSystemNotice(message);
+        return;
+      } finally {
+        this.isUploadingImage = false;
+      }
+    }
+
+    const clientMsgId = this.controller.send({ text, imageUrl });
+    if (!clientMsgId) {
+      this.addSystemNotice("Message could not be sent because the connection is not ready.");
+      return;
+    }
+
+    const optimisticMsg: UiMessage = {
+      id: clientMsgId,
+      clientId: clientMsgId,
+      kind: "user",
+      username: this.username,
+      text,
+      imageUrl,
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      status: "pending",
+    };
+    console.log(`[ChatRoom] adding optimistic message — clientId=${clientMsgId}`);
+    this.addMessage(optimisticMsg);
+  }
+
+  private shouldShowMetaForMessage(index: number): boolean {
+    const current = this.messages[index];
+    const next = this.messages[index + 1];
+    if (!current || current.kind !== "user") return true;
+    if (!next || next.kind !== "user") return true;
+    return current.username !== next.username;
+  }
+
+  render() {
+    const unreadCount = this.getUnreadCount();
+    return html`
+      <section
+        class="chat-room ${this.themeCtrl.theme === "dark"
+          ? "chat-room--dark"
+          : "chat-room--light"}"
+      >
+        <div class="chat-room__background">
+          <canvas id="starsCanvas" class="stars-layer"></canvas>
+          <div class="nebula nebula-1"></div>
+          <div class="nebula nebula-2"></div>
+          <div class="nebula nebula-3"></div>
+          <div class="nebula nebula-4"></div>
+        </div>
+
+        <chat-room-header
+          .roomName=${this.roomName}
+          .roomId=${this.roomId}
+          .username=${this.username}
+          .theme=${this.themeCtrl.theme}
+          .isReconnecting=${this.isReconnecting}
+          .onlineCount=${this._activeUsersCount}
+          .voiceState=${this._voiceState}
+          .showMembers=${this._showMembers}
+          @theme-toggle=${this.toggleTheme}
+          @voice-start=${this.handleVoiceStart}
+          @voice-stop=${this.handleVoiceStop}
+          @toggle-members=${this.handleToggleMembers}
+        ></chat-room-header>
+
+        <div class="chat-room__container">
+          <div class="chat-room__chat-pane">
+            ${this.inCall
+              ? this.showCallView
+                ? html`
+                    <chat-active-call
+                      .callState=${this._voiceState}
+                      .roomName=${this.roomName}
+                      .username=${this.username}
+                      .participants=${this._voiceParticipants}
+                      .isMuted=${this._isMuted}
+                      .isScreenSharing=${this._isScreenSharing}
+                      .screenSharingUser=${this._screenSharingUser}
+                      .screenShareStream=${this._screenShareStream}
+                      .connectionMetrics=${this._connectionMetrics}
+                      .backendCallStartTime=${this._callStartTime}
+                      @voice-stop=${this.handleActiveCallVoiceStop}
+                      @return-to-chat=${this.handleReturnToChat}
+                      @voice-mute-toggle=${this.handleMuteToggle}
+                      @voice-volume-change=${this.handleVolumeChange}
+                      @screen-share-toggle=${this.handleScreenShareToggleRequest}
+                    ></chat-active-call>
+                  `
+                : html`
+                    <chat-voice-bar
+                      .state=${this._voiceState}
+                      .participants=${this._voiceParticipants}
+                      .username=${this.username}
+                      .isMuted=${this._isMuted}
+                      .backendCallStartTime=${this._callStartTime}
+                      @return-to-call=${this.handleReturnToCall}
+                      @voice-stop=${this.handleVoiceStop}
+                      @voice-dismiss=${this.handleVoiceDismiss}
+                      @voice-mute-toggle=${this.handleMuteToggle}
+                    ></chat-voice-bar>
+                  `
+              : nothing}
+
+            <div
+              class="chat-room__messages"
+              @scroll=${this.handleMessagesScroll}
+              @image-preview=${this.handleImagePreview}
+              style="${this.showCallView ? "display: none;" : ""}"
+            >
+              ${this.isLoadingHistory
+                ? html`<div class="message message--system">Loading history…</div>`
+                : this.messages.length === 0
+                  ? html`<div class="message message--system">No messages yet. Say hello!</div>`
+                  : repeat(
+                      this.messages,
+                      (m) => m.id,
+                      (m, index) => html`
+                        ${this.unreadAnchorMessageId === m.id
+                          ? html`<unread-divider data-unread-anchor></unread-divider>`
+                          : nothing}
+                        <chat-message-item
+                          .message=${m}
+                          .username=${this.username}
+                          .showMeta=${this.shouldShowMetaForMessage(index)}
+                          @message-reaction-toggle=${this.handleMessageReactionToggle}
+                        ></chat-message-item>
+                      `,
+                    )}
+              ${this.hasUnseenMessages && unreadCount > 0
+                ? html`
+                    <button
+                      class="chat-room__jump-last-seen"
+                      @click=${this.scrollToLastSeen}
+                      title="Jump to first unread message"
+                    >
+                      ${unreadCount} unread • Scroll to last seen
+                    </button>
+                  `
+                : this.isScrolledUp
+                  ? html`
+                      <button
+                        class="chat-room__jump-bottom"
+                        @click=${this.forceScrollToBottom}
+                        title="Jump to bottom"
+                      >
+                        Scroll to bottom ↓
+                      </button>
+                    `
+                  : nothing}
+            </div>
+
+            <chat-room-composer
+              .submitting=${this.isUploadingImage}
+              @message-submit=${this.handleMessageSubmit}
+              @user-typing=${this.handleUserTyping}
+              style="${this.showCallView ? "display: none;" : ""}"
+            ></chat-room-composer>
+          </div>
+
+          ${this._showMembers
+            ? html`
+                <chat-room-users
+                  .users=${this._activeUsers}
+                  .typingUsers=${Array.from(this._typingUsers)}
+                  .currentUsername=${this.username}
+                  .loading=${this.isLoadingHistory}
+                ></chat-room-users>
+              `
+            : nothing}
+        </div>
+
+        ${this._previewImageUrl
+          ? html`
+              <chat-image-preview
+                .imageUrl=${this._previewImageUrl}
+                @close-preview=${this.closePreview}
+              ></chat-image-preview>
+            `
+          : nothing}
+      </section>
+    `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "chat-room": ChatRoom;
+  }
+}
