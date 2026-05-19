@@ -1,13 +1,8 @@
 import { LitElement, html, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import { logoIconSm } from "./landing-icons";
-import footerStylesRaw from "../../../../styles/landing/landing-footer.styles.scss?inline";
+import footerStylesRaw from "../../../styles/landing/landing-footer.styles.scss?inline";
 
-/**
- * <landing-footer>
- *
- * Stateless footer: copyright and static social/policy links.
- */
 @customElement("landing-footer")
 export class LandingFooter extends LitElement {
   static styles = unsafeCSS(footerStylesRaw);

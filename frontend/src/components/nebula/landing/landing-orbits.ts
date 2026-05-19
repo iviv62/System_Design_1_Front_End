@@ -2,15 +2,8 @@ import { LitElement, html, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import { ORBIT_USERS } from "./landing-orbit-data";
 import { userIcon } from "./landing-icons";
-import orbitsStylesRaw from "../../../../styles/landing/landing-orbits.styles.scss?inline";
+import orbitsStylesRaw from "../../../styles/landing/landing-orbits.styles.scss?inline";
 
-/**
- * <landing-orbits>
- *
- * Renders the "Discover Your Common Orbits" section.
- * All orbit-specific CSS variables (--orbit-r, --orbit-speed, --orbit-delay)
- * are scoped inside this component's shadow DOM.
- */
 @customElement("landing-orbits")
 export class LandingOrbits extends LitElement {
   static styles = unsafeCSS(orbitsStylesRaw);

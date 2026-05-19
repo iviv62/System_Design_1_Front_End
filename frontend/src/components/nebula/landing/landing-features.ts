@@ -1,12 +1,7 @@
 import { LitElement, html, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
-import featuresStylesRaw from "../../../../styles/landing/landing-features.styles.scss?inline";
+import featuresStylesRaw from "../../../styles/landing/landing-features.styles.scss?inline";
 
-/**
- * <landing-features>
- *
- * Stateless features grid: chat mockup + four feature cards.
- */
 @customElement("landing-features")
 export class LandingFeatures extends LitElement {
   static styles = unsafeCSS(featuresStylesRaw);

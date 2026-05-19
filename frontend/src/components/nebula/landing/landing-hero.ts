@@ -2,13 +2,8 @@ import { LitElement, html, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import { githubStarIcon, starIcon } from "./landing-icons";
 import "../../ui/app-button";
-import heroStylesRaw from "../../../../styles/landing/landing-hero.styles.scss?inline";
+import heroStylesRaw from "../../../styles/landing/landing-hero.styles.scss?inline";
 
-/**
- * <landing-hero>
- *
- * Stateless hero section: version badge, headline, subtitle, CTA buttons.
- */
 @customElement("landing-hero")
 export class LandingHero extends LitElement {
   static styles = unsafeCSS(heroStylesRaw);

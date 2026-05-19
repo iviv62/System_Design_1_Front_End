@@ -2,15 +2,8 @@ import { LitElement, html, unsafeCSS } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { handleLink } from "../../../utils/navigate";
 import { sunIcon, moonIcon, logoIcon } from "./landing-icons";
-import headerStylesRaw from "../../../../styles/landing/landing-header.styles.scss?inline";
+import headerStylesRaw from "../../../styles/landing/landing-header.styles.scss?inline";
 
-/**
- * <landing-header theme="dark|light">
- *
- * Renders the top navigation bar.
- * Dispatches a bubbling, composed `theme-toggle` CustomEvent when the
- * theme button is clicked so the parent can orchestrate the switch.
- */
 @customElement("landing-header")
 export class LandingHeader extends LitElement {
   static styles = unsafeCSS(headerStylesRaw);
