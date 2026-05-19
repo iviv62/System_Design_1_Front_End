@@ -13,6 +13,7 @@ export class ChatScreenShareViewer extends LitElement {
   static styles = unsafeCSS(chatActiveCallStylesRaw);
 
   @property() sharingUser: string | null = null;
+  /** May be null while the WebRTC offer/track is in flight (loading state). */
   @property({ attribute: false }) stream: MediaStream | null = null;
   @property({ type: Boolean }) isLoading = false;
 
@@ -25,6 +26,10 @@ export class ChatScreenShareViewer extends LitElement {
    * `@query` returns undefined and `bindStream()` silently exits.
    * `firstUpdated()` is guaranteed to run after the first render is in the
    * DOM, so the @query resolves and the srcObject is correctly attached.
+   *
+   * When the viewer is mounted with stream=null (loading state while waiting
+   * for the WebRTC track), this is a no-op — the subsequent stream update
+   * will be handled by updated() once the real stream arrives.
    */
   firstUpdated() {
     if (this.stream) void this.bindStream();
@@ -32,7 +37,7 @@ export class ChatScreenShareViewer extends LitElement {
 
   updated(changedProperties: Map<string, unknown>) {
     // Handles all subsequent stream changes after initial mount:
-    // - remote track arriving after the viewer is already in the DOM
+    // - real stream arriving after the viewer was mounted with stream=null
     // - stream being replaced mid-share
     // - stream cleared when sharing stops
     if (changedProperties.has("stream")) {
