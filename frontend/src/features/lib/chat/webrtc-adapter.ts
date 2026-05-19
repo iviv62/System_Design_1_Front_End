@@ -20,7 +20,24 @@ export type WebRTCAdapterEvents = {
   onStatusChange?: (status: "disconnected" | "connected" | "error", message?: string) => void;
   onCallStateChange?: (state: "idle" | "calling" | "active" | "error") => void;
   onParticipantsChange?: (participants: Participant[]) => void;
-  onAudioTrack?: (track: MediaStreamTrack, streams: readonly MediaStream[]) => void;
+  /**
+   * Fired when a remote audio track arrives.
+   * `safeStream` is a new MediaStream wrapping only this track — safe to set
+   * as `<audio>.srcObject` directly without cross-browser quirks.
+   * The UI layer is responsible for creating, mounting, and destroying the
+   * <audio> element. Use `track.id` as a stable key.
+   */
+  onAudioTrack?: (track: MediaStreamTrack, safeStream: MediaStream) => void;
+  /**
+   * Fired when the call ends (teardown). The UI layer should remove all
+   * <audio> elements it created via onAudioTrack.
+   */
+  onAudioTracksCleared?: () => void;
+  /**
+   * Fired when the user changes the volume slider. The UI layer should apply
+   * the new volume (0-100) to all active <audio> elements.
+   */
+  onVolumeChange?: (volume: number) => void;
   onScreenShareStarted?: (stream: MediaStream | null, sharerName: string, isLocal: boolean) => void;
   onScreenShareStopped?: () => void;
   onSystemNotice?: (text: string) => void;
@@ -35,7 +52,9 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
  *  - The main audio SFU RTCPeerConnection (server-offer flow)
  *  - P2P screen-share mesh (client-offer, WS-relayed signaling)
  *  - Participant state tracking
- *  - Remote audio element lifecycle
+ *
+ * The adapter is intentionally DOM-free. All audio element lifecycle
+ * (create, mount, volume, destroy) is delegated to the UI layer via events.
  *
  * The WS connection itself stays in ChatRoomController for chat/presence;
  * this adapter receives already-parsed voice events via handleVoiceEvent()
@@ -345,7 +364,7 @@ export class WebRTCAdapter {
     }
   }
 
-  // ── Mute / volume ───────────────────────────────────────────────────────────
+  // ── Mute ────────────────────────────────────────────────────────────────────
   setMuted(muted: boolean): void {
     this._isMuted = muted;
     this.micStream?.getAudioTracks().forEach((t) => {
@@ -353,10 +372,13 @@ export class WebRTCAdapter {
     });
   }
 
+  /**
+   * Notify the UI layer to update volume on all active audio elements.
+   * Volume control is intentionally delegated — the adapter holds no references
+   * to DOM elements.
+   */
   setVolume(volume: number): void {
-    document.querySelectorAll<HTMLAudioElement>("audio[data-webrtc-stream]").forEach((el) => {
-      el.volume = Math.max(0, Math.min(1, volume / 100));
-    });
+    this.events.onVolumeChange?.(volume);
   }
 
   // ── Full teardown ───────────────────────────────────────────────────────────
@@ -401,8 +423,8 @@ export class WebRTCAdapter {
     this.pc?.close();
     this.pc = null;
 
-    // Remote audio elements
-    document.querySelectorAll("audio[data-webrtc-stream]").forEach((el) => el.remove());
+    // Notify the UI layer to clean up all audio elements it owns
+    this.events.onAudioTracksCleared?.();
 
     this.myPeerId = null;
     this.setParticipants([]);
@@ -420,22 +442,12 @@ export class WebRTCAdapter {
       });
     }
 
-    peer.ontrack = ({ track, streams }) => {
+    peer.ontrack = ({ track }) => {
       if (track.kind !== "audio") return;
-
-      this.events.onAudioTrack?.(track, streams);
-
-      const singleTrackStream = new MediaStream([track]);
-      if (document.querySelector(`audio[data-webrtc-stream="${track.id}"]`)) return;
-
-      const audio = document.createElement("audio");
-      audio.autoplay = true;
-      audio.dataset["webrtcStream"] = track.id;
-      audio.srcObject = singleTrackStream;
-      audio.style.display = "none";
-      document.body.appendChild(audio);
-
-      track.onended = () => audio.remove();
+      // Wrap in a single-track stream — this is the safe cross-browser pattern.
+      // The UI layer receives this and owns the <audio> element lifecycle.
+      const safeStream = new MediaStream([track]);
+      this.events.onAudioTrack?.(track, safeStream);
     };
 
     peer.oniceconnectionstatechange = () => {
