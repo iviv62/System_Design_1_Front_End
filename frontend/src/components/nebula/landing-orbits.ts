@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS } from "lit";
+import { LitElement, html, css } from "lit";
 import { customElement } from "lit/decorators.js";
 import { ORBIT_USERS } from "./landing-orbit-data";
 import { userIcon } from "./landing-icons";
