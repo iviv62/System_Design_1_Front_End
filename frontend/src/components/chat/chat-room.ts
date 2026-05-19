@@ -45,6 +45,7 @@ import "./chat-voice-bar";
 import "./chat-active-call";
 import "./chat-image-preview";
 import "./chat-room-users";
+import "./chat-starfield";
 
 @customElement("chat-room")
 export class ChatRoom extends LitElement {
@@ -72,9 +73,6 @@ export class ChatRoom extends LitElement {
   @state() private isScrolledUp = false;
   @state() private _showMembers = true;
   @state() private _activeUsers: string[] = [];
-
-  private _starsAnimId: number | null = null;
-  private readonly boundResize = this.handleResize.bind(this);
 
   private awaitingFirstReplayMessage = false;
   private pendingAutoScroll = false;
@@ -119,9 +117,15 @@ export class ChatRoom extends LitElement {
           this._voiceParticipants = participants as VoiceParticipant[];
         },
         onScreenShareStarted: (stream, sharerName, isLocal) => {
-          this._screenShareStream = stream;
-          this._isScreenSharing = isLocal || this.webrtc.isScreenSharing;
+          // Always set the sharer name so the viewer mounts immediately (loading state).
+          // Only overwrite the stream if the new value is non-null — the first call from
+          // screen_share_started passes null (WS notification before WebRTC track arrives);
+          // the second call from ontrack passes the real MediaStream.
           this._screenSharingUser = sharerName.replace(" (you)", "") || this.username;
+          if (stream !== null) {
+            this._screenShareStream = stream;
+          }
+          this._isScreenSharing = isLocal || this.webrtc.isScreenSharing;
           this.requestUpdate();
         },
         onScreenShareStopped: () => {
@@ -169,15 +173,10 @@ export class ChatRoom extends LitElement {
 
   private readonly boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
 
-  firstUpdated() {
-    this._initStarfield();
-  }
-
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.addEventListener("focus", this.boundHandleVisibilityChange);
-    window.addEventListener("resize", this.boundResize);
     this.updateAdapterIdentity();
     this.controller.start();
     void this.loadUnreadCountSnapshot();
@@ -186,71 +185,20 @@ export class ChatRoom extends LitElement {
   }
 
   disconnectedCallback(): void {
+    // Flush all pending typing timers so their callbacks don't fire into a
+    // detached component, dispatch events on a dead node, or hold this instance
+    // in memory for up to 5 s after unmount.
+    for (const timer of this.typingTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.typingTimers.clear();
+
     window.removeEventListener("visibilitychange", this.boundHandleVisibilityChange);
     window.removeEventListener("focus", this.boundHandleVisibilityChange);
-    window.removeEventListener("resize", this.boundResize);
-    if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
     this.controller.stop();
     this.webrtc.destroy();
     this.resetVoiceUiState();
     super.disconnectedCallback();
-  }
-
-  private handleResize() {
-    this._initStarfield();
-  }
-
-  private _initStarfield() {
-    const canvas = this.shadowRoot?.getElementById("starsCanvas") as HTMLCanvasElement | null;
-    if (!canvas) return;
-    if (this._starsAnimId !== null) cancelAnimationFrame(this._starsAnimId);
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const isDark = this.themeCtrl.theme === "dark";
-    const COUNT = isDark ? 130 : 60;
-
-    interface Star {
-      x: number; y: number;
-      radius: number;
-      alpha: number;
-      speed: number;
-      color: string;
-    }
-
-    const STAR_COLORS_DARK = ["#ffffff", "#c8d8ff", "#ffd6e0", "#d0f0ff"];
-    const STAR_COLORS_LIGHT = ["#334155", "#475569", "#1e293b"];
-
-    const stars: Star[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      radius: 0.4 + Math.random() * (isDark ? 1.3 : 0.8),
-      alpha: Math.random(),
-      speed: 0.004 + Math.random() * 0.012,
-      color: isDark
-        ? STAR_COLORS_DARK[Math.floor(Math.random() * STAR_COLORS_DARK.length)]
-        : STAR_COLORS_LIGHT[Math.floor(Math.random() * STAR_COLORS_LIGHT.length)],
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const star of stars) {
-        star.alpha += star.speed;
-        if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
-        ctx.globalAlpha = Math.max(0.08, Math.min(1, star.alpha));
-        ctx.fillStyle = star.color;
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      this._starsAnimId = requestAnimationFrame(draw);
-    };
-
-    draw();
   }
 
   updated(changedProperties: PropertyValues) {
@@ -718,7 +666,7 @@ export class ChatRoom extends LitElement {
           : "chat-room--light"}"
       >
         <div class="chat-room__background">
-          <canvas id="starsCanvas" class="stars-layer"></canvas>
+          <chat-starfield .theme=${this.themeCtrl.theme}></chat-starfield>
           <div class="nebula nebula-1"></div>
           <div class="nebula nebula-2"></div>
           <div class="nebula nebula-3"></div>

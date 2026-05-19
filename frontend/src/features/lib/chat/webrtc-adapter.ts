@@ -21,7 +21,7 @@ export type WebRTCAdapterEvents = {
   onCallStateChange?: (state: "idle" | "calling" | "active" | "error") => void;
   onParticipantsChange?: (participants: Participant[]) => void;
   onAudioTrack?: (track: MediaStreamTrack, streams: readonly MediaStream[]) => void;
-  onScreenShareStarted?: (stream: MediaStream, sharerName: string, isLocal: boolean) => void;
+  onScreenShareStarted?: (stream: MediaStream | null, sharerName: string, isLocal: boolean) => void;
   onScreenShareStopped?: () => void;
   onSystemNotice?: (text: string) => void;
   onVoiceSignal?: (payload: Record<string, unknown>) => void;
@@ -303,18 +303,27 @@ export class WebRTCAdapter {
         if (sharerPeerId !== this.myPeerId) {
           this.currentSharerPeerId = sharerPeerId;
           this.currentSharerName = String(msg["username"] ?? "");
+          // Mount the viewer immediately with stream=null so the loading state
+          // is shown while we wait for the WebRTC offer/track to arrive.
+          // The stream will be passed via onScreenShareStarted once ontrack fires
+          // in handleScreenOffer.
+          this.events.onScreenShareStarted?.(null, this.currentSharerName, false);
           this.events.onSystemNotice?.(`${msg["username"]} started sharing their screen`);
         }
         break;
       }
       case "screen_share_stopped": {
-        const sharerPeerId = String(msg["peer_id"] ?? "");
-        if (this.currentSharerPeerId === sharerPeerId) {
-          this.currentSharerPeerId = null;
-          this.currentSharerName = null;
-          this.events.onScreenShareStopped?.();
-        }
-        this.events.onSystemNotice?.(`${msg["username"]} stopped sharing their screen`);
+        // Always clean up, regardless of whether currentSharerPeerId matches.
+        // The guard was overly defensive and caused the viewer to persist when
+        // the stored peerId was stale (e.g. after a reconnect or second share).
+        const stoppedName = String(msg["username"] ?? "");
+        this.currentSharerPeerId = null;
+        this.currentSharerName = null;
+        this.incomingSharePc?.close();
+        this.incomingSharePc = null;
+        this.pendingIceCandidates = [];
+        this.events.onScreenShareStopped?.();
+        this.events.onSystemNotice?.(`${stoppedName} stopped sharing their screen`);
         break;
       }
       case "screen_offer":
@@ -485,6 +494,11 @@ export class WebRTCAdapter {
 
     this.incomingSharePc.ontrack = ({ track, streams }) => {
       const stream = streams[0] ?? new MediaStream([track]);
+      // Update the viewer with the real stream now that the WebRTC track has arrived.
+      // The viewer was already mounted by the screen_share_started WS event handler
+      // with stream=null, so this call updates the existing component rather than
+      // triggering a conditional-render mount — firstUpdated() will NOT fire here,
+      // only updated() with changedProperties.has("stream") = true.
       this.events.onScreenShareStarted?.(stream, this.currentSharerName ?? "remote", false);
       track.onended = () => this.events.onScreenShareStopped?.();
     };

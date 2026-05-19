@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: #111827; // dark bg matching image
+  background: #111827;
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -164,9 +164,8 @@
   justify-content: center;
   aspect-ratio: 4/3;
   overflow: hidden;
-  border: 2px solid transparent; // for active speaker border
+  border: 2px solid transparent;
 
-  // Solo card: smaller avatar
   &:only-child .active-call__avatar {
     width: 80px;
     height: 80px;
@@ -261,6 +260,18 @@
     box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.35);
   }
 
+  // Muted state: replaces the old inline style hack
+  &--muted {
+    background-color: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+
+    &:hover {
+      background-color: #dc2626;
+      border-color: #dc2626;
+    }
+  }
+
   &--end {
     background: #ef4444;
     color: white;
@@ -284,6 +295,67 @@
   right: 1.5rem;
   display: flex;
   gap: 1rem;
+}
+
+// ---------------------------------------------------------------------------
+// Volume popup — previously rendered as inline styles inside the template.
+// All layout, sizing and slider-thumb rules live here.
+// ---------------------------------------------------------------------------
+
+.active-call__volume-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background-color: #1f2937;
+  border-radius: 8px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.active-call__volume-label {
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.active-call__volume-slider {
+  appearance: none;
+  width: 100px;
+  height: 6px;
+  background: #374151;
+  accent-color: #f59e0b;
+  border-radius: 3px;
+  outline: none;
+  margin: 40px 0;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #f59e0b;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #f59e0b;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
 }
 
 .active-call__metrics {

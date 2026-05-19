@@ -3,10 +3,13 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import chatActiveCallStylesRaw from "../../styles/chat-active-call.styles.scss?inline";
 import type { VoiceParticipant } from "../../features/lib/chat/chat-room-api";
 import type { ConnectionMetrics } from "../../features/lib/chat/connection-monitor";
+import { getInitials, getColorForUser } from "./chat-call-utils";
+import "./chat-participant-card";
+import "./chat-screen-share-viewer";
+import type { ChatScreenShareViewer } from "./chat-screen-share-viewer";
 import {
   iconWaveform,
   iconChat,
-  iconMaximize,
   iconVideoCameraOff,
   iconMonitor,
   iconMicOff,
@@ -18,6 +21,14 @@ import {
   iconExpand,
 } from "./chat-icons";
 
+/**
+ * Orchestration shell for the active voice-call overlay.
+ * Responsible for: call state, timer, participant dedup, volume, and toolbar events.
+ * Sub-component responsibilities:
+ *   - <chat-participant-card>     → individual participant tile rendering
+ *   - <chat-screen-share-viewer> → video stream binding, loading state, fullscreen
+ *   - chat-call-utils.ts         → pure avatar helpers (getInitials, getColorForUser)
+ */
 @customElement("chat-active-call")
 export class ChatActiveCall extends LitElement {
   static styles = unsafeCSS(chatActiveCallStylesRaw);
@@ -44,23 +55,52 @@ export class ChatActiveCall extends LitElement {
   @state() private showVolumeSlider = false;
   @state() private volume = 80;
   @state() private isScreenShareLoading = false;
-  @query(".active-call__screen-video") private screenVideoEl?: HTMLVideoElement;
+  /**
+   * Cached, deduped participant list. Recomputed in updated() only when
+   * `participants` or `username` changes — NOT on every timer tick.
+   * This prevents a Map + Array.from() allocation every second.
+   */
+  @state() private _uniqueParticipants: VoiceParticipant[] = [];
+
+  /**
+   * Direct reference to the screen-share sub-component.
+   * Used by handleScreenShareFullscreen() so the parent toolbar button
+   * can invoke the child's encapsulated fullscreen method without
+   * reaching into its shadow DOM via imperative DOM queries.
+   */
+  @query("chat-screen-share-viewer") private screenViewerEl?: ChatScreenShareViewer;
+
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private callStartTime = 0;
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.callState === "active") {
-      this.startTimer();
+  private rebuildUniqueParticipants() {
+    const map = new Map<string, VoiceParticipant>();
+    map.set(this.username, { peer_id: "self", username: this.username });
+    for (const p of this.participants) {
+      if (p.username !== this.username) {
+        map.set(p.username, p);
+      }
     }
+    this._uniqueParticipants = Array.from(map.values());
   }
 
   disconnectedCallback() {
-    this.stopTimer();
+    // Only stop the interval; do NOT reset the display here.
+    // The timer display resets when callState transitions away from "active".
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
     super.disconnectedCallback();
   }
 
   updated(changedProperties: Map<string, unknown>) {
+    // Rebuild the deduped participant list only when the source data changes,
+    // not on every timer tick.
+    if (changedProperties.has("participants") || changedProperties.has("username")) {
+      this.rebuildUniqueParticipants();
+    }
+
     if (changedProperties.has("callState")) {
       if (this.callState === "active") {
         this.startTimer();
@@ -71,11 +111,13 @@ export class ChatActiveCall extends LitElement {
 
     // If the backend start time arrives after callState is already active
     // (e.g. status fetch resolves after the WS join event), restart the timer
-    // so the elapsed offset is applied immediately.
+    // so the elapsed offset is applied immediately — but only if the value
+    // actually changed to avoid a flicker on parent re-renders.
     if (
       changedProperties.has("backendCallStartTime") &&
       this.callState === "active" &&
-      this.backendCallStartTime != null
+      this.backendCallStartTime != null &&
+      this.backendCallStartTime !== this.callStartTime / 1000
     ) {
       this.stopTimer();
       this.startTimer();
@@ -83,24 +125,7 @@ export class ChatActiveCall extends LitElement {
 
     if (changedProperties.has("screenShareStream") || changedProperties.has("screenSharingUser")) {
       this.isScreenShareLoading = Boolean(this.screenSharingUser && !this.screenShareStream);
-      void this.bindScreenShareVideo();
     }
-  }
-
-  private async bindScreenShareVideo() {
-    this.requestUpdate();
-    await this.updateComplete;
-    const video = this.screenVideoEl;
-    if (!video) return;
-
-    video.srcObject = this.screenShareStream ?? null;
-
-    if (!this.screenShareStream) return;
-
-    await video.play().catch(() => {
-      // Autoplay can be blocked transiently by browser policies; user interaction will recover.
-    });
-    this.isScreenShareLoading = false;
   }
 
   private startTimer() {
@@ -133,19 +158,6 @@ export class ChatActiveCall extends LitElement {
     this.timer = "00:00";
   }
 
-  private getInitials(name: string) {
-    return name ? name.substring(0, 2).toUpperCase() : "?";
-  }
-
-  private getColorForUser(name: string) {
-    const colors = ["#f59e0b", "#3b82f6", "#a855f7", "#ec4899", "#10b981", "#ef4444"];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  }
-
   private handleEndCall() {
     this.dispatchEvent(new CustomEvent("voice-stop", { bubbles: true, composed: true }));
   }
@@ -166,31 +178,17 @@ export class ChatActiveCall extends LitElement {
     this.dispatchEvent(new CustomEvent("screen-share-toggle", { bubbles: true, composed: true }));
   }
 
+  /**
+   * Delegates fullscreen control to the screen-share sub-component.
+   * The @query ref is null when no screen share is active (the viewer is
+   * conditionally rendered), so the optional-chain is intentional.
+   */
   private async handleScreenShareFullscreen() {
-    const video = this.screenVideoEl;
-    if (!video) return;
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        return;
-      }
-      await video.requestFullscreen();
-    } catch {
-      // No-op: fullscreen can fail on unsupported browsers or policy restrictions.
-    }
+    await this.screenViewerEl?.requestVideoFullscreen();
   }
 
   render() {
     if (this.callState === "idle" || this.callState === "error") return nothing;
-
-    const uniqueParticipants = new Map<string, VoiceParticipant>();
-    uniqueParticipants.set(this.username, { peer_id: "self", username: this.username });
-    for (const p of this.participants) {
-      if (p.username !== this.username) {
-        uniqueParticipants.set(p.username, p);
-      }
-    }
 
     return html`
       <div class="active-call">
@@ -231,61 +229,30 @@ export class ChatActiveCall extends LitElement {
             `
           : nothing}
 
-        <!-- Grid -->
+        <!-- Participant Grid -->
         <div class="active-call__grid">
-          ${Array.from(uniqueParticipants.values()).map((p) => {
-            const isSelf = p.username === this.username;
-            const color = this.getColorForUser(p.username);
-            const initials = this.getInitials(p.username);
-
-            return html`
-              <div class="active-call__card" id=${p.peer_id}>
-                <div class="active-call__avatar-wrap">
-                  <div class="active-call__avatar" style="background-color: ${color}">
-                    ${initials}
-                  </div>
-                </div>
-                <div class="active-call__card-controls">
-                  <div class="active-call__badge">
-                    ${p.username}
-                    ${isSelf ? html`<span class="active-call__badge-you">YOU</span>` : ""}
-                  </div>
-                </div>
-              </div>
-            `;
-          })}
+          ${this._uniqueParticipants.map(
+            (p) => html`
+              <chat-participant-card
+                class="active-call__card"
+                id=${p.peer_id}
+                .username=${p.username}
+                .isSelf=${p.username === this.username}
+                .color=${getColorForUser(p.username)}
+                .initials=${getInitials(p.username)}
+              ></chat-participant-card>
+            `,
+          )}
         </div>
 
+        <!-- Screen Share -->
         ${this.screenShareStream || this.screenSharingUser
           ? html`
-              <div class="active-call__screen-share">
-                <div class="active-call__screen-share-header">
-                  <p class="active-call__screen-share-label">
-                    ${this.screenSharingUser
-                      ? `${this.screenSharingUser} is sharing their screen`
-                      : "Screen share is live"}
-                  </p>
-                  <button
-                    type="button"
-                    class="active-call__screen-fullscreen-btn"
-                    @click=${this.handleScreenShareFullscreen}
-                    ?disabled=${!this.screenShareStream}
-                    title="Fullscreen"
-                    aria-label="Fullscreen screen share"
-                  >
-                    ${iconMaximize}
-                  </button>
-                </div>
-                ${this.isScreenShareLoading
-                  ? html`
-                      <div class="active-call__screen-loading" role="status" aria-live="polite">
-                        <span class="active-call__screen-spinner"></span>
-                        <span>Establishing screen share...</span>
-                      </div>
-                    `
-                  : nothing}
-                <video class="active-call__screen-video" autoplay playsinline muted></video>
-              </div>
+              <chat-screen-share-viewer
+                .sharingUser=${this.screenSharingUser}
+                .stream=${this.screenShareStream}
+                .isLoading=${this.isScreenShareLoading}
+              ></chat-screen-share-viewer>
             `
           : nothing}
 
@@ -307,9 +274,8 @@ export class ChatActiveCall extends LitElement {
             </button>
             <div class="active-call__toolbar-divider"></div>
             <button
-              class="active-call__toolbar-btn"
-              style="${this.isMuted
-                ? "background-color: #ef4444; color: white; border-color: #ef4444;"
+              class="active-call__toolbar-btn ${this.isMuted
+                ? "active-call__toolbar-btn--muted"
                 : ""}"
               title=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
               aria-label=${this.isMuted ? "Unmute microphone" : "Mute microphone"}
@@ -341,31 +307,8 @@ export class ChatActiveCall extends LitElement {
                       style="position: fixed; inset: 0; z-index: 99;"
                       @click=${() => (this.showVolumeSlider = false)}
                     ></div>
-                    <div
-                      class="active-call__volume-popup"
-                      style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px; background-color: #1f2937; border-radius: 8px; padding: 12px 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
-                    >
-                      <span
-                        style="color: #9ca3af; font-size: 12px; font-weight: bold; margin-bottom: 8px;"
-                        >${this.volume}%</span
-                      >
-                      <style>
-                        .popup-slider::-webkit-slider-thumb {
-                          appearance: none;
-                          width: 14px;
-                          height: 14px;
-                          background: #f59e0b;
-                          border-radius: 50%;
-                          cursor: pointer;
-                        }
-                        .popup-slider::-moz-range-thumb {
-                          width: 14px;
-                          height: 14px;
-                          background: #f59e0b;
-                          border-radius: 50%;
-                          cursor: pointer;
-                        }
-                      </style>
+                    <div class="active-call__volume-popup">
+                      <span class="active-call__volume-label">${this.volume}%</span>
                       <input
                         type="range"
                         min="0"
@@ -373,8 +316,7 @@ export class ChatActiveCall extends LitElement {
                         aria-label="Volume slider"
                         .value=${String(this.volume)}
                         @input=${this.handleVolumeChange}
-                        class="popup-slider"
-                        style="appearance: none; width: 100px; height: 6px; background: #374151; accent-color: #f59e0b; border-radius: 3px; outline: none; margin: 0; transform: rotate(-90deg); transform-origin: center; margin-top: 40px; margin-bottom: 40px; cursor: pointer;"
+                        class="active-call__volume-slider"
                       />
                     </div>
                   `
@@ -399,7 +341,13 @@ export class ChatActiveCall extends LitElement {
             >
               ${iconSettings}
             </button>
-            <button class="active-call__icon-btn" title="Expand view" aria-label="Expand view">
+            <button
+              class="active-call__icon-btn"
+              title="Expand view"
+              aria-label="Expand to fullscreen"
+              ?disabled=${!this.screenShareStream && !this.screenSharingUser}
+              @click=${this.handleScreenShareFullscreen}
+            >
               ${iconExpand}
             </button>
           </div>
