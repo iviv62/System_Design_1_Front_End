@@ -4,12 +4,12 @@ import pageLandingStylesRaw from "../styles/page-landing.styles.scss?inline";
 import { ThemeController } from "../utils/theme-controller";
 
 // Register sub-components
-import "../components/nebula/landing-starfield";
-import "../components/nebula/landing-header";
-import "../components/nebula/landing-hero";
-import "../components/nebula/landing-features";
-import "../components/nebula/landing-orbits";
-import "../components/nebula/landing-footer";
+import "../components/nebula/landing/landing-starfield";
+import "../components/nebula/landing/landing-header";
+import "../components/nebula/landing/landing-hero";
+import "../components/nebula/landing/landing-features";
+import "../components/nebula/landing/landing-orbits";
+import "../components/nebula/landing/landing-footer";
 
 @customElement("page-landing")
 export class PageLanding extends LitElement {
@@ -17,7 +17,6 @@ export class PageLanding extends LitElement {
 
   constructor() {
     super();
-    // ThemeController registers itself via addController() for side-effects only.
     void new ThemeController(this);
     this.setAttribute("data-theme", ThemeController.get());
   }
@@ -25,7 +24,6 @@ export class PageLanding extends LitElement {
   private _toggleTheme() {
     const next = ThemeController.get() === "dark" ? "light" : "dark";
     ThemeController.set(next);
-    // Propagate to sub-components that carry theme as a property
     this.requestUpdate();
   }
 
