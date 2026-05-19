@@ -1,0 +1,104 @@
+// landing-header.styles.scss
+
+@use './landing-tokens' as *;
+
+.landing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 0;
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--lp-text);
+  letter-spacing: -0.01em;
+
+  svg { color: var(--lp-accent); }
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+
+  a {
+    color: var(--lp-text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+    padding-bottom: 2px;
+
+    &:hover { color: var(--lp-text); }
+
+    &.active {
+      color: var(--lp-text);
+      border-bottom: 2px solid var(--lp-accent);
+    }
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--lp-border);
+    background: rgba(255, 255, 255, 0.30);
+    color: var(--lp-text-muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.50);
+      color: var(--lp-text);
+    }
+
+    svg { display: block; }
+  }
+
+  .login-btn {
+    display: inline-block;
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.30);
+    color: var(--lp-text);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid var(--lp-border);
+    transition: background 0.2s;
+
+    &:hover { background: rgba(255, 255, 255, 0.50); }
+  }
+}
+
+:host([data-theme="dark"]) {
+  .theme-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    &:hover { background: rgba(255, 255, 255, 0.10); }
+  }
+
+  .login-btn {
+    background: rgba(255, 255, 255, 0.06);
+    &:hover { background: rgba(255, 255, 255, 0.11); }
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+}

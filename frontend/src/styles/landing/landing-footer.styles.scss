@@ -1,0 +1,47 @@
+// landing-footer.styles.scss
+
+@use './landing-tokens' as *;
+
+.landing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 0;
+  border-top: 1px solid var(--lp-border);
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .copyright {
+    color: var(--lp-text-muted);
+    font-size: 0.8rem;
+  }
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+
+  a {
+    color: var(--lp-text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    transition: color 0.2s;
+
+    &:hover { color: var(--lp-text); }
+  }
+}
+
+@media (max-width: 900px) {
+  .landing-footer {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+}

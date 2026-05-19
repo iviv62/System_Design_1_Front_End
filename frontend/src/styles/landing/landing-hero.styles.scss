@@ -1,0 +1,123 @@
+// landing-hero.styles.scss
+
+@use './landing-tokens' as *;
+
+.hero-section {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.40);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--lp-text-muted);
+  border: 1px solid var(--lp-border);
+  letter-spacing: 0.01em;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    background-color: #16a34a;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+  }
+}
+
+:host([data-theme="dark"]) .version-badge {
+  background: rgba(255, 255, 255, 0.06);
+
+  .dot {
+    background-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.20);
+  }
+}
+
+.hero-title {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  line-height: 1.08;
+  font-weight: 800;
+  margin: 0;
+  color: var(--lp-text);
+  letter-spacing: -0.03em;
+}
+
+.hero-subtitle {
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  color: var(--lp-text-muted);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 580px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+
+  app-button::part(button) {
+    padding: 13px 26px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+}
+
+.github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  background: var(--lp-github-bg);
+  color: var(--lp-github-color);
+  border: 1px solid var(--lp-github-border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  white-space: nowrap;
+
+  svg:last-child {
+    color: var(--lp-star-color);
+    transition: transform 0.2s;
+  }
+
+  &:hover {
+    background: var(--lp-github-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+
+    svg:last-child { transform: rotate(15deg) scale(1.15); }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+
+    .github-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

@@ -1,0 +1,103 @@
+// landing-page.styles.scss
+// Styles for page-landing (host wrapper, space-bg, nebula blobs, layout container).
+
+@use './landing-tokens' as *;
+
+:host {
+  min-height: 100vh;
+}
+
+// ─── Space background ─────────────────────────────────────────────────────
+
+.space-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--lp-space-bg);
+  overflow: hidden;
+  pointer-events: none;
+  transition: background 0.4s;
+}
+
+.stars-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(var(--lp-nebula-blur));
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.4s;
+}
+
+:host([data-theme="dark"]) .nebula {
+  mix-blend-mode: screen;
+}
+
+.nebula-1 {
+  width: 520px; height: 520px;
+  top: -80px; left: 15%;
+  background: var(--lp-nebula-1);
+  animation: nebula-float 16s ease-in-out infinite;
+}
+
+.nebula-2 {
+  width: 480px; height: 480px;
+  top: 20%; right: 5%;
+  background: var(--lp-nebula-2);
+  animation: nebula-float 20s ease-in-out infinite reverse;
+}
+
+.nebula-3 {
+  width: 400px; height: 400px;
+  bottom: 10%; left: 5%;
+  background: var(--lp-nebula-3);
+  animation: nebula-float 14s ease-in-out infinite 4s;
+}
+
+.nebula-4 {
+  width: 360px; height: 360px;
+  bottom: 20%; right: 20%;
+  background: var(--lp-nebula-4);
+  animation: nebula-float 18s ease-in-out infinite 8s;
+}
+
+@keyframes nebula-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-18px) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nebula { animation: none; }
+}
+
+// ─── Layout ───────────────────────────────────────────────────────────────
+
+.landing-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.landing-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+  padding: 72px 0 80px;
+  position: relative;
+  z-index: 1;
+}

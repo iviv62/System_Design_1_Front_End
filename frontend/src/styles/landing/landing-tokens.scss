@@ -1,0 +1,98 @@
+// landing-tokens.scss
+// Shared CSS custom-property tokens consumed by every landing sub-component.
+// Import this into each component's own SCSS file.
+
+:host {
+  display: block;
+  color: var(--color-text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: color 0.3s;
+
+  // ── Space background tokens — LIGHT theme ─────────────────────────────
+  --lp-space-bg: #dde3f5;
+  --lp-nebula-1: rgba(99, 102, 241, 0.15);
+  --lp-nebula-2: rgba(59, 130, 246, 0.12);
+  --lp-nebula-3: rgba(6, 182, 212, 0.10);
+  --lp-nebula-4: rgba(168, 85, 247, 0.08);
+  --lp-nebula-blur: 130px;
+
+  // ── Card / UI tokens ──────────────────────────────────────────────────
+  --lp-card-bg: rgba(255, 255, 255, 0.60);
+  --lp-card-border: rgba(99, 102, 241, 0.14);
+  --lp-card-shadow: 0 4px 24px rgba(99, 102, 241, 0.08);
+  --lp-card-hover-shadow: 0 8px 40px rgba(99, 102, 241, 0.14);
+  --lp-mockup-bg: rgba(255, 255, 255, 0.70);
+  --lp-mockup-border: rgba(99, 102, 241, 0.12);
+  --lp-mockup-shadow: 0 20px 48px rgba(99, 102, 241, 0.12);
+  --lp-sidebar-bg: rgba(99, 102, 241, 0.06);
+  --lp-sidebar-border: rgba(99, 102, 241, 0.08);
+  --lp-msg-bg: rgba(99, 102, 241, 0.08);
+  --lp-content-glow: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(240, 244, 255, 0.90) 100%);
+
+  // ── Text ──────────────────────────────────────────────────────────────
+  --lp-text: #1e293b;
+  --lp-text-muted: #475569;
+  --lp-border: rgba(99, 102, 241, 0.14);
+  --lp-accent: #4f46e5;
+
+  // ── GitHub button ─────────────────────────────────────────────────────
+  --lp-github-bg: #24292f;
+  --lp-github-bg-hover: #32383f;
+  --lp-github-color: #ffffff;
+  --lp-github-border: rgba(0, 0, 0, 0.12);
+  --lp-star-color: #d97706;
+
+  // ── Orbit section tokens ──────────────────────────────────────────────
+  --lp-orbit-bg: rgba(255, 255, 255, 0.55);
+  --lp-orbit-ring: rgba(99, 102, 241, 0.18);
+  --lp-orbit-center-bg: #4f46e5;
+  --lp-orbit-center-color: #ffffff;
+  --lp-orbit-avatar-bg: rgba(255, 255, 255, 0.80);
+  --lp-orbit-avatar-border: rgba(99, 102, 241, 0.22);
+  --lp-orbit-badge-bg: #4f46e5;
+  --lp-orbit-badge-color: #ffffff;
+  --lp-orbit-label-color: rgba(71, 85, 105, 0.55);
+}
+
+// Dark theme overrides
+:host([data-theme="dark"]) {
+  --lp-space-bg: #030712;
+  --lp-nebula-1: rgba(139, 92, 246, 0.22);
+  --lp-nebula-2: rgba(59, 130, 246, 0.16);
+  --lp-nebula-3: rgba(6, 182, 212, 0.14);
+  --lp-nebula-4: rgba(192, 38, 211, 0.12);
+  --lp-nebula-blur: 130px;
+
+  --lp-card-bg: rgba(3, 7, 18, 0.65);
+  --lp-card-border: rgba(255, 255, 255, 0.07);
+  --lp-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+  --lp-card-hover-shadow: 0 8px 40px rgba(0, 0, 0, 0.70);
+  --lp-mockup-bg: rgba(2, 4, 14, 0.70);
+  --lp-mockup-border: rgba(255, 255, 255, 0.06);
+  --lp-mockup-shadow: 0 20px 48px rgba(0, 0, 0, 0.70);
+  --lp-sidebar-bg: rgba(0, 0, 0, 0.35);
+  --lp-sidebar-border: rgba(255, 255, 255, 0.04);
+  --lp-msg-bg: rgba(255, 255, 255, 0.06);
+  --lp-content-glow: linear-gradient(135deg, rgba(3, 7, 18, 0.90) 0%, rgba(2, 4, 14, 0.97) 100%);
+
+  --lp-text: #f1f5f9;
+  --lp-text-muted: #94a3b8;
+  --lp-border: rgba(255, 255, 255, 0.08);
+  --lp-accent: #818cf8;
+
+  --lp-github-bg: #2d333b;
+  --lp-github-bg-hover: #3c444d;
+  --lp-github-color: #cdd9e5;
+  --lp-github-border: rgba(205, 217, 229, 0.12);
+  --lp-star-color: #e3b341;
+
+  --lp-orbit-bg: rgba(3, 7, 18, 0.70);
+  --lp-orbit-ring: rgba(255, 255, 255, 0.08);
+  --lp-orbit-center-bg: #6d28d9;
+  --lp-orbit-center-color: #ffffff;
+  --lp-orbit-avatar-bg: rgba(15, 20, 40, 0.85);
+  --lp-orbit-avatar-border: rgba(255, 255, 255, 0.12);
+  --lp-orbit-badge-bg: #7c3aed;
+  --lp-orbit-badge-color: #ffffff;
+  --lp-orbit-label-color: rgba(148, 163, 184, 0.50);
+}
