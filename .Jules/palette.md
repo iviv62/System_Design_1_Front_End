@@ -13,3 +13,7 @@
 ## 2024-05-16 - Standalone Input Accessibility
 **Learning:** Several custom inputs (search bars, range sliders, compose textareas) across the app were missing `aria-label` attributes because they didn't have visual `<label>` elements, making them opaque to screen readers.
 **Action:** Always add an explicit `aria-label` to any `<input>` or `<textarea>` that acts as a standalone control without an associated `<label>` element.
+
+## 2025-05-19 - Accessible List Delete Actions
+**Learning:** In lists of items (e.g., chat rooms, users), having multiple identical buttons that just say "Delete" is completely opaque to screen reader users tab-navigating the list.
+**Action:** When adding actions like "Delete" or "Edit" to items in an iterated list, always bind the item's name into the `aria-label` (e.g., `aria-label=${"Delete room " + item.name}`). This provides vital context without cluttering the visual UI.
