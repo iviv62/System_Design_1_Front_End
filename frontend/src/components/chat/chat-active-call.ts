@@ -1,11 +1,12 @@
 import { LitElement, html, nothing, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import chatActiveCallStylesRaw from "../../styles/chat-active-call.styles.scss?inline";
 import type { VoiceParticipant } from "../../features/lib/chat/chat-room-api";
 import type { ConnectionMetrics } from "../../features/lib/chat/connection-monitor";
 import { getInitials, getColorForUser } from "./chat-call-utils";
 import "./chat-participant-card";
 import "./chat-screen-share-viewer";
+import type { ChatScreenShareViewer } from "./chat-screen-share-viewer";
 import {
   iconWaveform,
   iconChat,
@@ -60,6 +61,14 @@ export class ChatActiveCall extends LitElement {
    * This prevents a Map + Array.from() allocation every second.
    */
   @state() private _uniqueParticipants: VoiceParticipant[] = [];
+
+  /**
+   * Direct reference to the screen-share sub-component.
+   * Used by handleScreenShareFullscreen() so the parent toolbar button
+   * can invoke the child's encapsulated fullscreen method without
+   * reaching into its shadow DOM via imperative DOM queries.
+   */
+  @query("chat-screen-share-viewer") private screenViewerEl?: ChatScreenShareViewer;
 
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private callStartTime = 0;
@@ -167,6 +176,15 @@ export class ChatActiveCall extends LitElement {
 
   private handleScreenShareToggle() {
     this.dispatchEvent(new CustomEvent("screen-share-toggle", { bubbles: true, composed: true }));
+  }
+
+  /**
+   * Delegates fullscreen control to the screen-share sub-component.
+   * The @query ref is null when no screen share is active (the viewer is
+   * conditionally rendered), so the optional-chain is intentional.
+   */
+  private async handleScreenShareFullscreen() {
+    await this.screenViewerEl?.requestVideoFullscreen();
   }
 
   render() {
@@ -323,7 +341,13 @@ export class ChatActiveCall extends LitElement {
             >
               ${iconSettings}
             </button>
-            <button class="active-call__icon-btn" title="Expand view" aria-label="Expand view">
+            <button
+              class="active-call__icon-btn"
+              title="Expand view"
+              aria-label="Expand to fullscreen"
+              ?disabled=${!this.screenShareStream && !this.screenSharingUser}
+              @click=${this.handleScreenShareFullscreen}
+            >
               ${iconExpand}
             </button>
           </div>
