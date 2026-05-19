@@ -1,12 +1,14 @@
 import { LitElement, html, nothing, unsafeCSS } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import chatActiveCallStylesRaw from "../../styles/chat-active-call.styles.scss?inline";
 import type { VoiceParticipant } from "../../features/lib/chat/chat-room-api";
 import type { ConnectionMetrics } from "../../features/lib/chat/connection-monitor";
+import { getInitials, getColorForUser } from "./chat-call-utils";
+import "./chat-participant-card";
+import "./chat-screen-share-viewer";
 import {
   iconWaveform,
   iconChat,
-  iconMaximize,
   iconVideoCameraOff,
   iconMonitor,
   iconMicOff,
@@ -18,16 +20,14 @@ import {
   iconExpand,
 } from "./chat-icons";
 
-/** Avatar palette — kept as a constant to avoid per-render allocation. */
-const AVATAR_COLORS = [
-  "#f59e0b",
-  "#3b82f6",
-  "#a855f7",
-  "#ec4899",
-  "#10b981",
-  "#ef4444",
-];
-
+/**
+ * Orchestration shell for the active voice-call overlay.
+ * Responsible for: call state, timer, participant dedup, volume, and toolbar events.
+ * Sub-component responsibilities:
+ *   - <chat-participant-card>     → individual participant tile rendering
+ *   - <chat-screen-share-viewer> → video stream binding, loading state, fullscreen
+ *   - chat-call-utils.ts         → pure avatar helpers (getInitials, getColorForUser)
+ */
 @customElement("chat-active-call")
 export class ChatActiveCall extends LitElement {
   static styles = unsafeCSS(chatActiveCallStylesRaw);
@@ -61,7 +61,6 @@ export class ChatActiveCall extends LitElement {
    */
   @state() private _uniqueParticipants: VoiceParticipant[] = [];
 
-  @query(".active-call__screen-video") private screenVideoEl?: HTMLVideoElement;
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private callStartTime = 0;
 
@@ -88,8 +87,7 @@ export class ChatActiveCall extends LitElement {
 
   updated(changedProperties: Map<string, unknown>) {
     // Rebuild the deduped participant list only when the source data changes,
-    // not on every timer tick. This avoids a Map + Array.from() allocation
-    // every second.
+    // not on every timer tick.
     if (changedProperties.has("participants") || changedProperties.has("username")) {
       this.rebuildUniqueParticipants();
     }
@@ -118,28 +116,7 @@ export class ChatActiveCall extends LitElement {
 
     if (changedProperties.has("screenShareStream") || changedProperties.has("screenSharingUser")) {
       this.isScreenShareLoading = Boolean(this.screenSharingUser && !this.screenShareStream);
-      void this.bindScreenShareVideo();
     }
-  }
-
-  private async bindScreenShareVideo() {
-    // Do NOT call this.requestUpdate() here — this method is invoked from
-    // updated(), which already ran after a reactive-property change triggered
-    // a render. A second requestUpdate() would queue a redundant render cycle.
-    await this.updateComplete;
-    const video = this.screenVideoEl;
-    if (!video) return;
-
-    // Pause and clear before assigning a new srcObject to release held resources.
-    video.pause();
-    video.srcObject = this.screenShareStream ?? null;
-
-    if (!this.screenShareStream) return;
-
-    await video.play().catch(() => {
-      // Autoplay can be blocked transiently by browser policies; user interaction will recover.
-    });
-    this.isScreenShareLoading = false;
   }
 
   private startTimer() {
@@ -172,18 +149,6 @@ export class ChatActiveCall extends LitElement {
     this.timer = "00:00";
   }
 
-  private getInitials(name: string) {
-    return name ? name.substring(0, 2).toUpperCase() : "?";
-  }
-
-  private getColorForUser(name: string) {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-  }
-
   private handleEndCall() {
     this.dispatchEvent(new CustomEvent("voice-stop", { bubbles: true, composed: true }));
   }
@@ -202,24 +167,6 @@ export class ChatActiveCall extends LitElement {
 
   private handleScreenShareToggle() {
     this.dispatchEvent(new CustomEvent("screen-share-toggle", { bubbles: true, composed: true }));
-  }
-
-  private async handleScreenShareFullscreen() {
-    const video = this.screenVideoEl;
-    if (!video) return;
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        return;
-      }
-      await video.requestFullscreen();
-    } catch (err) {
-      // Fullscreen can fail on unsupported browsers or policy restrictions.
-      if (import.meta.env?.DEV) {
-        console.warn("[chat-active-call] Fullscreen request failed:", err);
-      }
-    }
   }
 
   render() {
@@ -264,61 +211,30 @@ export class ChatActiveCall extends LitElement {
             `
           : nothing}
 
-        <!-- Grid -->
+        <!-- Participant Grid -->
         <div class="active-call__grid">
-          ${this._uniqueParticipants.map((p) => {
-            const isSelf = p.username === this.username;
-            const color = this.getColorForUser(p.username);
-            const initials = this.getInitials(p.username);
-
-            return html`
-              <div class="active-call__card" id=${p.peer_id}>
-                <div class="active-call__avatar-wrap">
-                  <div class="active-call__avatar" style="background-color: ${color}">
-                    ${initials}
-                  </div>
-                </div>
-                <div class="active-call__card-controls">
-                  <div class="active-call__badge">
-                    ${p.username}
-                    ${isSelf ? html`<span class="active-call__badge-you">YOU</span>` : ""}
-                  </div>
-                </div>
-              </div>
-            `;
-          })}
+          ${this._uniqueParticipants.map(
+            (p) => html`
+              <chat-participant-card
+                class="active-call__card"
+                id=${p.peer_id}
+                .username=${p.username}
+                .isSelf=${p.username === this.username}
+                .color=${getColorForUser(p.username)}
+                .initials=${getInitials(p.username)}
+              ></chat-participant-card>
+            `,
+          )}
         </div>
 
+        <!-- Screen Share -->
         ${this.screenShareStream || this.screenSharingUser
           ? html`
-              <div class="active-call__screen-share">
-                <div class="active-call__screen-share-header">
-                  <p class="active-call__screen-share-label">
-                    ${this.screenSharingUser
-                      ? `${this.screenSharingUser} is sharing their screen`
-                      : "Screen share is live"}
-                  </p>
-                  <button
-                    type="button"
-                    class="active-call__screen-fullscreen-btn"
-                    @click=${this.handleScreenShareFullscreen}
-                    ?disabled=${!this.screenShareStream}
-                    title="Fullscreen"
-                    aria-label="Fullscreen screen share"
-                  >
-                    ${iconMaximize}
-                  </button>
-                </div>
-                ${this.isScreenShareLoading
-                  ? html`
-                      <div class="active-call__screen-loading" role="status" aria-live="polite">
-                        <span class="active-call__screen-spinner"></span>
-                        <span>Establishing screen share...</span>
-                      </div>
-                    `
-                  : nothing}
-                <video class="active-call__screen-video" autoplay playsinline muted></video>
-              </div>
+              <chat-screen-share-viewer
+                .sharingUser=${this.screenSharingUser}
+                .stream=${this.screenShareStream}
+                .isLoading=${this.isScreenShareLoading}
+              ></chat-screen-share-viewer>
             `
           : nothing}
 
