@@ -10,7 +10,7 @@ import "./nebula-welcome";
 import "./nebula-active-servers";
 import "./nebula-trending";
 import "./nebula-quick-actions";
-import "./nebula-live-activity";
+
 
 @customElement("nebula-app")
 export class NebulaApp extends LitElement {
@@ -115,14 +115,11 @@ export class NebulaApp extends LitElement {
             <div class="nebula-content">
               <nebula-welcome></nebula-welcome>
               <nebula-active-servers></nebula-active-servers>
+              <nebula-quick-actions></nebula-quick-actions>
               <nebula-trending></nebula-trending>
             </div>
           </main>
 
-          <aside class="nebula-right-sidebar">
-            <nebula-quick-actions></nebula-quick-actions>
-            <nebula-live-activity></nebula-live-activity>
-          </aside>
         </div>
       </div>
     `;

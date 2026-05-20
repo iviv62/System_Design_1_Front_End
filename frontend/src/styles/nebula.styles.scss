@@ -665,18 +665,7 @@
   }
 }
 
-/* Right Sidebar */
-.nebula-right-sidebar {
-  background: color-mix(in srgb, var(--neb-bg) 60%, transparent);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid var(--neb-border);
-  display: flex;
-  flex-direction: column;
-  padding: 2rem 1.5rem;
-  gap: 2rem;
-  overflow-y: auto;
-  height: 100vh;
-}
+
 
 .right-section {
   h3 {

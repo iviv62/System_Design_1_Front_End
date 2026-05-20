@@ -33,15 +33,7 @@ export class NebulaSidebar extends LitElement {
         <div class="nebula-sidebar-section">
           <div class="section-title">My Servers</div>
           <div class="nebula-server-list">
-            <a href="#" class="server-item">
-              <div class="server-icon">
-                <img
-                  src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=64&h=64&fit=crop&q=80"
-                  alt="Gaming"
-                />
-              </div>
-              <span>Gaming</span>
-            </a>
+
             <a href="#" class="server-item">
               <div class="server-icon">${nebulaIcons.design}</div>
               <span>Design</span>
