@@ -3,6 +3,8 @@ export interface Article {
   title: string;
   excerpt: string;
   author: string;
+  /** Backend model field — populated when fetching from the API. */
+  authorId?: string;
   tag: string;
   tagColor: string;
   stars: number;

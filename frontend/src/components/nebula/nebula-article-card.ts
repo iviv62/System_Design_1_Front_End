@@ -1,9 +1,13 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import type { PropertyValues } from "lit";
 import type { Article } from "../../types/article";
+import { navigate } from "../../utils/navigate";
 
 @customElement("nebula-article-card")
 export class NebulaArticleCard extends LitElement {
+  // Light DOM is used project-wide so global SCSS class selectors apply without
+  // Shadow DOM piercing. Scoping is handled purely by BEM-style class names.
   createRenderRoot() {
     return this;
   }
@@ -13,10 +17,25 @@ export class NebulaArticleCard extends LitElement {
   @state() private starred = false;
   @state() private starCount = 0;
 
-  connectedCallback() {
-    super.connectedCallback();
-    this.starred = this.article.starred;
-    this.starCount = this.article.stars;
+  willUpdate(changed: PropertyValues<this>) {
+    // Only initialise local state on the first render (when there is no previous
+    // value for `article`). Subsequent parent-driven updates will already carry
+    // the synced stars/starred values from handleArticleStar in the parent.
+    if (changed.has("article" as keyof this) && !changed.get("article" as keyof this)) {
+      this.starred = this.article.starred;
+      this.starCount = this.article.stars;
+    }
+  }
+
+  private openArticle() {
+    navigate(`/article/${this.article.id}`);
+  }
+
+  private handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      this.openArticle();
+    }
   }
 
   private handleStar(e: Event) {
@@ -27,14 +46,20 @@ export class NebulaArticleCard extends LitElement {
       new CustomEvent("article-star", {
         bubbles: true,
         composed: true,
-        detail: { id: this.article.id, starred: this.starred },
+        detail: { id: this.article.id, starred: this.starred, stars: this.starCount },
       })
     );
   }
 
   render() {
     return html`
-      <div class="trending-card article-card">
+      <div
+        class="trending-card article-card"
+        role="article"
+        tabindex="0"
+        @click=${this.openArticle}
+        @keydown=${this.handleKeyDown}
+      >
         <div
           class="card-banner"
           style="background: url('${this.article.coverUrl}') center/cover"

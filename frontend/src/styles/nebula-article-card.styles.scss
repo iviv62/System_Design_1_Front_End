@@ -1,14 +1,20 @@
 // Styles for nebula-article-card and the popular-articles section.
 // The .trending-card and .trending-grid base rules live in nebula.styles.scss;
-// only article-card–specific overrides and new rules are defined here.
+// only article-card-specific overrides and new rules are defined here.
+
+// Star accent colour. Override via --color-star in a theme or :root block.
+$star-color: var(--color-star, #f5c518);
 
 .article-card {
+  cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     border-color: var(--color-input-border);
     transform: translateY(-3px);
     box-shadow: 0 12px 24px -10px color-mix(in srgb, black 25%, transparent);
+    outline: none;
   }
 
   // No banner-icon offset needed — articles use the full banner as cover.
@@ -54,13 +60,13 @@
   }
 
   &:hover {
-    border-color: #f5c518;
-    color: #f5c518;
+    border-color: #{$star-color};
+    color: #{$star-color};
   }
 
   &.starred {
-    border-color: #f5c518;
-    color: #f5c518;
-    background: color-mix(in srgb, #f5c518 10%, transparent);
+    border-color: #{$star-color};
+    color: #{$star-color};
+    background: color-mix(in srgb, #{$star-color} 10%, transparent);
   }
 }

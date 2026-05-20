@@ -10,6 +10,7 @@ const SAMPLE_ARTICLES: Article[] = [
     excerpt:
       "Explore how WebRTC and CRDTs combine to enable seamless multi-user code execution environments...",
     author: "Alice Mercer",
+    authorId: undefined,
     tag: "ENGINEERING",
     tagColor: "#4f8ef7",
     stars: 312,
@@ -24,6 +25,7 @@ const SAMPLE_ARTICLES: Article[] = [
     excerpt:
       "From indie gems to blockbuster titles, pixel art is making a massive comeback in the gaming world...",
     author: "Ben Clarke",
+    authorId: undefined,
     tag: "ART",
     tagColor: "#e05c5c",
     stars: 198,
@@ -36,15 +38,23 @@ const SAMPLE_ARTICLES: Article[] = [
 
 @customElement("nebula-trending")
 export class NebulaTrending extends LitElement {
+  // Light DOM is used project-wide so global SCSS class selectors apply without
+  // Shadow DOM piercing. Scoping is handled purely by BEM-style class names.
   createRenderRoot() {
     return this;
   }
 
   @state() private articles: Article[] = SAMPLE_ARTICLES;
 
-  private handleArticleStar(e: CustomEvent<{ id: number; starred: boolean }>) {
+  private handleArticleStar(
+    e: CustomEvent<{ id: number; starred: boolean; stars: number }>
+  ) {
+    // Keep both `starred` and `stars` in sync so the next prop pass from the
+    // parent does not reset the child's displayed count after an API refresh.
     this.articles = this.articles.map((a) =>
-      a.id === e.detail.id ? { ...a, starred: e.detail.starred } : a
+      a.id === e.detail.id
+        ? { ...a, starred: e.detail.starred, stars: e.detail.stars }
+        : a
     );
   }
 
