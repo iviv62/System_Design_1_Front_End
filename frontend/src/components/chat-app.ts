@@ -323,6 +323,8 @@ export class ChatApp extends LitElement {
                                   <div class="lobby__room-card-actions">
                                     <button
                                       class="lobby__btn lobby__btn--delete lobby__btn--delete-sm"
+                                      title="Delete room ${r.name}"
+                                      aria-label="Delete room ${r.name}"
                                       @click=${(e: Event) => this.handleDeleteRoom(r, e)}
                                     >
                                       Delete
@@ -417,6 +419,12 @@ export class ChatApp extends LitElement {
                                 <td>
                                   <button
                                     class="lobby__btn lobby__btn--join"
+                                    title=${this.username.trim()
+                                      ? `Join room ${r.name}`
+                                      : "Log in to join room"}
+                                    aria-label=${this.username.trim()
+                                      ? `Join room ${r.name}`
+                                      : "Log in to join room"}
                                     ?disabled=${!this.username.trim()}
                                     @click=${(e: Event) => {
                                       e.stopPropagation();
@@ -428,6 +436,8 @@ export class ChatApp extends LitElement {
                                   ${r.created_by && r.created_by === this.username.trim()
                                     ? html`<button
                                         class="lobby__btn lobby__btn--delete"
+                                        title="Delete room ${r.name}"
+                                        aria-label="Delete room ${r.name}"
                                         @click=${(e: Event) => this.handleDeleteRoom(r, e)}
                                       >
                                         Delete

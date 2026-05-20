@@ -13,3 +13,7 @@
 ## 2024-05-16 - Standalone Input Accessibility
 **Learning:** Several custom inputs (search bars, range sliders, compose textareas) across the app were missing `aria-label` attributes because they didn't have visual `<label>` elements, making them opaque to screen readers.
 **Action:** Always add an explicit `aria-label` to any `<input>` or `<textarea>` that acts as a standalone control without an associated `<label>` element.
+
+## 2024-05-20 - Contextual Labels for Repeated Actions
+**Learning:** Found a pattern where multiple cards in lists (like trending rooms or my rooms) have identical buttons like "Join" or "Delete". A screen reader user navigating through interactive elements would just hear "Join button", "Join button", "Join button" without knowing *what* they are joining.
+**Action:** When mapping over items to render action buttons, always interpolate the item specific name or context into the `aria-label` and `title` (e.g. `aria-label="Delete room ${room.name}"` instead of just "Delete").

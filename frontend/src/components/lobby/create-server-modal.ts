@@ -322,6 +322,10 @@ export class CreateServerModal extends LitElement {
                   <button
                     class="btn-create"
                     @click=${this.handleSubmit}
+                    title=${this.newRoomName.trim() ? "Create Server" : "Server name is required"}
+                    aria-label=${this.newRoomName.trim()
+                      ? "Create Server"
+                      : "Server name is required"}
                     ?disabled=${!this.newRoomName.trim()}
                   >
                     Create Server &rarr;
