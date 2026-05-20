@@ -23,6 +23,7 @@ export class NebulaApp extends LitElement {
 
   @state() private error = "";
   @state() private username = "";
+  @state() private searchQuery = "";
 
   createRenderRoot() {
     return this;
@@ -69,6 +70,10 @@ export class NebulaApp extends LitElement {
   private handleThemeChanged(e: CustomEvent) {
     const next = e.detail.theme;
     ThemeController.set(next);
+  }
+
+  private handleSearchChange(e: CustomEvent) {
+    this.searchQuery = e.detail.query;
   }
 
   private handleOpenCreateServerModal() {
@@ -170,12 +175,18 @@ export class NebulaApp extends LitElement {
           <main class="nebula-main">
             <nebula-topbar
               .theme=${this.themeCtrl.theme}
+              .username=${this.username}
+              .searchQuery=${this.searchQuery}
               @theme-changed=${this.handleThemeChanged}
+              @search-change=${this.handleSearchChange}
             ></nebula-topbar>
 
             <div class="nebula-content">
               <nebula-welcome></nebula-welcome>
-              <nebula-active-servers></nebula-active-servers>
+              <nebula-active-servers
+                .username=${this.username}
+                .searchQuery=${this.searchQuery}
+              ></nebula-active-servers>
               <nebula-trending></nebula-trending>
             </div>
           </main>

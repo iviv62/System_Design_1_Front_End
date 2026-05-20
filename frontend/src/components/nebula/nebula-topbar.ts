@@ -6,9 +6,23 @@ import "../ui/theme-button";
 @customElement("nebula-topbar")
 export class NebulaTopbar extends LitElement {
   @property() theme: "light" | "dark" = "dark";
+  @property() username = "";
+  @property() searchQuery = "";
 
   createRenderRoot() {
     return this;
+  }
+
+  private handleSearchInput(e: Event) {
+    const value = (e.target as HTMLInputElement).value;
+    this.searchQuery = value;
+    this.dispatchEvent(
+      new CustomEvent("search-change", {
+        detail: { query: value },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   render() {
@@ -23,6 +37,8 @@ export class NebulaTopbar extends LitElement {
               type="text"
               placeholder="Find servers, users, or messages..."
               aria-label="Search"
+              .value=${this.searchQuery}
+              @input=${this.handleSearchInput}
             />
           </div>
 
@@ -33,7 +49,7 @@ export class NebulaTopbar extends LitElement {
               src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=64&h=64&fit=crop&q=80"
               alt="User Profile"
             />
-            <span>User</span>
+            <span>${this.username || "User"}</span>
             ${nebulaIcons.chevronDown}
           </div>
         </div>

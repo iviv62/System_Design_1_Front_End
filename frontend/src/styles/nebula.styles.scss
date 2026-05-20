@@ -468,11 +468,13 @@
   padding: 1.25rem;
   backdrop-filter: blur(16px);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     background: var(--neb-icon-bg);
     border-color: var(--neb-border-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.25);
   }
 
   .card-header {
@@ -525,12 +527,30 @@
     }
 
     .notification-badge {
-      background: var(--neb-border-hover);
-      color: var(--neb-text);
+      background: #3b82f6;
+      color: #ffffff;
       font-size: 0.75rem;
-      padding: 0.1rem 0.5rem;
+      padding: 0.15rem 0.5rem;
       border-radius: 12px;
       font-weight: 600;
+    }
+
+    .delete-card-btn {
+      background: transparent;
+      border: none;
+      color: var(--neb-text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+      }
     }
   }
 
@@ -562,6 +582,7 @@
         font-size: 0.65rem;
         margin-left: -8px;
         border: 2px solid var(--neb-bg);
+        color: var(--neb-text);
       }
     }
 
@@ -576,6 +597,50 @@
       strong {
         color: var(--neb-text);
       }
+    }
+  }
+}
+
+/* Pagination styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--neb-border);
+
+  .page-btn {
+    background: var(--neb-card-bg);
+    border: 1px solid var(--neb-border);
+    color: var(--neb-text);
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    &:hover:not(:disabled) {
+      background: var(--neb-icon-bg);
+      border-color: var(--neb-border-hover);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    &.active {
+      background: #3b82f6;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
     }
   }
 }
