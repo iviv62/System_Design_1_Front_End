@@ -272,12 +272,12 @@
   }
 
   &--end {
-    background: var(--color-status-error-text);
-    color: var(--color-surface);
+    background: var(--color-status-error-solid);
+    color: #ffffff;
 
     &:hover {
-      background: var(--color-status-error-bg-hover);
-      color: var(--color-status-error-text);
+      background: var(--color-status-error-solid-hover);
+      color: #ffffff;
     }
   }
 }
