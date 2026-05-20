@@ -246,7 +246,7 @@ export class ChatApp extends LitElement {
         <!-- Top Header Bar -->
         <lobby-header
           .theme=${this.themeCtrl.theme}
-          @toggle-theme=${this.toggleTheme}
+          @theme-changed=${this.toggleTheme}
         ></lobby-header>
 
         <!-- Three-column layout -->

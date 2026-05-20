@@ -1,3 +1,4 @@
+import { html } from "lit";
 import { customElement } from "lit/decorators.js";
 import { AppButton } from "./app-button";
 
@@ -23,5 +24,13 @@ export class ThemeButton extends AppButton {
         composed: true, // Allow the event to cross the shadow DOM boundary
       }),
     );
+  }
+
+  override render() {
+    return html`
+      <button part="button" class="${this.theme}" ?disabled=${this.disabled} type=${this.type}>
+        <slot>${this.theme === "light" ? "🌙 Dark" : "☀️ Light"}</slot>
+      </button>
+    `;
   }
 }

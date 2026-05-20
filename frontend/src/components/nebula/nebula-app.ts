@@ -52,8 +52,23 @@ export class NebulaApp extends LitElement {
     super.disconnectedCallback();
   }
 
+  private _lastTheme = this.themeCtrl.theme;
+
+  protected updated(changedProperties: Map<PropertyKey, unknown>) {
+    super.updated(changedProperties);
+    if (this._lastTheme !== this.themeCtrl.theme) {
+      this._lastTheme = this.themeCtrl.theme;
+      this._initStarfield();
+    }
+  }
+
   private handleResize() {
     this._initStarfield();
+  }
+
+  private handleThemeChanged(e: CustomEvent) {
+    const next = e.detail.theme;
+    ThemeController.set(next);
   }
 
   private handleOpenCreateServerModal() {
@@ -153,7 +168,10 @@ export class NebulaApp extends LitElement {
           <nebula-sidebar></nebula-sidebar>
 
           <main class="nebula-main">
-            <nebula-topbar></nebula-topbar>
+            <nebula-topbar
+              .theme=${this.themeCtrl.theme}
+              @theme-changed=${this.handleThemeChanged}
+            ></nebula-topbar>
 
             <div class="nebula-content">
               <nebula-welcome></nebula-welcome>

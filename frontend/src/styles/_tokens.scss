@@ -92,7 +92,7 @@
 // ---------------------------------------------------------------------------
 // Dark theme — explicit toggle
 // ---------------------------------------------------------------------------
-body[data-theme="dark"] {
+[data-theme="dark"] {
   @include dark-theme-vars;
 }
 
@@ -100,6 +100,7 @@ body[data-theme="dark"] {
 // Dark theme — OS-level preference fallback (no explicit toggle set)
 // ---------------------------------------------------------------------------
 @media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),
   body:not([data-theme="light"]) {
     @include dark-theme-vars;
   }

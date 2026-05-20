@@ -1,5 +1,11 @@
 :root {
-  --neb-bg: var(--color-bg);
+  --neb-space-bg: #f8fafc;
+  --neb-nebula-1: rgba(99, 102, 241, 0.16);
+  --neb-nebula-2: rgba(59, 130, 246, 0.13);
+  --neb-nebula-3: rgba(6, 182, 212, 0.11);
+  --neb-nebula-4: rgba(168, 85, 247, 0.09);
+
+  --neb-bg: var(--neb-space-bg);
   --neb-bg-sidebar: var(--color-surface);
   --neb-text: var(--color-text);
   --neb-text-muted: var(--color-text-muted);
@@ -13,6 +19,25 @@
   --neb-btn-secondary-bg: var(--color-surface-2);
   --neb-btn-secondary-hover: var(--color-item-hover);
   --neb-btn-secondary-text: var(--color-text);
+}
+
+[data-theme="dark"] {
+  --neb-space-bg: #030712;
+  --neb-nebula-1: rgba(139, 92, 246, 0.22);
+  --neb-nebula-2: rgba(59, 130, 246, 0.16);
+  --neb-nebula-3: rgba(6, 182, 212, 0.14);
+  --neb-nebula-4: rgba(192, 38, 211, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),
+  body:not([data-theme="light"]) {
+    --neb-space-bg: #030712;
+    --neb-nebula-1: rgba(139, 92, 246, 0.22);
+    --neb-nebula-2: rgba(59, 130, 246, 0.16);
+    --neb-nebula-3: rgba(6, 182, 212, 0.14);
+    --neb-nebula-4: rgba(192, 38, 211, 0.12);
+  }
 }
 
 .nebula-layout {
@@ -829,7 +854,7 @@
   z-index: 0;
 }
 
-body[data-theme="dark"] .nebula {
+[data-theme="dark"] .nebula {
   mix-blend-mode: screen;
 }
 
@@ -838,7 +863,7 @@ body[data-theme="dark"] .nebula {
   height: 320px;
   top: -40px;
   left: 10%;
-  background: rgba(139, 92, 246, 0.22);
+  background: var(--neb-nebula-1);
   animation: cr-nebula-float 22s ease-in-out infinite;
 }
 
@@ -847,7 +872,7 @@ body[data-theme="dark"] .nebula {
   height: 280px;
   top: 35%;
   right: -20px;
-  background: rgba(59, 130, 246, 0.16);
+  background: var(--neb-nebula-2);
   animation: cr-nebula-float 26s ease-in-out infinite reverse;
 }
 
@@ -856,7 +881,7 @@ body[data-theme="dark"] .nebula {
   height: 260px;
   bottom: -60px;
   left: 20%;
-  background: rgba(6, 182, 212, 0.14);
+  background: var(--neb-nebula-3);
   animation: cr-nebula-float 20s ease-in-out infinite;
 }
 
@@ -865,7 +890,7 @@ body[data-theme="dark"] .nebula {
   height: 300px;
   top: 15%;
   left: 45%;
-  background: rgba(192, 38, 211, 0.12);
+  background: var(--neb-nebula-4);
   animation: cr-nebula-float 30s ease-in-out infinite reverse;
 }
 

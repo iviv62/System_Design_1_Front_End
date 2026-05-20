@@ -38,6 +38,7 @@ export class ThemeController {
 
   static set(theme: ThemeMode) {
     browserKeyValueStorage.set(THEME_STORAGE_KEY, theme);
+    document.documentElement.setAttribute("data-theme", theme);
     document.body.setAttribute("data-theme", theme);
     window.dispatchEvent(new Event("theme-changed"));
   }
