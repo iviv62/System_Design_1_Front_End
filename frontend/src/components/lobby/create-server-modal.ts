@@ -11,6 +11,7 @@ export class CreateServerModal extends LitElement {
   }
 
   @property({ type: String }) error: string = "";
+  @property({ type: Boolean }) onlyModal: boolean = false;
 
   @state() private isModalOpen = false;
   @state() private newRoomName = "";
@@ -55,8 +56,12 @@ export class CreateServerModal extends LitElement {
     this._triggerEl?.focus();
   }
 
+  public open() {
+    this.openModal();
+  }
+
   private openModal() {
-    this._triggerEl = this.renderRoot.querySelector(".lobby__btn--dark");
+    this._triggerEl = this.renderRoot.querySelector(".lobby__btn--dark") || (document.activeElement as HTMLElement);
     this.isModalOpen = true;
     this.newRoomName = "";
     this.selectedCategory = "Gaming";
@@ -90,12 +95,16 @@ export class CreateServerModal extends LitElement {
 
   render() {
     return html`
-      <div class="lobby__card">
-        <h3 class="lobby__card-title">Create a New Server</h3>
-        <button class="lobby__btn lobby__btn--dark lobby__btn--full" @click=${this.openModal}>
-          + Create Server
-        </button>
-      </div>
+      ${this.onlyModal
+        ? html``
+        : html`
+            <div class="lobby__card">
+              <h3 class="lobby__card-title">Create a New Server</h3>
+              <button class="lobby__btn lobby__btn--dark lobby__btn--full" @click=${this.openModal}>
+                + Create Server
+              </button>
+            </div>
+          `}
 
       ${this.isModalOpen
         ? html`

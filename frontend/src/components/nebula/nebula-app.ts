@@ -1,6 +1,9 @@
 import { LitElement, html } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { ThemeController } from "../../utils/theme-controller";
+import { createRoom, ApiError } from "../../features/lib/chat/chat-room-api";
+import { fetchCurrentUser } from "../../features/lib/auth/auth-api";
+import { navigate } from "../../utils/navigate";
 
 import "../../styles/nebula.styles.scss";
 
@@ -9,7 +12,7 @@ import "./nebula-topbar";
 import "./nebula-welcome";
 import "./nebula-active-servers";
 import "./nebula-trending";
-import "./nebula-quick-actions";
+import "../lobby/create-server-modal";
 
 
 @customElement("nebula-app")
@@ -17,6 +20,9 @@ export class NebulaApp extends LitElement {
   themeCtrl = new ThemeController(this);
   private _starsAnimId: number | null = null;
   private readonly boundResize = this.handleResize.bind(this);
+
+  @state() private error = "";
+  @state() private username = "";
 
   createRenderRoot() {
     return this;
@@ -30,6 +36,14 @@ export class NebulaApp extends LitElement {
     super.connectedCallback();
     window.addEventListener("resize", this.boundResize);
     ThemeController.set(this.themeCtrl.theme);
+
+    fetchCurrentUser()
+      .then((user) => {
+        this.username = user.username || "";
+      })
+      .catch(() => {
+        // Not logged in or error
+      });
   }
 
   disconnectedCallback(): void {
@@ -40,6 +54,35 @@ export class NebulaApp extends LitElement {
 
   private handleResize() {
     this._initStarfield();
+  }
+
+  private handleOpenCreateServerModal() {
+    this.error = "";
+    const modal = this.querySelector("#createServerModal") as any;
+    if (modal) {
+      modal.open();
+    }
+  }
+
+  private async handleCreateRoom(e: CustomEvent) {
+    const { name, status } = e.detail;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const room = await createRoom({
+        name: trimmed,
+        status: status,
+        created_by: this.username || undefined,
+      });
+      this.error = "";
+      navigate(`/chat/${encodeURIComponent(room.id)}`);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        this.error = "A room with that name already exists. Pick a different name.";
+      } else {
+        this.error = "Failed to create room.";
+      }
+    }
   }
 
   private _initStarfield() {
@@ -97,7 +140,7 @@ export class NebulaApp extends LitElement {
 
   render() {
     return html`
-      <div class="nebula-layout-wrapper">
+      <div class="nebula-layout-wrapper" @open-create-server-modal=${this.handleOpenCreateServerModal}>
         <div class="chat-room__background">
           <canvas id="starsCanvas" class="stars-layer"></canvas>
           <div class="nebula nebula-1"></div>
@@ -115,12 +158,18 @@ export class NebulaApp extends LitElement {
             <div class="nebula-content">
               <nebula-welcome></nebula-welcome>
               <nebula-active-servers></nebula-active-servers>
-              <nebula-quick-actions></nebula-quick-actions>
               <nebula-trending></nebula-trending>
             </div>
           </main>
 
         </div>
+
+        <create-server-modal
+          id="createServerModal"
+          .onlyModal=${true}
+          .error=${this.error}
+          @create-room=${this.handleCreateRoom}
+        ></create-server-modal>
       </div>
     `;
   }
