@@ -17,11 +17,22 @@ export class NebulaWelcome extends LitElement {
           your people.
         </p>
         <div class="welcome-actions">
-          <button class="btn-primary">${nebulaIcons.plus} Create New Server</button>
+          <button class="btn-primary" @click=${this.handleOpenCreateServer}>
+            ${nebulaIcons.plus} Create New Server
+          </button>
           <button class="btn-secondary">${nebulaIcons.browse} Browse Directory</button>
         </div>
       </div>
     `;
+  }
+
+  private handleOpenCreateServer() {
+    this.dispatchEvent(
+      new CustomEvent("open-create-server-modal", {
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }
 

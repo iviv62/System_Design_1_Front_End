@@ -44,7 +44,7 @@ export class NebulaSidebar extends LitElement {
               <span>Development</span>
             </a>
           </div>
-          <button class="add-server-btn">
+          <button class="add-server-btn" @click=${this.handleOpenCreateServer}>
             ${nebulaIcons.plus}
             <span>Add Server</span>
           </button>
@@ -62,6 +62,15 @@ export class NebulaSidebar extends LitElement {
         </div>
       </aside>
     `;
+  }
+
+  private handleOpenCreateServer() {
+    this.dispatchEvent(
+      new CustomEvent("open-create-server-modal", {
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }
 

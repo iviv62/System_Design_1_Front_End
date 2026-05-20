@@ -17,7 +17,7 @@
 
 .nebula-layout {
   display: grid;
-  grid-template-columns: 240px 1fr 300px;
+  grid-template-columns: 240px 1fr;
   min-height: 100vh;
   background-color: transparent;
   color: var(--neb-text);
@@ -27,12 +27,6 @@
     -apple-system,
     sans-serif;
   overflow: hidden;
-}
-
-@media (max-width: 1024px) {
-  .nebula-layout {
-    grid-template-columns: 240px 1fr;
-  }
 }
 
 @media (max-width: 768px) {
@@ -187,7 +181,7 @@
   margin: 0.5rem 1rem;
   border-radius: 8px;
   background: transparent;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px dashed var(--neb-border);
   color: var(--neb-text-muted);
   font-size: 0.9rem;
   font-weight: 500;
@@ -195,7 +189,7 @@
   transition: all 0.2s;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: var(--neb-border-hover);
     color: var(--neb-text);
   }
 }
@@ -387,9 +381,9 @@
     }
 
     .btn-secondary {
-      background: var(--neb-icon-bg);
-      border: 1px solid var(--neb-border-hover);
-      color: #ffffff;
+      background: var(--neb-btn-secondary-bg);
+      border: 1px solid var(--neb-border);
+      color: var(--neb-btn-secondary-text);
       padding: 0.75rem 1.25rem;
       border-radius: 8px;
       font-size: 0.9rem;
@@ -649,8 +643,8 @@
 
       .btn-join {
         background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #ffffff;
+        border: 1px solid var(--neb-border);
+        color: var(--neb-text);
         padding: 0.4rem 1rem;
         border-radius: 16px;
         font-size: 0.8rem;
@@ -658,7 +652,8 @@
         transition: all 0.2s;
 
         &:hover {
-          background: var(--neb-border-hover);
+          background: var(--neb-btn-secondary-bg);
+          border-color: var(--neb-border-hover);
         }
       }
     }
@@ -879,3 +874,5 @@ body[data-theme="dark"] .nebula {
   33% { transform: translate(30px, -40px) scale(1.12); }
   66% { transform: translate(-25px, 20px) scale(0.92); }
 }
+
+@import "./create-server-modal.styles.scss";
