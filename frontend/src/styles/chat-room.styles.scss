@@ -21,7 +21,6 @@
   --cr-placeholder-color: #6b7fa5;
   --cr-call-group-bg:  transparent;
 
-  --cr-space-bg:    #f8fafc;
   --cr-glass-bg:    rgba(255, 255, 255, 0.65);
   --cr-glass-border: rgba(99, 102, 241, 0.12);
 }
@@ -40,7 +39,6 @@
   --cr-placeholder-color: #6e81a6;
   --cr-call-group-bg:  rgba(33, 47, 76, 0.4);
 
-  --cr-space-bg:    #030712;
   --cr-glass-bg:    rgba(11, 15, 26, 0.55);
   --cr-glass-border: rgba(255, 255, 255, 0.04);
 }
@@ -60,7 +58,7 @@
 .chat-room {
   display: flex;
   flex-direction: column;
-  background: var(--cr-space-bg);
+  background: var(--color-space-bg);
   position: relative;
   border-radius: 0;
   border: none;
@@ -160,11 +158,11 @@
     }
 
     &--active {
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.1);
+      color: var(--color-status-error-text);
+      background: var(--color-status-error-bg);
       &:hover {
-        background: rgba(239, 68, 68, 0.2);
-        color: #dc2626;
+        background: var(--color-status-error-bg-hover);
+        color: var(--color-status-error-text);
       }
     }
 
@@ -176,9 +174,9 @@
   }
 
   &__header-action--theme {
-    background: rgba(250, 204, 21, 0.18);
-    color: #facc15;
-    border-color: rgba(250, 204, 21, 0.28);
+    background: var(--color-status-calling-bg);
+    color: var(--color-status-calling-text);
+    border-color: var(--color-status-calling-border);
   }
 
   &__title {
@@ -197,7 +195,7 @@
   }
 
   &__online {
-    color: #34d399;
+    color: var(--color-status-online);
   }
 
   &__banner {
@@ -357,7 +355,7 @@
 
   &__composer-error {
     margin: 0;
-    color: #ef4444;
+    color: var(--color-status-error-text);
     font-size: 0.78rem;
     font-weight: 600;
   }
@@ -608,8 +606,8 @@
       opacity: 0.5;
       animation: status-pulse 1.2s ease-in-out infinite;
     }
-    &--sent  { color: #34d399; }
-    &--failed { color: #ef4444; }
+    &--sent  { color: var(--color-status-online); }
+    &--failed { color: var(--color-status-error-text); }
   }
 
   &__reactions {
@@ -763,16 +761,16 @@
     }
 
     .message__link {
-      color: #0b3b8f;
-      &:hover { color: #1d4ed8; }
+      color: var(--color-primary);
+      &:hover { color: var(--color-primary-hover); }
     }
   }
 
   &--pending .message__body { opacity: 0.65; }
 
   &--failed .message__body {
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: var(--color-status-error-bg);
+    border: 1px solid var(--color-status-error-border);
   }
 
   &--system {

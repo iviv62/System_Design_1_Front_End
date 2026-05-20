@@ -45,14 +45,14 @@
   height: 1.4rem;
   padding: 0 0.4rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--color-text-muted);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface-2);
 }
 
 .chat-room__users-list {
@@ -74,10 +74,10 @@
 }
 
 .chat-room__users-list::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--color-border);
   border-radius: 999px;
   &:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: var(--color-input-border);
   }
 }
 
@@ -144,7 +144,7 @@
 }
 
 .chat-room__user-presence-dot--online {
-  background: #10b981;
+  background: var(--color-status-online);
 }
 
 @keyframes ping {
@@ -159,12 +159,12 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: #10b981;
+  background-color: var(--color-status-online);
   animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 .chat-room__user-presence-dot--typing {
-  background: #10b981;
+  background: var(--color-status-online);
 }
 
 .chat-room__user-main {
@@ -209,9 +209,9 @@
   font-weight: 600;
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
-  color: #fbbf24;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--color-status-calling-text);
+  background: var(--color-status-calling-bg);
+  border: 1px solid var(--color-status-calling-border);
 }
 
 .chat-room__users-empty {

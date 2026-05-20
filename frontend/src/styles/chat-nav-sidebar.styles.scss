@@ -44,9 +44,9 @@
 }
 
 .nav-sidebar__room-icon--active {
-  background: #f7a600;
-  color: #0f172a;
-  box-shadow: 0 4px 14px rgba(247, 166, 0, 0.45);
+  background: var(--color-active-room-bg);
+  color: var(--color-active-room-text);
+  box-shadow: 0 4px 14px var(--color-active-room-shadow);
 }
 
 .nav-sidebar__room-icon--active:hover {
