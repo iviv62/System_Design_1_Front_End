@@ -12,7 +12,7 @@
   --cr-msg-self-bg:           color-mix(in srgb, var(--color-primary) 50%, transparent);
   --cr-msg-self-color:        var(--color-text-inverse);
   --cr-composer-shell-bg:     color-mix(in srgb, var(--color-primary) 50%, transparent);
-  --cr-composer-shell-border: rgba(0, 0, 0, 0.1);
+  --cr-composer-shell-border: var(--color-surface-scrim);
   --cr-send-icon-bg:          var(--color-purple);
   --cr-send-icon-border:      var(--color-purple);
   --cr-send-icon-color:       var(--color-text-inverse);
@@ -26,11 +26,11 @@
 }
 
 @mixin cr-dark-tokens {
-  --cr-msg-other-bg:          rgba(255, 255, 255, 0.06);
+  --cr-msg-other-bg:          color-mix(in srgb, white 6%, transparent);
   --cr-msg-self-bg:           var(--color-cr-msg-self-bg-dark);
   --cr-msg-self-color:        var(--color-text-inverse);
   --cr-composer-shell-bg:     color-mix(in srgb, var(--color-primary) 50%, transparent);
-  --cr-composer-shell-border: rgba(255, 255, 255, 0.08);
+  --cr-composer-shell-border: color-mix(in srgb, white 8%, transparent);
   --cr-send-icon-bg:          var(--color-purple);
   --cr-send-icon-border:      var(--color-purple);
   --cr-send-icon-color:       var(--color-text-inverse);
@@ -40,7 +40,7 @@
   --cr-call-group-bg:         color-mix(in srgb, var(--color-surface) 40%, transparent);
 
   --cr-glass-bg:              color-mix(in srgb, var(--color-space-bg) 55%, transparent);
-  --cr-glass-border:          rgba(255, 255, 255, 0.04);
+  --cr-glass-border:          var(--color-surface-scrim);
 }
 
 :host {
@@ -753,7 +753,7 @@
       color: var(--cr-msg-self-color);
       border: none;
       border-bottom-right-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 12px var(--color-msg-self-shadow);
     }
 
     .message__time {

@@ -9,92 +9,92 @@
 
   // ── Space background tokens — LIGHT theme: soft twilight sky ─────────────
   --lp-space-bg: #dde3f5; // soft periwinkle — daylight sky at dusk
-  --lp-nebula-1: rgba(99, 102, 241, 0.15); // indigo (pastel)
-  --lp-nebula-2: rgba(59, 130, 246, 0.12); // blue
-  --lp-nebula-3: rgba(6, 182, 212, 0.10); // cyan
-  --lp-nebula-4: rgba(168, 85, 247, 0.08); // purple
-  --lp-nebula-blur: 130px;
+  --lp-nebula-1: var(--color-nebula-1);
+  --lp-nebula-2: var(--color-nebula-2);
+  --lp-nebula-3: var(--color-nebula-3);
+  --lp-nebula-4: var(--color-nebula-4);
+  --lp-nebula-blur: var(--color-nebula-blur);
 
   // ── Card / UI tokens (light: frosted glass over soft bg) ─────────────
-  --lp-card-bg: rgba(255, 255, 255, 0.60);
-  --lp-card-border: rgba(99, 102, 241, 0.14);
-  --lp-card-shadow: 0 4px 24px rgba(99, 102, 241, 0.08);
-  --lp-card-hover-shadow: 0 8px 40px rgba(99, 102, 241, 0.14);
-  --lp-mockup-bg: rgba(255, 255, 255, 0.70);
-  --lp-mockup-border: rgba(99, 102, 241, 0.12);
-  --lp-mockup-shadow: 0 20px 48px rgba(99, 102, 241, 0.12);
-  --lp-sidebar-bg: rgba(99, 102, 241, 0.06);
-  --lp-sidebar-border: rgba(99, 102, 241, 0.08);
-  --lp-msg-bg: rgba(99, 102, 241, 0.08);
-  --lp-content-glow: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(240, 244, 255, 0.90) 100%);
+  --lp-card-bg: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  --lp-card-border: color-mix(in srgb, var(--color-purple) 14%, transparent);
+  --lp-card-shadow: 0 4px 24px color-mix(in srgb, var(--color-purple) 8%, transparent);
+  --lp-card-hover-shadow: 0 8px 40px color-mix(in srgb, var(--color-purple) 14%, transparent);
+  --lp-mockup-bg: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  --lp-mockup-border: color-mix(in srgb, var(--color-purple) 12%, transparent);
+  --lp-mockup-shadow: 0 20px 48px color-mix(in srgb, var(--color-purple) 12%, transparent);
+  --lp-sidebar-bg: color-mix(in srgb, var(--color-purple) 6%, transparent);
+  --lp-sidebar-border: color-mix(in srgb, var(--color-purple) 8%, transparent);
+  --lp-msg-bg: color-mix(in srgb, var(--color-purple) 8%, transparent);
+  --lp-content-glow: linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 80%, transparent) 0%, color-mix(in srgb, var(--color-surface-offset) 90%, transparent) 100%);
 
   // ── Text (dark on light bg) ──────────────────────────────────────
-  --lp-text: #1e293b; // slate-800
-  --lp-text-muted: #475569; // slate-600
-  --lp-border: rgba(99, 102, 241, 0.14);
-  --lp-accent: #4f46e5; // indigo-600 — readable on light bg
+  --lp-text: var(--color-text);
+  --lp-text-muted: var(--color-text-muted);
+  --lp-border: color-mix(in srgb, var(--color-purple) 14%, transparent);
+  --lp-accent: var(--color-purple-hover);
 
   // ── GitHub button ─────────────────────────────────────────────────────
   --lp-github-bg: #24292f;
   --lp-github-bg-hover: #32383f;
   --lp-github-color: #ffffff;
-  --lp-github-border: rgba(0, 0, 0, 0.12);
+  --lp-github-border: color-mix(in srgb, black 12%, transparent);
   --lp-star-color: #d97706; // amber-600 — visible on dark button
 
   // ── Orbit section tokens (light) ─────────────────────────────────────
-  --lp-orbit-bg: rgba(255, 255, 255, 0.55);
-  --lp-orbit-ring: rgba(99, 102, 241, 0.18);
-  --lp-orbit-center-bg: #4f46e5;
-  --lp-orbit-center-color: #ffffff;
-  --lp-orbit-avatar-bg: rgba(255, 255, 255, 0.80);
-  --lp-orbit-avatar-border: rgba(99, 102, 241, 0.22);
-  --lp-orbit-badge-bg: #4f46e5;
-  --lp-orbit-badge-color: #ffffff;
-  --lp-orbit-label-color: rgba(71, 85, 105, 0.55);
+  --lp-orbit-bg: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  --lp-orbit-ring: color-mix(in srgb, var(--color-purple) 18%, transparent);
+  --lp-orbit-center-bg: var(--color-purple-hover);
+  --lp-orbit-center-color: var(--color-text-inverse);
+  --lp-orbit-avatar-bg: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  --lp-orbit-avatar-border: color-mix(in srgb, var(--color-purple) 22%, transparent);
+  --lp-orbit-badge-bg: var(--color-purple-hover);
+  --lp-orbit-badge-color: var(--color-text-inverse);
+  --lp-orbit-label-color: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
 }
 
 // Dark theme: deep void with rich saturated nebulae
 :host([data-theme="dark"]) {
-  --lp-space-bg: #030712; // slate-950 — true void
-  --lp-nebula-1: rgba(139, 92, 246, 0.22);
-  --lp-nebula-2: rgba(59, 130, 246, 0.16);
-  --lp-nebula-3: rgba(6, 182, 212, 0.14);
-  --lp-nebula-4: rgba(192, 38, 211, 0.12);
-  --lp-nebula-blur: 130px;
+  --lp-space-bg: var(--color-space-bg);
+  --lp-nebula-1: var(--color-nebula-1);
+  --lp-nebula-2: var(--color-nebula-2);
+  --lp-nebula-3: var(--color-nebula-3);
+  --lp-nebula-4: var(--color-nebula-4);
+  --lp-nebula-blur: var(--color-nebula-blur);
 
-  --lp-card-bg: rgba(3, 7, 18, 0.65);
-  --lp-card-border: rgba(255, 255, 255, 0.07);
-  --lp-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
-  --lp-card-hover-shadow: 0 8px 40px rgba(0, 0, 0, 0.70);
-  --lp-mockup-bg: rgba(2, 4, 14, 0.70);
-  --lp-mockup-border: rgba(255, 255, 255, 0.06);
-  --lp-mockup-shadow: 0 20px 48px rgba(0, 0, 0, 0.70);
-  --lp-sidebar-bg: rgba(0, 0, 0, 0.35);
-  --lp-sidebar-border: rgba(255, 255, 255, 0.04);
-  --lp-msg-bg: rgba(255, 255, 255, 0.06);
-  --lp-content-glow: linear-gradient(135deg, rgba(3, 7, 18, 0.90) 0%, rgba(2, 4, 14, 0.97) 100%);
+  --lp-card-bg: color-mix(in srgb, var(--color-space-bg) 65%, transparent);
+  --lp-card-border: color-mix(in srgb, var(--color-text-inverse) 7%, transparent);
+  --lp-card-shadow: 0 4px 24px color-mix(in srgb, black 55%, transparent);
+  --lp-card-hover-shadow: 0 8px 40px color-mix(in srgb, black 70%, transparent);
+  --lp-mockup-bg: color-mix(in srgb, var(--color-space-bg) 70%, transparent);
+  --lp-mockup-border: color-mix(in srgb, var(--color-text-inverse) 6%, transparent);
+  --lp-mockup-shadow: 0 20px 48px color-mix(in srgb, black 70%, transparent);
+  --lp-sidebar-bg: color-mix(in srgb, black 35%, transparent);
+  --lp-sidebar-border: color-mix(in srgb, var(--color-text-inverse) 4%, transparent);
+  --lp-msg-bg: color-mix(in srgb, var(--color-text-inverse) 6%, transparent);
+  --lp-content-glow: linear-gradient(135deg, color-mix(in srgb, var(--color-space-bg) 90%, transparent) 0%, color-mix(in srgb, var(--color-space-bg) 97%, transparent) 100%);
 
-  --lp-text: #f1f5f9; // slate-100
-  --lp-text-muted: #94a3b8; // slate-400
-  --lp-border: rgba(255, 255, 255, 0.08);
-  --lp-accent: #818cf8; // indigo-400 — pops on dark bg
+  --lp-text: var(--color-text);
+  --lp-text-muted: var(--color-text-muted);
+  --lp-border: color-mix(in srgb, var(--color-text-inverse) 8%, transparent);
+  --lp-accent: var(--color-purple);
 
   --lp-github-bg: #2d333b;
   --lp-github-bg-hover: #3c444d;
   --lp-github-color: #cdd9e5;
-  --lp-github-border: rgba(205, 217, 229, 0.12);
+  --lp-github-border: color-mix(in srgb, var(--lp-github-color) 12%, transparent);
   --lp-star-color: #e3b341;
 
   // ── Orbit section tokens (dark) ───────────────────────────────────────
-  --lp-orbit-bg: rgba(3, 7, 18, 0.70);
-  --lp-orbit-ring: rgba(255, 255, 255, 0.08);
-  --lp-orbit-center-bg: #6d28d9;
-  --lp-orbit-center-color: #ffffff;
-  --lp-orbit-avatar-bg: rgba(15, 20, 40, 0.85);
-  --lp-orbit-avatar-border: rgba(255, 255, 255, 0.12);
-  --lp-orbit-badge-bg: #7c3aed;
-  --lp-orbit-badge-color: #ffffff;
-  --lp-orbit-label-color: rgba(148, 163, 184, 0.50);
+  --lp-orbit-bg: color-mix(in srgb, var(--color-space-bg) 70%, transparent);
+  --lp-orbit-ring: color-mix(in srgb, var(--color-text-inverse) 8%, transparent);
+  --lp-orbit-center-bg: color-mix(in srgb, var(--color-purple) 85%, black);
+  --lp-orbit-center-color: var(--color-text-inverse);
+  --lp-orbit-avatar-bg: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  --lp-orbit-avatar-border: color-mix(in srgb, var(--color-text-inverse) 12%, transparent);
+  --lp-orbit-badge-bg: color-mix(in srgb, var(--color-purple) 95%, black);
+  --lp-orbit-badge-color: var(--color-text-inverse);
+  --lp-orbit-label-color: color-mix(in srgb, var(--color-text-muted) 50%, transparent);
 }
 
 // ─── Space background layers ──────────────────────────────────────────────
@@ -268,13 +268,13 @@
     height: 36px;
     border-radius: 8px;
     border: 1px solid var(--lp-border);
-    background: rgba(255, 255, 255, 0.30);
+    background: color-mix(in srgb, var(--color-text-inverse) 30%, transparent);
     color: var(--lp-text-muted);
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.50);
+      background: color-mix(in srgb, var(--color-text-inverse) 50%, transparent);
       color: var(--lp-text);
     }
 
@@ -285,17 +285,17 @@
 
   // In dark mode the toggle is a darker glass
   :host([data-theme="dark"]) & .theme-toggle {
-    background: rgba(255, 255, 255, 0.05);
+    background: color-mix(in srgb, var(--color-text-inverse) 5%, transparent);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.10);
+      background: color-mix(in srgb, var(--color-text-inverse) 10%, transparent);
     }
   }
 
   .login-btn {
     display: inline-block;
     padding: 8px 20px;
-    background: rgba(255, 255, 255, 0.30);
+    background: color-mix(in srgb, var(--color-text-inverse) 30%, transparent);
     color: var(--lp-text);
     text-decoration: none;
     border-radius: 8px;
@@ -305,15 +305,15 @@
     transition: background 0.2s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.50);
+      background: color-mix(in srgb, var(--color-text-inverse) 50%, transparent);
     }
   }
 
   :host([data-theme="dark"]) & .login-btn {
-    background: rgba(255, 255, 255, 0.06);
+    background: color-mix(in srgb, var(--color-text-inverse) 6%, transparent);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.11);
+      background: color-mix(in srgb, var(--color-text-inverse) 11%, transparent);
     }
   }
 }
@@ -346,7 +346,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: rgba(255, 255, 255, 0.40);
+  background: color-mix(in srgb, var(--color-text-inverse) 40%, transparent);
   padding: 5px 14px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -358,18 +358,18 @@
   .dot {
     width: 6px;
     height: 6px;
-    background-color: #16a34a; // green-600 — visible on light bg
+    background-color: var(--color-status-online); // green-600 — visible on light bg
     border-radius: 50%;
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-status-online) 18%, transparent);
   }
 }
 
 :host([data-theme="dark"]) .version-badge {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--color-text-inverse) 6%, transparent);
 
   .dot {
-    background-color: #34d399;
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.20);
+    background-color: var(--color-status-online);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-status-online) 20%, transparent);
   }
 }
 
@@ -431,7 +431,7 @@
   &:hover {
     background: var(--lp-github-bg-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 16px color-mix(in srgb, black 25%, transparent);
 
     svg:last-child {
       transform: rotate(15deg) scale(1.15);
@@ -506,12 +506,12 @@
   justify-content: center;
   color: var(--lp-accent);
   border-radius: 10px;
-  background: rgba(99, 102, 241, 0.10);
+  background: color-mix(in srgb, var(--color-purple) 10%, transparent);
   flex-shrink: 0;
 }
 
 :host([data-theme="dark"]) .icon-wrapper {
-  background: rgba(129, 140, 248, 0.12);
+  background: color-mix(in srgb, var(--color-purple) 12%, transparent);
 }
 
 // ─── Main feature card (mockup) ─────────────────────────────────────────────
@@ -546,7 +546,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 60% 60%, rgba(99, 102, 241, 0.06) 0%, transparent 65%);
+      background: radial-gradient(circle at 60% 60%, color-mix(in srgb, var(--color-purple) 6%, transparent) 0%, transparent 65%);
       pointer-events: none;
     }
   }
@@ -591,32 +591,32 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background-color: rgba(22, 163, 74, 0.10);
-    color: #16a34a;
+    background-color: color-mix(in srgb, var(--color-status-online) 10%, transparent);
+    color: var(--color-status-online);
     padding: 3px 9px;
     border-radius: 10px;
     font-size: 0.72rem;
     font-weight: 600;
-    border: 1px solid rgba(22, 163, 74, 0.18);
+    border: 1px solid color-mix(in srgb, var(--color-status-online) 18%, transparent);
     letter-spacing: 0.02em;
     text-transform: uppercase;
 
     .dot {
       width: 4px;
       height: 4px;
-      background-color: #16a34a;
+      background-color: var(--color-status-online);
       border-radius: 50%;
     }
   }
 }
 
 :host([data-theme="dark"]) .live-badge {
-  background-color: rgba(52, 211, 153, 0.10);
-  color: #34d399;
-  border-color: rgba(52, 211, 153, 0.18);
+  background-color: color-mix(in srgb, var(--color-status-online) 10%, transparent);
+  color: var(--color-status-online);
+  border-color: color-mix(in srgb, var(--color-status-online) 18%, transparent);
 
   .dot {
-    background-color: #34d399;
+    background-color: var(--color-status-online);
   }
 }
 
@@ -790,15 +790,15 @@
 }
 
 .orbit-legend-dot--far {
-  background: rgba(139, 92, 246, 0.80);
+  background: color-mix(in srgb, var(--color-purple) 80%, transparent);
 }
 
 .orbit-legend-dot--mid {
-  background: rgba(99, 102, 241, 0.80);
+  background: color-mix(in srgb, var(--color-purple) 80%, transparent);
 }
 
 .orbit-legend-dot--near {
-  background: rgba(6, 182, 212, 0.80);
+  background: color-mix(in srgb, var(--color-primary) 80%, transparent);
 }
 
 .orbit-legend-text {
@@ -824,7 +824,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.18), 0 4px 20px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--lp-orbit-center-bg) 18%, transparent), 0 4px 20px color-mix(in srgb, var(--lp-orbit-center-bg) 35%, transparent);
   z-index: 2;
 
   svg {
@@ -833,7 +833,7 @@
 }
 
 :host([data-theme="dark"]) .orbit-center {
-  box-shadow: 0 0 0 6px rgba(109, 40, 217, 0.25), 0 4px 24px rgba(109, 40, 217, 0.45);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--lp-orbit-center-bg) 25%, transparent), 0 4px 24px color-mix(in srgb, var(--lp-orbit-center-bg) 45%, transparent);
 }
 
 .orbit-center__dot {
@@ -843,7 +843,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #34d399;
+  background: var(--color-status-online);
   border: 2px solid var(--lp-orbit-center-bg);
 }
 
@@ -863,11 +863,11 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px color-mix(in srgb, black 12%, transparent);
   padding: 0;
 
   &:hover {
-    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.40);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--lp-accent) 40%, transparent);
     border-color: var(--lp-accent);
   }
 }
@@ -910,7 +910,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #34d399;
+  background: var(--color-status-online);
   border: 2px solid var(--lp-orbit-avatar-bg);
   pointer-events: none;
 }
@@ -958,7 +958,7 @@
   left: 0;
   width: var(--orbit-r, 156px);
   height: 0;
-  border-top: 1.5px dashed rgba(139, 92, 246, 0.18);
+  border-top: 1.5px dashed color-mix(in srgb, var(--color-purple) 18%, transparent);
   transform-origin: left center;
   pointer-events: none;
   animation: orbit-spoke var(--orbit-speed, 45s) linear infinite;
@@ -967,16 +967,16 @@
 }
 
 .orbit-wrap:hover>.orbit-spoke {
-  border-top-color: rgba(139, 92, 246, 0.85);
+  border-top-color: color-mix(in srgb, var(--color-purple) 85%, transparent);
   border-top-width: 2px;
 }
 
 :host([data-theme='dark']) .orbit-spoke {
-  border-top-color: rgba(167, 139, 250, 0.15);
+  border-top-color: color-mix(in srgb, var(--color-purple) 15%, transparent);
 }
 
 :host([data-theme='dark']) .orbit-wrap:hover>.orbit-spoke {
-  border-top-color: rgba(167, 139, 250, 0.80);
+  border-top-color: color-mix(in srgb, var(--color-purple) 80%, transparent);
 }
 
 @keyframes orbit-spoke {
