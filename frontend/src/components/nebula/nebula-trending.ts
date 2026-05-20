@@ -33,7 +33,13 @@ export class NebulaTrending extends LitElement {
               </p>
               <div class="card-footer">
                 <span class="members">8.4k Members</span>
-                <button class="btn-join">Join</button>
+                <button
+                  class="btn-join"
+                  title="Join Arcade Legends"
+                  aria-label="Join Arcade Legends"
+                >
+                  Join
+                </button>
               </div>
             </div>
           </div>
@@ -56,7 +62,13 @@ export class NebulaTrending extends LitElement {
               <p>Share your sprites, get feedback on animations, and participate in weekly...</p>
               <div class="card-footer">
                 <span class="members">12.1k Members</span>
-                <button class="btn-join">Join</button>
+                <button
+                  class="btn-join"
+                  title="Join Pixel Art Collective"
+                  aria-label="Join Pixel Art Collective"
+                >
+                  Join
+                </button>
               </div>
             </div>
           </div>
