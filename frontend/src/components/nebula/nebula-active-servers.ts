@@ -194,13 +194,13 @@ export class NebulaActiveServers extends LitElement {
         <div class="section-header">
           <h3>Your Active Servers</h3>
           <div class="section-header-actions" style="display: flex; gap: 1rem; align-items: center;">
-            ${this.isLoading ? html`<span class="loading-indicator" style="font-size: 0.85rem; color: var(--neb-text-muted);">Loading...</span>` : ""}
-            ${this.error ? html`<span class="error-msg" style="font-size: 0.85rem; color: #ef4444;">${this.error}</span>` : ""}
+            ${this.isLoading ? html`<span class="loading-indicator" style="font-size: 0.85rem; color: var(--color-text-muted);">Loading...</span>` : ""}
+            ${this.error ? html`<span class="error-msg" style="font-size: 0.85rem; color: var(--color-status-error-text);">${this.error}</span>` : ""}
           </div>
         </div>
 
         ${filteredRooms.length === 0 && !this.isLoading
-          ? html`<div class="empty-rooms-state" style="padding: 3rem; text-align: center; background: var(--neb-card-bg); border: 1px dashed var(--neb-border); border-radius: 12px; color: var(--neb-text-muted);">No servers found matching "${this.searchQuery}"</div>`
+          ? html`<div class="empty-rooms-state" style="padding: 3rem; text-align: center; background: var(--color-surface); border: 1px dashed var(--color-border); border-radius: 12px; color: var(--color-text-muted);">No servers found matching "${this.searchQuery}"</div>`
           : html`
               <div class="active-servers-grid">
                 ${repeat(
@@ -252,7 +252,7 @@ export class NebulaActiveServers extends LitElement {
                               (p) => html`
                                 <div
                                   class="avatar"
-                                  style="background: ${this.getAvatarBgColor(p)}; color: #ffffff; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; justify-content: center; text-transform: uppercase; border: 2px solid var(--neb-card-bg);"
+                                  style="background: ${this.getAvatarBgColor(p)}; color: #ffffff; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; justify-content: center; text-transform: uppercase; border: 2px solid var(--color-surface);"
                                   title="${p}"
                                 >
                                   ${p[0]}

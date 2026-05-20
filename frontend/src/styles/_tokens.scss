@@ -44,6 +44,27 @@
 
   // Misc
   --color-shadow: rgba(0, 0, 0, 0.5);
+
+  // Nebula background glows — dark
+  --color-nebula-1: rgba(139,  92, 246, 0.22);
+  --color-nebula-2: rgba( 59, 130, 246, 0.16);
+  --color-nebula-3: rgba(  6, 182, 212, 0.14);
+  --color-nebula-4: rgba(192,  38, 211, 0.12);
+  --color-nebula-blur: 100px;
+
+  // Status colours — voice bar (dark)
+  // Translucent tinted backgrounds keep the signal readable on near-black surfaces.
+  --color-status-calling-bg:     rgba(234, 179,  8, 0.15);
+  --color-status-calling-border: rgba(234, 179,  8, 0.35);
+  --color-status-calling-text:   #fef08a;
+
+  --color-status-active-bg:      rgba( 34, 197, 94, 0.15);
+  --color-status-active-border:  rgba( 34, 197, 94, 0.35);
+  --color-status-active-text:    #a7f3d0;
+
+  --color-status-error-bg:       rgba(239,  68, 68, 0.15);
+  --color-status-error-border:   rgba(239,  68, 68, 0.35);
+  --color-status-error-text:     #fecaca;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +108,26 @@
 
   // Misc
   --color-shadow: rgba(0, 0, 0, 0.1);
+
+  // Nebula background glows
+  --color-nebula-1: rgba(99,  102, 241, 0.16);
+  --color-nebula-2: rgba(59,  130, 246, 0.13);
+  --color-nebula-3: rgba(6,   182, 212, 0.11);
+  --color-nebula-4: rgba(168,  85, 247, 0.09);
+  --color-nebula-blur: 100px;
+
+  // Status colours — voice bar
+  --color-status-calling-bg:     #fef9c3;
+  --color-status-calling-border: #fde047;
+  --color-status-calling-text:   #854d0e;
+
+  --color-status-active-bg:      #dcfce7;
+  --color-status-active-border:  #86efac;
+  --color-status-active-text:    #166534;
+
+  --color-status-error-bg:       #fee2e2;
+  --color-status-error-border:   #fca5a5;
+  --color-status-error-text:     #991b1b;
 }
 
 // ---------------------------------------------------------------------------
